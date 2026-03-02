@@ -103,3 +103,50 @@ export function getTeamVelocity(team: TeamData) {
   if (estimated === 0) return 0;
   return Math.round((estimated / spent) * 100);
 }
+
+// Billing data extracted from Report_Time_Felipe_2.xlsx
+export type BillingStatus = "Faturável" | "Não Faturável" | "Nenhum Faturável";
+
+export interface BillingData {
+  status: BillingStatus;
+  label: string;
+  description: string;
+  estimatedHours: number;
+  spentHours: number;
+  taskCount: number;
+  color: string;
+}
+
+export const billingData: BillingData[] = [
+  {
+    status: "Faturável",
+    label: "Faturável",
+    description: "Atividades marcadas como faturáveis ao cliente",
+    estimatedHours: 144.5, // 144h 30m
+    spentHours: 184.25, // 184h 15m
+    taskCount: 11,
+    color: "hsl(var(--primary))",
+  },
+  {
+    status: "Não Faturável",
+    label: "Não Faturável",
+    description: "Atividades explicitamente marcadas como não faturáveis",
+    estimatedHours: 110.5, // 110h 30m
+    spentHours: 159.15, // 159h 9m
+    taskCount: 10,
+    color: "hsl(var(--warning))",
+  },
+  {
+    status: "Nenhum Faturável",
+    label: "Sem Marcação",
+    description: "A opção de 'Faturável' não foi preenchida na tarefa",
+    estimatedHours: 521.83, // 521h 50m
+    spentHours: 1923.12, // 1923h 7m
+    taskCount: 176,
+    color: "hsl(var(--muted-foreground))",
+  },
+];
+
+export const billingTotalSpent = billingData.reduce((s, b) => s + b.spentHours, 0);
+export const billingTotalEstimated = billingData.reduce((s, b) => s + b.estimatedHours, 0);
+export const billingTotalTasks = billingData.reduce((s, b) => s + b.taskCount, 0);
