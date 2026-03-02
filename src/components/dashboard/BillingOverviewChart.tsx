@@ -1,22 +1,27 @@
-import { billingData, billingTotalSpent } from "@/data/dashboardData";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { AlertCircle } from "lucide-react";
+import type { BillingData } from "@/data/dashboardData";
 
 const COLORS = [
-  "hsl(160, 84%, 39%)",  // Faturável - primary/green
-  "hsl(38, 92%, 50%)",   // Não Faturável - warning/amber
-  "hsl(215, 15%, 42%)",  // Sem Marcação - muted
+  "hsl(160, 84%, 39%)",
+  "hsl(38, 92%, 50%)",
+  "hsl(215, 15%, 42%)",
 ];
 
-const data = billingData.map(b => ({
-  name: b.label,
-  fullName: b.status,
-  description: b.description,
-  value: Math.round(b.spentHours),
-  tasks: b.taskCount,
-}));
+interface BillingOverviewChartProps {
+  billingData: BillingData[];
+  billingTotalSpent: number;
+}
 
-export function BillingOverviewChart() {
+export function BillingOverviewChart({ billingData, billingTotalSpent }: BillingOverviewChartProps) {
+  const data = billingData.map(b => ({
+    name: b.label,
+    fullName: b.status,
+    description: b.description,
+    value: Math.round(b.spentHours),
+    tasks: b.taskCount,
+  }));
+
   return (
     <div className="gradient-card rounded-lg border border-border p-5 opacity-0 animate-fade-in" style={{ animationDelay: "550ms" }}>
       <h3 className="text-sm font-semibold mb-1">Classificação de Faturamento</h3>
@@ -25,32 +30,14 @@ export function BillingOverviewChart() {
         <div className="h-52 w-52 flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={80}
-                paddingAngle={3}
-                dataKey="value"
-                strokeWidth={0}
-              >
+              <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value" strokeWidth={0}>
                 {data.map((_, index) => (
                   <Cell key={index} fill={COLORS[index]} fillOpacity={0.85} />
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{
-                  background: "hsl(225, 22%, 11%)",
-                  border: "1px solid hsl(225, 15%, 18%)",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  color: "hsl(210, 20%, 92%)",
-                }}
-                formatter={(value: number, _: string, entry: { payload: typeof data[0] }) => [
-                  `${value}h (${entry.payload.tasks} tarefas)`,
-                  entry.payload.fullName,
-                ]}
+                contentStyle={{ background: "hsl(225, 22%, 11%)", border: "1px solid hsl(225, 15%, 18%)", borderRadius: "8px", fontSize: "12px", color: "hsl(210, 20%, 92%)" }}
+                formatter={(value: number, _: string, entry: { payload: typeof data[0] }) => [`${value}h (${entry.payload.tasks} tarefas)`, entry.payload.fullName]}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -63,7 +50,7 @@ export function BillingOverviewChart() {
                 <span className="text-xs font-semibold flex-1">{d.name}</span>
                 <span className="text-xs font-mono font-semibold">{d.value}h</span>
                 <span className="text-[10px] font-mono text-muted-foreground w-12 text-right">
-                  {((d.value / billingTotalSpent) * 100).toFixed(1)}%
+                  {billingTotalSpent > 0 ? ((d.value / billingTotalSpent) * 100).toFixed(1) : "0"}%
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground ml-[18px]">{d.description}</p>
@@ -72,7 +59,7 @@ export function BillingOverviewChart() {
           <div className="flex items-start gap-1.5 mt-3 p-2 rounded-md bg-warning/5 border border-warning/20">
             <AlertCircle className="h-3.5 w-3.5 text-warning flex-shrink-0 mt-0.5" />
             <p className="text-[10px] text-warning/80">
-              <strong>{Math.round((data[2].value / billingTotalSpent) * 100)}%</strong> das horas não possuem marcação de faturamento — considere revisar essas tarefas.
+              <strong>{billingTotalSpent > 0 ? Math.round((data[2]?.value || 0) / billingTotalSpent * 100) : 0}%</strong> das horas não possuem marcação de faturamento — considere revisar essas tarefas.
             </p>
           </div>
         </div>

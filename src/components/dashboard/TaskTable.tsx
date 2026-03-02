@@ -1,5 +1,5 @@
-import { categoryTotals } from "@/data/dashboardData";
 import { cn } from "@/lib/utils";
+import type { CategoryName } from "@/data/dashboardData";
 
 const categoryColors: Record<string, string> = {
   "Atendimento": "bg-info/15 text-info",
@@ -11,7 +11,11 @@ const categoryColors: Record<string, string> = {
   "Épico": "bg-team-tesseract/15 text-team-tesseract",
 };
 
-export function TaskTable() {
+interface TaskTableProps {
+  categoryTotals: { name: CategoryName; hours: number; count: number }[];
+}
+
+export function TaskTable({ categoryTotals }: TaskTableProps) {
   const totalHours = categoryTotals.reduce((s, c) => s + c.hours, 0);
   const totalCount = categoryTotals.reduce((s, c) => s + c.count, 0);
 
@@ -30,19 +34,19 @@ export function TaskTable() {
             </tr>
           </thead>
           <tbody>
-            {categoryTotals
+            {[...categoryTotals]
               .sort((a, b) => b.hours - a.hours)
-              .map((cat, i) => (
+              .map((cat) => (
                 <tr key={cat.name} className="border-t border-border hover:bg-muted/30 transition-colors">
                   <td className="py-2.5 px-3">
-                    <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold", categoryColors[cat.name])}>
+                    <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold", categoryColors[cat.name] || "bg-muted text-muted-foreground")}>
                       {cat.name}
                     </span>
                   </td>
                   <td className="py-2.5 px-3 text-right font-mono">{cat.count}</td>
                   <td className="py-2.5 px-3 text-right font-mono">{cat.hours.toFixed(0)}h</td>
                   <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">
-                    {((cat.hours / totalHours) * 100).toFixed(1)}%
+                    {totalHours > 0 ? ((cat.hours / totalHours) * 100).toFixed(1) : "0"}%
                   </td>
                 </tr>
               ))}
