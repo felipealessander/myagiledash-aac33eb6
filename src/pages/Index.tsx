@@ -1,10 +1,13 @@
-import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3 } from "lucide-react";
+import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { TeamCard } from "@/components/dashboard/TeamCard";
 import { CategoryChart } from "@/components/dashboard/CategoryChart";
 import { EstimationVsSpentChart } from "@/components/dashboard/EstimationVsSpentChart";
 import { TaskTable } from "@/components/dashboard/TaskTable";
 import { TeamDistributionChart } from "@/components/dashboard/TeamDistributionChart";
+import { BillingOverviewChart } from "@/components/dashboard/BillingOverviewChart";
+import { BillingComparisonChart } from "@/components/dashboard/BillingComparisonChart";
+import { BillingKpiCards } from "@/components/dashboard/BillingKpiCards";
 import { teams, totalEstimated, totalSpent, totalTasks } from "@/data/dashboardData";
 
 const Index = () => {
@@ -104,6 +107,20 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <TeamDistributionChart />
           <TaskTable />
+        </div>
+
+        {/* Billing Section */}
+        <div className="pt-2">
+          <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-muted-foreground" />
+            Classificação de Faturamento
+          </h2>
+          <BillingKpiCards />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <BillingOverviewChart />
+          <BillingComparisonChart />
         </div>
       </main>
     </div>
