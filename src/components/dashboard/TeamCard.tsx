@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { TeamData, getTeamTotalHours, getTeamTotalTasks, getTeamVelocity } from "@/data/dashboardData";
 import { Users, Clock, Zap } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TeamCardProps {
   team: TeamData;
@@ -44,9 +45,21 @@ export function TeamCard({ team, delay = 0 }: TeamCardProps) {
       <div className="flex items-center gap-3 mb-4">
         <div className={cn("h-2.5 w-2.5 rounded-full", teamDotMap[team.name])} />
         <h3 className="text-sm font-semibold">{team.name}</h3>
-        <span className={cn("ml-auto rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider", teamBadgeMap[team.name])}>
-          {team.members} devs
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={cn("ml-auto rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider cursor-help", teamBadgeMap[team.name])}>
+              {team.members} devs
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-[200px]">
+            <p className="text-[10px] font-semibold mb-1.5 text-muted-foreground uppercase tracking-wider">Membros do time</p>
+            <ul className="space-y-0.5">
+              {team.memberNames.map(name => (
+                <li key={name} className="text-xs">{name}</li>
+              ))}
+            </ul>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="grid grid-cols-3 gap-3">

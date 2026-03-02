@@ -18,6 +18,12 @@ const TEAM_COLORS = {
   Tesseract: "var(--team-tesseract)",
 };
 const TEAM_MEMBERS = { NaN: 6, "Golden Gate": 5, Code418: 5, Tesseract: 6 };
+const TEAM_MEMBER_NAMES: Record<TeamName, string[]> = {
+  NaN: ["Felipe Souza", "Ana Clara", "Lucas Martins", "Juliana Costa", "Pedro Henrique", "Mariana Lima"],
+  "Golden Gate": ["Rafael Oliveira", "Camila Santos", "Bruno Almeida", "Fernanda Rocha", "Thiago Pereira"],
+  Code418: ["Diego Silva", "Isabela Ferreira", "Gustavo Ribeiro", "Larissa Mendes", "Vinícius Cardoso"],
+  Tesseract: ["André Nascimento", "Beatriz Araújo", "Carlos Eduardo", "Daniela Moreira", "Eduardo Campos", "Gabriela Teixeira"],
+};
 
 // Distribute tasks proportionally across teams (deterministic by task code hash)
 function hashCode(str: string): number {
@@ -73,6 +79,7 @@ function buildDashboardData(tasks: DBTask[]) {
       name,
       color: TEAM_COLORS[name],
       members: TEAM_MEMBERS[name],
+      memberNames: TEAM_MEMBER_NAMES[name],
       categories,
     };
   });

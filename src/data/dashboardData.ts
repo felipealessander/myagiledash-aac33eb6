@@ -8,6 +8,7 @@ export interface TeamData {
   name: TeamName;
   color: string;
   members: number;
+  memberNames: string[];
   categories: { name: CategoryName; spentHours: number; estimatedHours: number; taskCount: number }[];
 }
 
@@ -16,6 +17,7 @@ export const teams: TeamData[] = [
     name: "NaN",
     color: "var(--team-nan)",
     members: 6,
+    memberNames: ["Felipe Souza", "Ana Clara", "Lucas Martins", "Juliana Costa", "Pedro Henrique", "Mariana Lima"],
     categories: [
       { name: "Atendimento", spentHours: 38.5, estimatedHours: 0, taskCount: 7 },
       { name: "Auxílio técnico", spentHours: 4.2, estimatedHours: 0, taskCount: 2 },
@@ -30,6 +32,7 @@ export const teams: TeamData[] = [
     name: "Golden Gate",
     color: "var(--team-golden-gate)",
     members: 5,
+    memberNames: ["Rafael Oliveira", "Camila Santos", "Bruno Almeida", "Fernanda Rocha", "Thiago Pereira"],
     categories: [
       { name: "Atendimento", spentHours: 42.3, estimatedHours: 0, taskCount: 8 },
       { name: "Auxílio técnico", spentHours: 3.8, estimatedHours: 0, taskCount: 1 },
@@ -44,6 +47,7 @@ export const teams: TeamData[] = [
     name: "Code418",
     color: "var(--team-code418)",
     members: 5,
+    memberNames: ["Diego Silva", "Isabela Ferreira", "Gustavo Ribeiro", "Larissa Mendes", "Vinícius Cardoso"],
     categories: [
       { name: "Atendimento", spentHours: 35.5, estimatedHours: 0, taskCount: 6 },
       { name: "Auxílio técnico", spentHours: 3.5, estimatedHours: 0, taskCount: 1 },
@@ -58,6 +62,7 @@ export const teams: TeamData[] = [
     name: "Tesseract",
     color: "var(--team-tesseract)",
     members: 6,
+    memberNames: ["André Nascimento", "Beatriz Araújo", "Carlos Eduardo", "Daniela Moreira", "Eduardo Campos", "Gabriela Teixeira"],
     categories: [
       { name: "Atendimento", spentHours: 29.5, estimatedHours: 0, taskCount: 5 },
       { name: "Auxílio técnico", spentHours: 3.6, estimatedHours: 0, taskCount: 1 },
