@@ -1,5 +1,6 @@
-import { teams, getTeamTotalHours } from "@/data/dashboardData";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import type { TeamData } from "@/data/dashboardData";
+import { getTeamTotalHours } from "@/data/dashboardData";
 
 const COLORS = [
   "hsl(280, 67%, 56%)",
@@ -8,12 +9,15 @@ const COLORS = [
   "hsl(210, 100%, 56%)",
 ];
 
-const data = teams.map(t => ({
-  name: t.name,
-  value: Math.round(getTeamTotalHours(t)),
-}));
+interface TeamDistributionChartProps {
+  teams: TeamData[];
+}
 
-export function TeamDistributionChart() {
+export function TeamDistributionChart({ teams }: TeamDistributionChartProps) {
+  const data = teams.map(t => ({
+    name: t.name,
+    value: Math.round(getTeamTotalHours(t)),
+  }));
   const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
@@ -24,28 +28,13 @@ export function TeamDistributionChart() {
         <div className="h-48 w-48 flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={75}
-                paddingAngle={3}
-                dataKey="value"
-                strokeWidth={0}
-              >
+              <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0}>
                 {data.map((_, index) => (
                   <Cell key={index} fill={COLORS[index]} fillOpacity={0.85} />
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{
-                  background: "hsl(225, 22%, 11%)",
-                  border: "1px solid hsl(225, 15%, 18%)",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  color: "hsl(210, 20%, 92%)",
-                }}
+                contentStyle={{ background: "hsl(225, 22%, 11%)", border: "1px solid hsl(225, 15%, 18%)", borderRadius: "8px", fontSize: "12px", color: "hsl(210, 20%, 92%)" }}
                 formatter={(value: number) => [`${value}h`, ""]}
               />
             </PieChart>
@@ -58,7 +47,7 @@ export function TeamDistributionChart() {
               <span className="text-xs flex-1">{d.name}</span>
               <span className="text-xs font-mono text-muted-foreground">{d.value}h</span>
               <span className="text-[10px] font-mono text-muted-foreground w-10 text-right">
-                {((d.value / total) * 100).toFixed(0)}%
+                {total > 0 ? ((d.value / total) * 100).toFixed(0) : 0}%
               </span>
             </div>
           ))}

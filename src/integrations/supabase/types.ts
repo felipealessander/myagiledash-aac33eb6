@@ -14,7 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      report_tasks: {
+        Row: {
+          billing_status: string | null
+          category: string | null
+          created_at: string
+          estimated_minutes: number | null
+          id: string
+          report_id: string
+          spent_minutes: number | null
+          task_code: string
+          title: string | null
+        }
+        Insert: {
+          billing_status?: string | null
+          category?: string | null
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: string
+          report_id: string
+          spent_minutes?: number | null
+          task_code: string
+          title?: string | null
+        }
+        Update: {
+          billing_status?: string | null
+          category?: string | null
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: string
+          report_id?: string
+          spent_minutes?: number | null
+          task_code?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_tasks_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "sprint_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sprint_reports: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          month: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          month: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          month?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
