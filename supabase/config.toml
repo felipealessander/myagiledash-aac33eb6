@@ -1,4 +1,4 @@
 project_id = "nbrfuazmmjrnxrciksve"
 
-[functions.youtrack]
+[functions.youtrack-sync]
 verify_jwt = false
