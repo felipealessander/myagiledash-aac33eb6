@@ -20,6 +20,9 @@ interface DBTask {
   spent_minutes: number | null;
   squad: string | null;
   assignee: string | null;
+  status: string | null;
+  created_at_yt: string | null;
+  resolved_at: string | null;
 }
 
 // Fallback hardcoded members for static data only
@@ -141,6 +144,57 @@ function buildDashboardData(tasks: DBTask[]) {
   const billingTotalEstimated = billingData.reduce((s, b) => s + b.estimatedHours, 0);
   const billingTotalTasks = billingData.reduce((s, b) => s + b.taskCount, 0);
 
+  // Agile metrics
+  const resolvedTasks = tasks.filter(t => t.created_at_yt && t.resolved_at);
+  const leadTimes = resolvedTasks.map(t => {
+    const created = new Date(t.created_at_yt!).getTime();
+    const resolved = new Date(t.resolved_at!).getTime();
+    return Math.max(0, (resolved - created) / (1000 * 60 * 60 * 24)); // days
+  });
+
+  // Lead time by squad
+  const leadTimeBySquad: { squad: string; avg: number; median: number; p85: number; count: number }[] = [];
+  for (const squadName of squadNames) {
+    const squadResolved = resolvedTasks.filter(t => (t.squad || "Sem Squad") === squadName);
+    if (squadResolved.length === 0) {
+      leadTimeBySquad.push({ squad: squadName, avg: 0, median: 0, p85: 0, count: 0 });
+      continue;
+    }
+    const times = squadResolved.map(t => {
+      const c = new Date(t.created_at_yt!).getTime();
+      const r = new Date(t.resolved_at!).getTime();
+      return Math.max(0, (r - c) / (1000 * 60 * 60 * 24));
+    }).sort((a, b) => a - b);
+    const avg = times.reduce((s, v) => s + v, 0) / times.length;
+    const median = times[Math.floor(times.length / 2)];
+    const p85 = times[Math.floor(times.length * 0.85)];
+    leadTimeBySquad.push({ squad: squadName, avg: Math.round(avg * 10) / 10, median: Math.round(median * 10) / 10, p85: Math.round(p85 * 10) / 10, count: squadResolved.length });
+  }
+
+  // Throughput by week
+  const throughputByWeek: { week: string; count: number }[] = [];
+  const resolvedByWeek = new Map<string, number>();
+  for (const t of resolvedTasks) {
+    const d = new Date(t.resolved_at!);
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay());
+    const key = weekStart.toISOString().slice(0, 10);
+    resolvedByWeek.set(key, (resolvedByWeek.get(key) || 0) + 1);
+  }
+  Array.from(resolvedByWeek.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .forEach(([week, count]) => throughputByWeek.push({ week, count }));
+
+  // WIP: tasks with status not resolved/done
+  const wipBySquad: { squad: string; wip: number }[] = squadNames.map(name => {
+    const squadTasks = squadTasksMap.get(name) || [];
+    const openTasks = squadTasks.filter(t => {
+      const s = (t.status || "").toLowerCase();
+      return !s.includes("done") && !s.includes("resolved") && !s.includes("closed") && !s.includes("conclu");
+    });
+    return { squad: name, wip: openTasks.length };
+  });
+
   return {
     teams,
     categoryTotals,
@@ -151,6 +205,9 @@ function buildDashboardData(tasks: DBTask[]) {
     billingTotalSpent,
     billingTotalEstimated,
     billingTotalTasks,
+    leadTimeBySquad,
+    throughputByWeek,
+    wipBySquad,
   };
 }
 
@@ -199,7 +256,7 @@ export function useDashboardData() {
     setLoading(true);
     supabase
       .from("report_tasks")
-      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee")
+      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at")
       .eq("report_id", monthOption.id)
       .then(({ data, error }) => {
         setLoading(false);
@@ -224,6 +281,9 @@ export function useDashboardData() {
         billingTotalSpent: staticData.billingTotalSpent,
         billingTotalEstimated: staticData.billingTotalEstimated,
         billingTotalTasks: staticData.billingTotalTasks,
+        leadTimeBySquad: [],
+        throughputByWeek: [],
+        wipBySquad: [],
       };
     }
 
