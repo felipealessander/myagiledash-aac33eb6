@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       report_tasks: {
         Row: {
+          assignee: string | null
           billing_status: string | null
           category: string | null
           created_at: string
@@ -28,6 +29,7 @@ export type Database = {
           title: string | null
         }
         Insert: {
+          assignee?: string | null
           billing_status?: string | null
           category?: string | null
           created_at?: string
@@ -40,6 +42,7 @@ export type Database = {
           title?: string | null
         }
         Update: {
+          assignee?: string | null
           billing_status?: string | null
           category?: string | null
           created_at?: string

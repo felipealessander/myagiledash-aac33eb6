@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
       query += ` created: ${dateFrom} .. ${dateTo || 'Today'}`
     }
 
-    const fields = 'id,idReadable,summary,created,resolved,customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation)),timeTracking(estimation(minutes),spentTime(minutes))'
+    const fields = 'id,idReadable,summary,created,resolved,customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation)),timeTracking(estimation(minutes),spentTime(minutes)),reporter(login,fullName),assignee(login,fullName)'
 
     const allIssues: any[] = []
     let skip = 0
@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
         category: getField(issue, 'Type') || 'Tarefa',
         billingStatus: getField(issue, 'Faturável') || 'Nenhum Faturável',
         squad: getField(issue, 'Squad') || 'Sem Squad',
+        assignee: issue.assignee?.fullName || issue.assignee?.login || null,
         estimatedMinutes: estimationFromField,
         spentMinutes: spentFromField,
         status: getField(issue, 'State') || 'Open',
