@@ -118,6 +118,32 @@ const Index = () => {
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   Métricas Ágeis
                 </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <KpiCard
+                    title="Lead Time Médio"
+                    value={`${leadTimeBySquad.length > 0 ? (leadTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, leadTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d`}
+                    subtitle="Média geral em dias"
+                    icon={Clock}
+                    variant="info"
+                    delay={0}
+                  />
+                  <KpiCard
+                    title="Throughput Médio"
+                    value={`${throughputByWeek.length > 0 ? (throughputByWeek.reduce((s, w) => s + w.count, 0) / throughputByWeek.length).toFixed(1) : "0"}/sem`}
+                    subtitle="Tarefas resolvidas por semana"
+                    icon={TrendingUp}
+                    variant="primary"
+                    delay={50}
+                  />
+                  <KpiCard
+                    title="WIP Total"
+                    value={wipBySquad.reduce((s, w) => s + w.wip, 0)}
+                    subtitle="Tarefas em andamento"
+                    icon={ListTodo}
+                    variant="warning"
+                    delay={100}
+                  />
+                </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <LeadTimeChart data={leadTimeBySquad || []} />
                   <ThroughputChart data={throughputByWeek || []} />
