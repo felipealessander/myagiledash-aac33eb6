@@ -21,8 +21,17 @@ interface DBTask {
   squad: string | null;
 }
 
+const SQUAD_MEMBERS: Record<string, string[]> = {
+  "NaN": ["Felipe Souza", "Ana Clara", "Lucas Martins", "Juliana Costa", "Pedro Henrique", "Mariana Lima"],
+  "Golden Gate": ["Rafael Oliveira", "Camila Santos", "Bruno Almeida", "Fernanda Rocha", "Thiago Pereira"],
+  "Code418": ["Diego Silva", "Isabela Ferreira", "Gustavo Ribeiro", "Larissa Mendes", "Vinícius Cardoso"],
+  "Tesseract": ["André Nascimento", "Beatriz Araújo", "Carlos Eduardo", "Daniela Moreira", "Eduardo Campos", "Gabriela Teixeira"],
+  "Code402": ["Marcos Vieira", "Patrícia Lopes", "Roberto Dias"],
+  "JRE": ["Henrique Barros", "Tatiana Fonseca", "Leonardo Pinto", "Renata Campos"],
+  "TheBigBang": ["João Victor", "Amanda Nunes", "Caio Rezende"],
+};
+
 function buildDashboardData(tasks: DBTask[]) {
-  // Group tasks by squad (dynamic teams)
   const squadTasksMap = new Map<string, DBTask[]>();
 
   for (const task of tasks) {
@@ -56,11 +65,13 @@ function buildDashboardData(tasks: DBTask[]) {
     // Count unique task codes as proxy for team size
     const uniqueTasks = new Set(tTasks.map(t => t.task_code));
 
+    const memberNames = SQUAD_MEMBERS[name] || [];
+
     return {
       name,
       color: getTeamColor(index),
-      members: Math.max(1, Math.ceil(uniqueTasks.size / 10)), // estimate members
-      memberNames: [], // no member data from XLSX
+      members: memberNames.length || Math.max(1, Math.ceil(uniqueTasks.size / 10)),
+      memberNames,
       categories,
     };
   });
