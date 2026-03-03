@@ -1,1 +1,4 @@
 project_id = "nbrfuazmmjrnxrciksve"
+
+[functions.youtrack]
+verify_jwt = false
