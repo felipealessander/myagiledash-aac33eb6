@@ -18,6 +18,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { LastSyncBadge } from "@/components/dashboard/LastSyncBadge";
 
 const Index = () => {
   const { user, signOut } = useAuth();
@@ -41,6 +42,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <LastSyncBadge />
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
             {user && <YouTrackSyncDialog onImported={refetchMonths} />}
             {user ? (
