@@ -42,6 +42,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <LastSyncBadge />
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
             {user && <YouTrackSyncDialog onImported={refetchMonths} />}
             {user ? (
