@@ -83,11 +83,44 @@ export const teams: TeamData[] = [
     categories: [
       { name: "Atendimento", spentHours: 29.5, estimatedHours: 0, taskCount: 5 },
       { name: "Auxílio técnico", spentHours: 3.6, estimatedHours: 0, taskCount: 1 },
-      { name: "Erro script", spentHours: 0, estimatedHours: 0, taskCount: 0 },
       { name: "Incidente", spentHours: 89, estimatedHours: 0, taskCount: 7 },
       { name: "Melhoria", spentHours: 6.5, estimatedHours: 0, taskCount: 1 },
       { name: "Tarefa", spentHours: 419, estimatedHours: 183, taskCount: 27 },
       { name: "Épico", spentHours: 4, estimatedHours: 20, taskCount: 1 },
+    ],
+  },
+  {
+    name: "Code402",
+    color: "hsl(190, 90%, 50%)",
+    members: 3,
+    memberNames: ["Marcos Vieira", "Patrícia Lopes", "Roberto Dias"],
+    categories: [
+      { name: "Atendimento", spentHours: 18.2, estimatedHours: 0, taskCount: 3 },
+      { name: "Incidente", spentHours: 45, estimatedHours: 0, taskCount: 4 },
+      { name: "Tarefa", spentHours: 210, estimatedHours: 95, taskCount: 14 },
+    ],
+  },
+  {
+    name: "JRE",
+    color: "hsl(330, 80%, 55%)",
+    members: 4,
+    memberNames: ["Henrique Barros", "Tatiana Fonseca", "Leonardo Pinto", "Renata Campos"],
+    categories: [
+      { name: "Atendimento", spentHours: 22.5, estimatedHours: 0, taskCount: 4 },
+      { name: "Incidente", spentHours: 52, estimatedHours: 0, taskCount: 5 },
+      { name: "Tarefa", spentHours: 280, estimatedHours: 120, taskCount: 18 },
+      { name: "Melhoria", spentHours: 5, estimatedHours: 0, taskCount: 1 },
+    ],
+  },
+  {
+    name: "TheBigBang",
+    color: "hsl(60, 70%, 45%)",
+    members: 3,
+    memberNames: ["João Victor", "Amanda Nunes", "Caio Rezende"],
+    categories: [
+      { name: "Atendimento", spentHours: 15, estimatedHours: 0, taskCount: 2 },
+      { name: "Incidente", spentHours: 38, estimatedHours: 0, taskCount: 3 },
+      { name: "Tarefa", spentHours: 175, estimatedHours: 80, taskCount: 12 },
     ],
   },
 ];
