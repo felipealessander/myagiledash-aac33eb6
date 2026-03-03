@@ -20,7 +20,7 @@ import { Link } from "react-router-dom";
 
 const Index = () => {
   const { user, signOut } = useAuth();
-  const { months, selectedMonth, setSelectedMonth, dashboardData, loading, refetchMonths } = useDashboardData();
+  const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
   const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, throughputByWeek, wipBySquad } = dashboardData;
 
   const overrun = totalEstimated > 0 ? (((totalSpent - totalEstimated) / totalEstimated) * 100).toFixed(0) : "0";
@@ -56,16 +56,34 @@ const Index = () => {
               </Button>
             )}
             <div className="hidden lg:flex items-center gap-2">
-              {teams.map((t, i) => (
-                <span key={t.name} className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground">
+              {allTeams.map((t, i) => (
+                <button
+                  key={t.name}
+                  onClick={() => setSelectedSquad(selectedSquad === t.name ? null : t.name)}
+                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition-all cursor-pointer border ${
+                    selectedSquad === t.name
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : selectedSquad === null
+                        ? "bg-secondary text-secondary-foreground border-transparent hover:border-border"
+                        : "bg-muted/50 text-muted-foreground border-transparent hover:border-border opacity-60"
+                  }`}
+                >
                   <span
                     className="h-1.5 w-1.5 rounded-full"
                     style={{ backgroundColor: t.color.startsWith("var(") ? undefined : t.color }}
                     {...(t.color.startsWith("var(") ? { className: `h-1.5 w-1.5 rounded-full bg-muted-foreground` } : {})}
                   />
                   {t.name}
-                </span>
+                </button>
               ))}
+              {selectedSquad && (
+                <button
+                  onClick={() => setSelectedSquad(null)}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline ml-1"
+                >
+                  Limpar
+                </button>
+              )}
             </div>
           </div>
         </div>
