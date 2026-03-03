@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { RefreshCw, Loader2, Cloud } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -32,12 +33,17 @@ interface YouTrackSyncDialogProps {
   onImported: () => void;
 }
 
+type SyncPhase = "idle" | "fetching" | "saving" | "done";
+
 export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [project, setProject] = useState("ATT");
   const [syncing, setSyncing] = useState(false);
+  const [phase, setPhase] = useState<SyncPhase>("idle");
+  const [progress, setProgress] = useState(0);
+  const [phaseLabel, setPhaseLabel] = useState("");
   const { toast } = useToast();
 
   const handleSync = async () => {
@@ -47,6 +53,9 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
     }
 
     setSyncing(true);
+    setPhase("fetching");
+    setProgress(10);
+    setPhaseLabel("Buscando tarefas no YouTrack...");
 
     try {
       const monthNum = parseInt(month);
@@ -58,11 +67,16 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const url = `https://${projectId}.supabase.co/functions/v1/youtrack?project=${encodeURIComponent(project)}&dateFrom=${dateFrom}&dateTo=${dateTo}`;
 
+      setProgress(20);
+
       const response = await fetch(url);
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(err.error || `HTTP ${response.status}`);
       }
+
+      setProgress(50);
+      setPhaseLabel("Processando resposta...");
 
       const result = await response.json();
       const tasks = result.tasks;
@@ -70,10 +84,16 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       if (!tasks || tasks.length === 0) {
         toast({ title: "Nenhuma tarefa encontrada no período", variant: "destructive" });
         setSyncing(false);
+        setPhase("idle");
+        setProgress(0);
         return;
       }
 
       // Save to database
+      setPhase("saving");
+      setProgress(55);
+      setPhaseLabel(`Salvando ${tasks.length} tarefas no banco...`);
+
       const monthKey = `${year}-${month}`;
       const monthLabel = `${MONTHS.find(m => m.value === month)?.label} ${year}`;
 
@@ -85,10 +105,21 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
 
       if (reportError) throw reportError;
 
+      setProgress(60);
+
       await supabase.from("report_tasks").delete().eq("report_id", report.id);
 
+      setProgress(65);
+
       const batchSize = 100;
+      const totalBatches = Math.ceil(tasks.length / batchSize);
+
       for (let i = 0; i < tasks.length; i += batchSize) {
+        const batchIndex = Math.floor(i / batchSize);
+        const batchProgress = 65 + Math.round((batchIndex / totalBatches) * 30);
+        setProgress(batchProgress);
+        setPhaseLabel(`Salvando lote ${batchIndex + 1}/${totalBatches} (${Math.min(i + batchSize, tasks.length)}/${tasks.length} tarefas)...`);
+
         const batch = tasks.slice(i, i + batchSize).map((t: any) => ({
           report_id: report.id,
           task_code: t.taskCode,
@@ -109,6 +140,10 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
         if (error) throw error;
       }
 
+      setPhase("done");
+      setProgress(100);
+      setPhaseLabel("Sincronização concluída!");
+
       const squads = new Set(tasks.map((t: any) => t.squad));
 
       toast({
@@ -116,19 +151,27 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
         description: `${tasks.length} tarefas importadas do YouTrack para ${monthLabel} (${squads.size} squads)`,
       });
 
-      setOpen(false);
-      setMonth("");
-      onImported();
+      setTimeout(() => {
+        setOpen(false);
+        setMonth("");
+        setPhase("idle");
+        setProgress(0);
+        onImported();
+      }, 800);
     } catch (err: any) {
       console.error("YouTrack sync error:", err);
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+      setPhase("idle");
+      setProgress(0);
     } finally {
       setSyncing(false);
     }
   };
 
+  const phasePercentage = Math.round(progress);
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { if (!syncing) setOpen(v); }}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Cloud className="h-3.5 w-3.5" />
@@ -147,7 +190,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label className="text-xs">Mês</Label>
-              <Select value={month} onValueChange={setMonth}>
+              <Select value={month} onValueChange={setMonth} disabled={syncing}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
@@ -160,7 +203,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Ano</Label>
-              <Select value={year} onValueChange={setYear}>
+              <Select value={year} onValueChange={setYear} disabled={syncing}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -175,9 +218,20 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
 
           <div className="space-y-2">
             <Label className="text-xs">Projeto YouTrack</Label>
-            <Input value={project} onChange={e => setProject(e.target.value)} placeholder="ATT" />
+            <Input value={project} onChange={e => setProject(e.target.value)} placeholder="ATT" disabled={syncing} />
             <p className="text-[10px] text-muted-foreground">ShortName do projeto (prefixo das issues)</p>
           </div>
+
+          {/* Progress indicator */}
+          {phase !== "idle" && (
+            <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{phaseLabel}</span>
+                <span className="font-mono font-semibold text-primary">{phasePercentage}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+          )}
 
           <Button onClick={handleSync} disabled={syncing} className="w-full gap-2">
             {syncing ? (
