@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -33,18 +33,22 @@ interface YouTrackSyncDialogProps {
   onImported: () => void;
 }
 
-type SyncPhase = "idle" | "fetching" | "saving" | "done";
-
 export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [project, setProject] = useState("ATT");
   const [syncing, setSyncing] = useState(false);
-  const [phase, setPhase] = useState<SyncPhase>("idle");
   const [progress, setProgress] = useState(0);
   const [phaseLabel, setPhaseLabel] = useState("");
   const { toast } = useToast();
+
+  const buildUrl = (params: Record<string, string>) => {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const base = `https://${projectId}.supabase.co/functions/v1/youtrack`;
+    const qs = new URLSearchParams(params).toString();
+    return `${base}?${qs}`;
+  };
 
   const handleSync = async () => {
     if (!month || !year) {
@@ -53,8 +57,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
     }
 
     setSyncing(true);
-    setPhase("fetching");
-    setProgress(10);
+    setProgress(5);
     setPhaseLabel("Buscando tarefas no YouTrack...");
 
     try {
@@ -64,36 +67,55 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       const lastDay = new Date(yearNum, monthNum, 0).getDate();
       const dateTo = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
 
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const url = `https://${projectId}.supabase.co/functions/v1/youtrack?project=${encodeURIComponent(project)}&dateFrom=${dateFrom}&dateTo=${dateTo}`;
-
-      setProgress(20);
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error || `HTTP ${response.status}`);
+      // Step 1: Fetch issues (fast, no activities)
+      const issuesUrl = buildUrl({ project, dateFrom, dateTo, mode: "issues" });
+      const issuesRes = await fetch(issuesUrl);
+      if (!issuesRes.ok) {
+        const err = await issuesRes.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || `HTTP ${issuesRes.status}`);
       }
 
-      setProgress(50);
-      setPhaseLabel("Processando resposta...");
-
-      const result = await response.json();
-      const tasks = result.tasks;
-
+      const { tasks } = await issuesRes.json();
       if (!tasks || tasks.length === 0) {
         toast({ title: "Nenhuma tarefa encontrada no período", variant: "destructive" });
         setSyncing(false);
-        setPhase("idle");
         setProgress(0);
+        setPhaseLabel("");
         return;
       }
 
-      // Save to database
-      setPhase("saving");
-      setProgress(55);
-      setPhaseLabel(`Salvando ${tasks.length} tarefas no banco...`);
+      setProgress(30);
+      setPhaseLabel(`${tasks.length} tarefas encontradas. Buscando dados de cycle time...`);
 
+      // Step 2: Fetch activities in batches of 50 issue IDs
+      const activityBatchSize = 50;
+      const startedAtMap: Record<string, string> = {};
+      const issueIdsWithYtId = tasks.filter((t: any) => t.id);
+      const totalActBatches = Math.ceil(issueIdsWithYtId.length / activityBatchSize);
+
+      for (let i = 0; i < issueIdsWithYtId.length; i += activityBatchSize) {
+        const batchIdx = Math.floor(i / activityBatchSize);
+        const batchProgress = 30 + Math.round((batchIdx / Math.max(totalActBatches, 1)) * 25);
+        setProgress(batchProgress);
+        setPhaseLabel(`Buscando cycle time (lote ${batchIdx + 1}/${totalActBatches})...`);
+
+        const batchIds = issueIdsWithYtId.slice(i, i + activityBatchSize).map((t: any) => t.id);
+        try {
+          const actUrl = buildUrl({ mode: "activities", issueIds: batchIds.join(",") });
+          const actRes = await fetch(actUrl);
+          if (actRes.ok) {
+            const { startedAt } = await actRes.json();
+            if (startedAt) Object.assign(startedAtMap, startedAt);
+          }
+        } catch {
+          // Non-fatal: continue without cycle time for this batch
+        }
+      }
+
+      setProgress(55);
+      setPhaseLabel("Salvando no banco de dados...");
+
+      // Step 3: Save to database
       const monthKey = `${year}-${month}`;
       const monthLabel = `${MONTHS.find(m => m.value === month)?.label} ${year}`;
 
@@ -106,21 +128,20 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       if (reportError) throw reportError;
 
       setProgress(60);
-
       await supabase.from("report_tasks").delete().eq("report_id", report.id);
 
       setProgress(65);
 
-      const batchSize = 100;
-      const totalBatches = Math.ceil(tasks.length / batchSize);
+      const dbBatchSize = 100;
+      const totalDbBatches = Math.ceil(tasks.length / dbBatchSize);
 
-      for (let i = 0; i < tasks.length; i += batchSize) {
-        const batchIndex = Math.floor(i / batchSize);
-        const batchProgress = 65 + Math.round((batchIndex / totalBatches) * 30);
+      for (let i = 0; i < tasks.length; i += dbBatchSize) {
+        const batchIdx = Math.floor(i / dbBatchSize);
+        const batchProgress = 65 + Math.round((batchIdx / totalDbBatches) * 30);
         setProgress(batchProgress);
-        setPhaseLabel(`Salvando lote ${batchIndex + 1}/${totalBatches} (${Math.min(i + batchSize, tasks.length)}/${tasks.length} tarefas)...`);
+        setPhaseLabel(`Salvando lote ${batchIdx + 1}/${totalDbBatches} (${Math.min(i + dbBatchSize, tasks.length)}/${tasks.length})...`);
 
-        const batch = tasks.slice(i, i + batchSize).map((t: any) => ({
+        const batch = tasks.slice(i, i + dbBatchSize).map((t: any) => ({
           report_id: report.id,
           task_code: t.taskCode,
           title: t.title,
@@ -133,42 +154,40 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
           status: t.status,
           created_at_yt: t.createdAt,
           resolved_at: t.resolvedAt,
-          started_at: t.startedAt,
+          started_at: startedAtMap[t.id] || null,
         }));
 
         const { error } = await supabase.from("report_tasks").insert(batch);
         if (error) throw error;
+
+        await new Promise((r) => setTimeout(r, 50));
       }
 
-      setPhase("done");
       setProgress(100);
       setPhaseLabel("Sincronização concluída!");
 
       const squads = new Set(tasks.map((t: any) => t.squad));
-
       toast({
         title: "Sincronização concluída!",
-        description: `${tasks.length} tarefas importadas do YouTrack para ${monthLabel} (${squads.size} squads)`,
+        description: `${tasks.length} tarefas importadas para ${monthLabel} (${squads.size} squads)`,
       });
 
       setTimeout(() => {
         setOpen(false);
         setMonth("");
-        setPhase("idle");
         setProgress(0);
+        setPhaseLabel("");
         onImported();
       }, 800);
     } catch (err: any) {
       console.error("YouTrack sync error:", err);
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
-      setPhase("idle");
       setProgress(0);
+      setPhaseLabel("");
     } finally {
       setSyncing(false);
     }
   };
-
-  const phasePercentage = Math.round(progress);
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!syncing) setOpen(v); }}>
@@ -184,6 +203,9 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
             <RefreshCw className="h-5 w-5 text-primary" />
             Sincronizar com YouTrack
           </DialogTitle>
+          <DialogDescription>
+            Importar tarefas do YouTrack para o período selecionado.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
@@ -222,12 +244,11 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
             <p className="text-[10px] text-muted-foreground">ShortName do projeto (prefixo das issues)</p>
           </div>
 
-          {/* Progress indicator */}
-          {phase !== "idle" && (
+          {progress > 0 && (
             <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">{phaseLabel}</span>
-                <span className="font-mono font-semibold text-primary">{phasePercentage}%</span>
+                <span className="font-mono font-semibold text-primary">{Math.round(progress)}%</span>
               </div>
               <Progress value={progress} className="h-2" />
             </div>
