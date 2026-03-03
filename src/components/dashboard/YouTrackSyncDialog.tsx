@@ -99,7 +99,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
         setProgress(batchProgress);
         setPhaseLabel(`Buscando cycle time (lote ${batchIdx + 1}/${totalActBatches})...`);
 
-        const batchIds = issueIdsWithYtId.slice(i, i + activityBatchSize).map((t: any) => t.id);
+        const batchIds = issueIdsWithYtId.slice(i, i + activityBatchSize).map((t: any) => t.taskCode || t.id);
         try {
           const actUrl = buildUrl({ mode: "activities" });
           const actRes = await fetch(actUrl, {
