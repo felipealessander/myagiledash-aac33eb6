@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
         for (const issueId of ids) {
           try {
             const actFields = 'target(id),timestamp,field(name),added(name,presentation,text),removed(name,presentation,text)'
-            const actUrl = `${base}/api/activities?query=${encodeURIComponent(`issue id: ${issueId}`)}&fields=${encodeURIComponent(actFields)}&$top=120`
+            const actUrl = `${base}/api/activities?issueQuery=${encodeURIComponent(`id: ${issueId}`)}&fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory&$top=120&reverse=false`
 
             const activities = await fetchJson(actUrl, YOUTRACK_TOKEN, 10000) as any[]
             if (!Array.isArray(activities) || activities.length === 0) continue
