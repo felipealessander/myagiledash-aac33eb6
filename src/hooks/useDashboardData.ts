@@ -85,7 +85,9 @@ function buildDashboardData(tasks: DBTask[]) {
   function normalizeBillingStatus(raw: string | null): string {
     if (!raw) return "Nenhum Faturável";
     const lower = raw.toLowerCase().trim();
-    if (lower.includes("não") || lower.includes("nao")) return "Não Faturável";
+    if (lower === "sim") return "Faturável";
+    if (lower === "não" || lower === "nao") return "Não Faturável";
+    if (lower.includes("não fatur") || lower.includes("nao fatur")) return "Não Faturável";
     if (lower.includes("nenhum")) return "Nenhum Faturável";
     if (lower.includes("fatur")) return "Faturável";
     return "Nenhum Faturável";
