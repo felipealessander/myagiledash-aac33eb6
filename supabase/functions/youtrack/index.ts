@@ -5,6 +5,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
+async function fetchJson(url: string, token: string) {
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`API error [${res.status}]: ${text.substring(0, 200)}`)
+  }
+  const ct = res.headers.get('content-type') || ''
+  if (!ct.includes('application/json')) {
+    const text = await res.text()
+    throw new Error(`Non-JSON response. Check YOUTRACK_URL. Response: ${text.substring(0, 200)}`)
+  }
+  return res.json()
+}
+
+async function fetchAllPages(baseUrl: string, token: string, top = 500) {
+  const all: any[] = []
+  let skip = 0
+  while (true) {
+    const url = `${baseUrl}&$top=${top}&$skip=${skip}`
+    const page = await fetchJson(url, token)
+    all.push(...page)
+    if (page.length < top) break
+    skip += top
+  }
+  return all
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -31,136 +60,48 @@ Deno.serve(async (req) => {
       query += ` created: ${dateFrom} .. ${dateTo || 'Today'}`
     }
 
-    const fields = 'id,idReadable,summary,created,resolved,customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation)),timeTracking(estimation(minutes),spentTime(minutes)),reporter(login,fullName),assignee(login,fullName)'
+    // Step 1: Fetch issues
+    const fields = 'id,idReadable,summary,created,resolved,customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation)),reporter(login,fullName),assignee(login,fullName)'
+    const issuesUrl = `${YOUTRACK_URL}/api/issues?query=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}`
+    const allIssues = await fetchAllPages(issuesUrl, YOUTRACK_TOKEN)
 
-    const allIssues: any[] = []
-    let skip = 0
-    const top = 500
-    let hasMore = true
+    // Step 2: Fetch state-change activities in a single query for the whole project+period
+    const startedAtMap = new Map<string, string>()
 
-    while (hasMore) {
-      const apiUrl = `${YOUTRACK_URL}/api/issues?query=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}&$top=${top}&$skip=${skip}`
-
-      const response = await fetch(apiUrl, {
-        headers: {
-          'Authorization': `Bearer ${YOUTRACK_TOKEN}`,
-          'Accept': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type') || ''
-        let errorDetail: string
-        if (contentType.includes('application/json')) {
-          errorDetail = JSON.stringify(await response.json())
-        } else {
-          const text = await response.text()
-          errorDetail = text.substring(0, 200)
-        }
-        return new Response(
-          JSON.stringify({ error: `YouTrack API error [${response.status}]: ${errorDetail}` }),
-          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      const contentType = response.headers.get('content-type') || ''
-      if (!contentType.includes('application/json')) {
-        const text = await response.text()
-        return new Response(
-          JSON.stringify({ error: `YouTrack returned non-JSON response. Check YOUTRACK_URL is correct (should be like https://youtrack.company.com). Response: ${text.substring(0, 200)}` }),
-          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      const issues = await response.json()
-      allIssues.push(...issues)
-
-      if (issues.length < top) {
-        hasMore = false
-      } else {
-        skip += top
-      }
-    }
-
-    // Fetch state change activities to determine "started_at" (when moved to In Progress)
-    const issueIds = allIssues.map(i => i.id)
-    const startedAtMap = new Map<string, string>() // issue id -> ISO timestamp
-
-    if (issueIds.length > 0) {
+    if (allIssues.length > 0) {
       try {
-        // Fetch activities in bulk using activitiesPage endpoint
-        const activityFields = 'target(id,idReadable),timestamp,field(id,name),added(name),removed(name)'
-        const activityQuery = `project: ${project}`
+        const actFields = 'target(id),timestamp,field(name),added(name)'
+        let actQuery = `project: ${project}`
         if (dateFrom) {
-          // Use same query scope
+          actQuery += ` updated: ${dateFrom} .. ${dateTo || 'Today'}`
         }
+        const actUrl = `${YOUTRACK_URL}/api/activities?query=${encodeURIComponent(actQuery)}&fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory`
+        const activities = await fetchAllPages(actUrl, YOUTRACK_TOKEN)
 
-        // We'll fetch activities for the specific issues using their IDs
-        // Process in batches to avoid URL length limits
-        const batchSize = 50
-        for (let i = 0; i < allIssues.length; i += batchSize) {
-          const batch = allIssues.slice(i, i + batchSize)
-          const issueIdList = batch.map((iss: any) => iss.idReadable).join(', ')
-          const actQuery = `issue id: ${issueIdList}`
-          
-          let actSkip = 0
-          let actHasMore = true
+        const issueIdSet = new Set(allIssues.map((i: any) => i.id))
 
-          while (actHasMore) {
-            const actUrl = `${YOUTRACK_URL}/api/activities?query=${encodeURIComponent(actQuery)}&fields=${encodeURIComponent(activityFields)}&categories=CustomFieldCategory&$top=500&$skip=${actSkip}`
+        for (const act of activities) {
+          if (act.field?.name !== 'State' || !act.added || !act.target?.id) continue
+          if (!issueIdSet.has(act.target.id)) continue
 
-            const actResponse = await fetch(actUrl, {
-              headers: {
-                'Authorization': `Bearer ${YOUTRACK_TOKEN}`,
-                'Accept': 'application/json',
-              },
-            })
-
-            if (!actResponse.ok) {
-              console.error(`Activities API error: ${actResponse.status}`)
-              actHasMore = false
-              break
-            }
-
-            const actContentType = actResponse.headers.get('content-type') || ''
-            if (!actContentType.includes('application/json')) {
-              actHasMore = false
-              break
-            }
-
-            const activities = await actResponse.json()
-
-            for (const act of activities) {
-              // Look for State field changes where added value indicates "In Progress" or similar
-              if (act.field?.name === 'State' && act.added && act.target?.id) {
-                const addedNames = Array.isArray(act.added) ? act.added : [act.added]
-                for (const added of addedNames) {
-                  const name = (added.name || '').toLowerCase()
-                  if (name.includes('progress') || name.includes('andamento') || name.includes('em desenvolvimento') || name.includes('in progress') || name.includes('doing')) {
-                    const issueId = act.target.id
-                    const ts = new Date(act.timestamp).toISOString()
-                    // Keep the earliest "started" timestamp
-                    if (!startedAtMap.has(issueId) || ts < startedAtMap.get(issueId)!) {
-                      startedAtMap.set(issueId, ts)
-                    }
-                  }
-                }
+          const addedNames = Array.isArray(act.added) ? act.added : [act.added]
+          for (const added of addedNames) {
+            const name = (added.name || '').toLowerCase()
+            if (name.includes('progress') || name.includes('andamento') || name.includes('desenvolvimento') || name.includes('doing')) {
+              const ts = new Date(act.timestamp).toISOString()
+              const prev = startedAtMap.get(act.target.id)
+              if (!prev || ts < prev) {
+                startedAtMap.set(act.target.id, ts)
               }
-            }
-
-            if (activities.length < 500) {
-              actHasMore = false
-            } else {
-              actSkip += 500
             }
           }
         }
-      } catch (actError) {
-        console.error('Error fetching activities for cycle time:', actError)
-        // Non-fatal: cycle time will just be null
+      } catch (e) {
+        console.error('Activities fetch error (non-fatal):', e)
       }
     }
 
+    // Step 3: Map to response
     function getField(issue: any, name: string): string | null {
       const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
       if (!cf || !cf.value) return null
@@ -173,25 +114,20 @@ Deno.serve(async (req) => {
       return cf.value.minutes || 0
     }
 
-    const tasks = allIssues.map((issue) => {
-      const estimationFromField = getMinutes(issue, 'Estimativa')
-      const spentFromField = getMinutes(issue, 'Tempo gasto')
-
-      return {
-        taskCode: issue.idReadable,
-        title: issue.summary,
-        category: getField(issue, 'Type') || 'Tarefa',
-        billingStatus: getField(issue, 'Faturável') || 'Nenhum Faturável',
-        squad: getField(issue, 'Squad') || 'Sem Squad',
-        assignee: issue.assignee?.fullName || issue.assignee?.login || null,
-        estimatedMinutes: estimationFromField,
-        spentMinutes: spentFromField,
-        status: getField(issue, 'State') || 'Open',
-        createdAt: new Date(issue.created).toISOString(),
-        resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
-        startedAt: startedAtMap.get(issue.id) || null,
-      }
-    })
+    const tasks = allIssues.map((issue: any) => ({
+      taskCode: issue.idReadable,
+      title: issue.summary,
+      category: getField(issue, 'Type') || 'Tarefa',
+      billingStatus: getField(issue, 'Faturável') || 'Nenhum Faturável',
+      squad: getField(issue, 'Squad') || 'Sem Squad',
+      assignee: issue.assignee?.fullName || issue.assignee?.login || null,
+      estimatedMinutes: getMinutes(issue, 'Estimativa'),
+      spentMinutes: getMinutes(issue, 'Tempo gasto'),
+      status: getField(issue, 'State') || 'Open',
+      createdAt: new Date(issue.created).toISOString(),
+      resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
+      startedAt: startedAtMap.get(issue.id) || null,
+    }))
 
     return new Response(
       JSON.stringify({ tasks, total: tasks.length }),
