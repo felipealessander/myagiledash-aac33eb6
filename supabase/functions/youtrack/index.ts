@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     const issuesUrl = `${YOUTRACK_URL}/api/issues?query=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}`
     const allIssues = await fetchAllPages(issuesUrl, YOUTRACK_TOKEN)
 
-    // Step 2: Fetch state-change activities in a single query for the whole project+period
+    // Step 2: Fetch state-change activities
     const startedAtMap = new Map<string, string>()
 
     if (allIssues.length > 0) {
