@@ -81,8 +81,18 @@ function buildDashboardData(tasks: DBTask[]) {
 
   // Billing data
   const billMap = new Map<string, { estimatedHours: number; spentHours: number; taskCount: number }>();
+
+  function normalizeBillingStatus(raw: string | null): string {
+    if (!raw) return "Nenhum Faturável";
+    const lower = raw.toLowerCase().trim();
+    if (lower.includes("não") || lower.includes("nao")) return "Não Faturável";
+    if (lower.includes("nenhum")) return "Nenhum Faturável";
+    if (lower.includes("fatur")) return "Faturável";
+    return "Nenhum Faturável";
+  }
+
   for (const t of tasks) {
-    const status = t.billing_status || "Nenhum Faturável";
+    const status = normalizeBillingStatus(t.billing_status);
     const entry = billMap.get(status) || { estimatedHours: 0, spentHours: 0, taskCount: 0 };
     entry.spentHours += (t.spent_minutes || 0) / 60;
     entry.estimatedHours += (t.estimated_minutes || 0) / 60;
@@ -98,7 +108,7 @@ function buildDashboardData(tasks: DBTask[]) {
 
   const billingData: BillingData[] = ["Faturável", "Não Faturável", "Nenhum Faturável"].map(status => {
     const data = billMap.get(status) || { estimatedHours: 0, spentHours: 0, taskCount: 0 };
-    const meta = billingLabelMap[status] || { label: status, description: "", color: "hsl(var(--muted-foreground))" };
+    const meta = billingLabelMap[status];
     return {
       status: status as BillingStatus,
       ...meta,
