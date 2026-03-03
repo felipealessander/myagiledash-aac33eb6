@@ -290,12 +290,32 @@ export function useDashboardData() {
     return buildDashboardData(dbTasks);
   }, [selectedMonth, dbTasks]);
 
+  const [selectedSquad, setSelectedSquad] = useState<string | null>(null);
+
+  const filteredDashboardData: DashboardData = useMemo(() => {
+    if (!selectedSquad) return dashboardData;
+    // Re-build from filtered tasks
+    if (selectedMonth === "static" || !dbTasks) {
+      // Filter static teams
+      const filtered = {
+        ...dashboardData,
+        teams: dashboardData.teams.filter(t => t.name === selectedSquad),
+      };
+      return filtered;
+    }
+    const filtered = dbTasks.filter(t => (t.squad || "Sem Squad") === selectedSquad);
+    return buildDashboardData(filtered);
+  }, [dashboardData, selectedSquad, selectedMonth, dbTasks]);
+
   return {
     months,
     selectedMonth,
     setSelectedMonth,
-    dashboardData,
+    dashboardData: filteredDashboardData,
+    allTeams: dashboardData.teams,
     loading,
     refetchMonths: fetchMonths,
+    selectedSquad,
+    setSelectedSquad,
   };
 }
