@@ -5,20 +5,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-async function fetchJson(url: string, token: string) {
-  const res = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`API error [${res.status}]: ${text.substring(0, 200)}`)
+async function fetchJson(url: string, token: string, timeoutMs = 15000) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      signal: controller.signal,
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`API error [${res.status}]: ${text.substring(0, 200)}`)
+    }
+
+    const ct = res.headers.get('content-type') || ''
+    if (!ct.includes('application/json')) {
+      const text = await res.text()
+      throw new Error(`Non-JSON response. Check YOUTRACK_URL. Response: ${text.substring(0, 200)}`)
+    }
+
+    return res.json()
+  } finally {
+    clearTimeout(timer)
   }
-  const ct = res.headers.get('content-type') || ''
-  if (!ct.includes('application/json')) {
-    const text = await res.text()
-    throw new Error(`Non-JSON response. Check YOUTRACK_URL. Response: ${text.substring(0, 200)}`)
-  }
-  return res.json()
 }
 
 async function fetchAllPages(baseUrl: string, token: string, top = 500) {
@@ -54,7 +65,10 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url)
-    const mode = url.searchParams.get('mode')
+    const requestBody = req.method === 'POST'
+      ? await req.json().catch(() => ({})) as { mode?: string; issueIds?: string[] | string }
+      : {}
+    const mode = url.searchParams.get('mode') || requestBody.mode || null
 
     // Health check
     if (!mode && !url.searchParams.get('dateFrom')) {
@@ -85,11 +99,10 @@ Deno.serve(async (req) => {
       let ids: string[] = []
 
       if (req.method === 'POST') {
-        const body = await req.json().catch(() => ({})) as { issueIds?: string[] | string }
-        if (Array.isArray(body.issueIds)) {
-          ids = body.issueIds.filter(Boolean)
-        } else if (typeof body.issueIds === 'string') {
-          ids = body.issueIds.split(',').map((id) => id.trim()).filter(Boolean)
+        if (Array.isArray(requestBody.issueIds)) {
+          ids = requestBody.issueIds.filter(Boolean)
+        } else if (typeof requestBody.issueIds === 'string') {
+          ids = requestBody.issueIds.split(',').map((id) => id.trim()).filter(Boolean)
         }
       } else if (issueIds) {
         ids = issueIds.split(',').map((id) => id.trim()).filter(Boolean)
@@ -105,26 +118,47 @@ Deno.serve(async (req) => {
       const startedAtMap: Record<string, string> = {}
 
       try {
-        const actFields = 'target(id),timestamp,field(name),added(name)'
-        const idQueries = ids.map(id => `issue id: ${id}`).join(' or ')
-        const actUrl = `${base}/api/activities?query=${encodeURIComponent(`(${idQueries})`)}&fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory`
-        const activities = await fetchAllPages(actUrl, YOUTRACK_TOKEN, 200)
+        const isStartState = (value: string) => {
+          const name = value.toLowerCase()
+          return (
+            name.includes('progress') ||
+            name.includes('andamento') ||
+            name.includes('desenvolvimento') ||
+            name.includes('doing') ||
+            name.includes('review') ||
+            name.includes('teste') ||
+            name.includes('discovery')
+          )
+        }
 
-        const idSet = new Set(ids)
-        for (const act of activities) {
-          if (act.field?.name !== 'State' || !act.added || !act.target?.id) continue
-          if (!idSet.has(act.target.id)) continue
+        for (const issueId of ids) {
+          try {
+            const actFields = 'target(id),timestamp,field(name),added(name,presentation,text),removed(name,presentation,text)'
+            const issueFilter = /^[A-Z]+-\d+$/.test(issueId) ? `idReadable: ${issueId}` : `id: ${issueId}`
+            const actUrl = `${base}/api/activities?issueQuery=${encodeURIComponent(issueFilter)}&fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory&$top=120&reverse=false`
 
-          const addedNames = Array.isArray(act.added) ? act.added : [act.added]
-          for (const added of addedNames) {
-            const name = (added.name || '').toLowerCase()
-            if (name.includes('progress') || name.includes('andamento') || name.includes('desenvolvimento') || name.includes('doing')) {
-              const ts = new Date(act.timestamp).toISOString()
-              const prev = startedAtMap[act.target.id]
-              if (!prev || ts < prev) {
-                startedAtMap[act.target.id] = ts
+            const activities = await fetchJson(actUrl, YOUTRACK_TOKEN, 10000) as any[]
+            if (!Array.isArray(activities) || activities.length === 0) continue
+
+            const ordered = [...activities].sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
+            for (const act of ordered) {
+              if (!act.target?.id || !act.added) continue
+
+              const addedValues = Array.isArray(act.added) ? act.added : [act.added]
+              const enteredInProgress = addedValues.some((added: any) => {
+                const raw = added?.name || added?.presentation || added?.text || ''
+                return isStartState(raw)
+              })
+
+              if (enteredInProgress) {
+                const startedAt = new Date(act.timestamp).toISOString()
+                startedAtMap[act.target.id] = startedAt
+                startedAtMap[issueId] = startedAt
+                break
               }
             }
+          } catch (issueError) {
+            console.error(`Activities fetch failed for ${issueId}:`, issueError)
           }
         }
       } catch (e) {

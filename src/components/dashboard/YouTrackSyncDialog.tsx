@@ -99,7 +99,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
         setProgress(batchProgress);
         setPhaseLabel(`Buscando cycle time (lote ${batchIdx + 1}/${totalActBatches})...`);
 
-        const batchIds = issueIdsWithYtId.slice(i, i + activityBatchSize).map((t: any) => t.id);
+        const batchIds = issueIdsWithYtId.slice(i, i + activityBatchSize).map((t: any) => t.taskCode || t.id);
         try {
           const actUrl = buildUrl({ mode: "activities" });
           const actRes = await fetch(actUrl, {
@@ -159,7 +159,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
           status: t.status,
           created_at_yt: t.createdAt,
           resolved_at: t.resolvedAt,
-          started_at: startedAtMap[t.id] || null,
+          started_at: startedAtMap[t.taskCode] || startedAtMap[t.id] || (t.spentMinutes > 0 ? t.createdAt : null),
         }));
 
         const { error } = await supabase.from("report_tasks").insert(batch);
