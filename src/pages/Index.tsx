@@ -1,4 +1,4 @@
-import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogIn, LogOut } from "lucide-react";
+import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogIn, LogOut, Gauge } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { TeamCard } from "@/components/dashboard/TeamCard";
 import { CategoryChart } from "@/components/dashboard/CategoryChart";
@@ -11,6 +11,7 @@ import { BillingKpiCards } from "@/components/dashboard/BillingKpiCards";
 import { LeadTimeChart } from "@/components/dashboard/LeadTimeChart";
 import { ThroughputChart } from "@/components/dashboard/ThroughputChart";
 import { WIPChart } from "@/components/dashboard/WIPChart";
+import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -21,7 +22,7 @@ import { Link } from "react-router-dom";
 const Index = () => {
   const { user, signOut } = useAuth();
   const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
-  const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, throughputByWeek, wipBySquad } = dashboardData;
+  const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, cycleTimeBySquad, throughputByWeek, wipBySquad } = dashboardData;
 
   const overrun = totalEstimated > 0 ? (((totalSpent - totalEstimated) / totalEstimated) * 100).toFixed(0) : "0";
 
@@ -129,29 +130,37 @@ const Index = () => {
           </div>
 
           {/* Agile Metrics Section */}
-          {selectedMonth !== "static" && (leadTimeBySquad?.length > 0 || throughputByWeek?.length > 0 || wipBySquad?.length > 0) && (
+          {selectedMonth !== "static" && (leadTimeBySquad?.length > 0 || cycleTimeBySquad?.length > 0 || throughputByWeek?.length > 0 || wipBySquad?.length > 0) && (
             <>
               <div className="pt-2">
                 <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   Métricas Ágeis
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   <KpiCard
                     title="Lead Time Médio"
                     value={`${leadTimeBySquad.length > 0 ? (leadTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, leadTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d`}
-                    subtitle="Média geral em dias"
+                    subtitle="Criação → Conclusão"
                     icon={Clock}
                     variant="info"
                     delay={0}
+                  />
+                  <KpiCard
+                    title="Cycle Time Médio"
+                    value={`${cycleTimeBySquad.length > 0 ? (cycleTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, cycleTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d`}
+                    subtitle="Em andamento → Conclusão"
+                    icon={Gauge}
+                    variant="primary"
+                    delay={50}
                   />
                   <KpiCard
                     title="Throughput Médio"
                     value={`${throughputByWeek.length > 0 ? (throughputByWeek.reduce((s, w) => s + w.count, 0) / throughputByWeek.length).toFixed(1) : "0"}/sem`}
                     subtitle="Tarefas resolvidas por semana"
                     icon={TrendingUp}
-                    variant="primary"
-                    delay={50}
+                    variant="default"
+                    delay={100}
                   />
                   <KpiCard
                     title="WIP Total"
@@ -159,15 +168,16 @@ const Index = () => {
                     subtitle="Tarefas em andamento"
                     icon={ListTodo}
                     variant="warning"
-                    delay={100}
+                    delay={150}
                   />
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <LeadTimeChart data={leadTimeBySquad || []} />
-                  <ThroughputChart data={throughputByWeek || []} />
+                  <CycleTimeChart data={cycleTimeBySquad || []} />
                 </div>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <ThroughputChart data={throughputByWeek || []} />
                 <WIPChart data={wipBySquad || []} />
               </div>
             </>

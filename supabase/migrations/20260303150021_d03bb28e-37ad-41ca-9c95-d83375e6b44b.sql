@@ -1,0 +1,1 @@
+ALTER TABLE public.report_tasks ADD COLUMN started_at timestamp with time zone DEFAULT NULL;

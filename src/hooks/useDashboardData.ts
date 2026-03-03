@@ -23,6 +23,7 @@ interface DBTask {
   status: string | null;
   created_at_yt: string | null;
   resolved_at: string | null;
+  started_at: string | null;
 }
 
 // Fallback hardcoded members for static data only
@@ -144,12 +145,12 @@ function buildDashboardData(tasks: DBTask[]) {
   const billingTotalEstimated = billingData.reduce((s, b) => s + b.estimatedHours, 0);
   const billingTotalTasks = billingData.reduce((s, b) => s + b.taskCount, 0);
 
-  // Agile metrics
+  // Agile metrics - Lead Time
   const resolvedTasks = tasks.filter(t => t.created_at_yt && t.resolved_at);
   const leadTimes = resolvedTasks.map(t => {
     const created = new Date(t.created_at_yt!).getTime();
     const resolved = new Date(t.resolved_at!).getTime();
-    return Math.max(0, (resolved - created) / (1000 * 60 * 60 * 24)); // days
+    return Math.max(0, (resolved - created) / (1000 * 60 * 60 * 24));
   });
 
   // Lead time by squad
@@ -169,6 +170,26 @@ function buildDashboardData(tasks: DBTask[]) {
     const median = times[Math.floor(times.length / 2)];
     const p85 = times[Math.floor(times.length * 0.85)];
     leadTimeBySquad.push({ squad: squadName, avg: Math.round(avg * 10) / 10, median: Math.round(median * 10) / 10, p85: Math.round(p85 * 10) / 10, count: squadResolved.length });
+  }
+
+  // Cycle Time by squad (started_at -> resolved_at)
+  const cycleTimeTasks = tasks.filter(t => t.started_at && t.resolved_at);
+  const cycleTimeBySquad: { squad: string; avg: number; median: number; p85: number; count: number }[] = [];
+  for (const squadName of squadNames) {
+    const squadCycle = cycleTimeTasks.filter(t => (t.squad || "Sem Squad") === squadName);
+    if (squadCycle.length === 0) {
+      cycleTimeBySquad.push({ squad: squadName, avg: 0, median: 0, p85: 0, count: 0 });
+      continue;
+    }
+    const times = squadCycle.map(t => {
+      const started = new Date(t.started_at!).getTime();
+      const resolved = new Date(t.resolved_at!).getTime();
+      return Math.max(0, (resolved - started) / (1000 * 60 * 60 * 24));
+    }).sort((a, b) => a - b);
+    const avg = times.reduce((s, v) => s + v, 0) / times.length;
+    const median = times[Math.floor(times.length / 2)];
+    const p85 = times[Math.floor(times.length * 0.85)];
+    cycleTimeBySquad.push({ squad: squadName, avg: Math.round(avg * 10) / 10, median: Math.round(median * 10) / 10, p85: Math.round(p85 * 10) / 10, count: squadCycle.length });
   }
 
   // Throughput by week
@@ -206,6 +227,7 @@ function buildDashboardData(tasks: DBTask[]) {
     billingTotalEstimated,
     billingTotalTasks,
     leadTimeBySquad,
+    cycleTimeBySquad,
     throughputByWeek,
     wipBySquad,
   };
@@ -256,7 +278,7 @@ export function useDashboardData() {
     setLoading(true);
     supabase
       .from("report_tasks")
-      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at")
+      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at")
       .eq("report_id", monthOption.id)
       .then(({ data, error }) => {
         setLoading(false);
@@ -282,6 +304,7 @@ export function useDashboardData() {
         billingTotalEstimated: staticData.billingTotalEstimated,
         billingTotalTasks: staticData.billingTotalTasks,
         leadTimeBySquad: [],
+        cycleTimeBySquad: [],
         throughputByWeek: [],
         wipBySquad: [],
       };
