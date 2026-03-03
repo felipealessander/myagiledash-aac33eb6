@@ -1,39 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { TeamData, TeamName, CategoryName, BillingData, BillingStatus } from "@/data/dashboardData";
+import type { TeamData, CategoryName, BillingData, BillingStatus } from "@/data/dashboardData";
+import { getTeamColor } from "@/data/dashboardData";
 import * as staticData from "@/data/dashboardData";
 
 export interface MonthOption {
-  value: string; // "2025-01"
-  label: string; // "Janeiro 2025"
-  id: string; // report uuid
-}
-
-const TEAM_NAMES: TeamName[] = ["NaN", "Golden Gate", "Code418", "Tesseract"];
-const TEAM_COLORS = {
-  NaN: "var(--team-nan)",
-  "Golden Gate": "var(--team-golden-gate)",
-  Code418: "var(--team-code418)",
-  Tesseract: "var(--team-tesseract)",
-};
-const TEAM_MEMBERS = { NaN: 6, "Golden Gate": 5, Code418: 5, Tesseract: 6 };
-const TEAM_MEMBER_NAMES: Record<TeamName, string[]> = {
-  NaN: ["Felipe Souza", "Ana Clara", "Lucas Martins", "Juliana Costa", "Pedro Henrique", "Mariana Lima"],
-  "Golden Gate": ["Rafael Oliveira", "Camila Santos", "Bruno Almeida", "Fernanda Rocha", "Thiago Pereira"],
-  Code418: ["Diego Silva", "Isabela Ferreira", "Gustavo Ribeiro", "Larissa Mendes", "Vinícius Cardoso"],
-  Tesseract: ["André Nascimento", "Beatriz Araújo", "Carlos Eduardo", "Daniela Moreira", "Eduardo Campos", "Gabriela Teixeira"],
-};
-
-// Distribute tasks proportionally across teams (deterministic by task code hash)
-function hashCode(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
+  value: string;
+  label: string;
+  id: string;
 }
 
 interface DBTask {
@@ -43,22 +18,25 @@ interface DBTask {
   billing_status: string | null;
   estimated_minutes: number | null;
   spent_minutes: number | null;
+  squad: string | null;
 }
 
 function buildDashboardData(tasks: DBTask[]) {
-  // Group tasks by team (hash-based distribution)
-  const teamTasks: Record<TeamName, DBTask[]> = {
-    NaN: [], "Golden Gate": [], Code418: [], Tesseract: [],
-  };
+  // Group tasks by squad (dynamic teams)
+  const squadTasksMap = new Map<string, DBTask[]>();
 
   for (const task of tasks) {
-    const teamIndex = hashCode(task.task_code) % 4;
-    teamTasks[TEAM_NAMES[teamIndex]].push(task);
+    const squadName = task.squad || "Sem Squad";
+    if (!squadTasksMap.has(squadName)) {
+      squadTasksMap.set(squadName, []);
+    }
+    squadTasksMap.get(squadName)!.push(task);
   }
 
-  // Build team data
-  const teams: TeamData[] = TEAM_NAMES.map(name => {
-    const tTasks = teamTasks[name];
+  // Build team data from squads
+  const squadNames = Array.from(squadTasksMap.keys()).sort();
+  const teams: TeamData[] = squadNames.map((name, index) => {
+    const tTasks = squadTasksMap.get(name)!;
     const categoryMap = new Map<string, { spentHours: number; estimatedHours: number; taskCount: number }>();
 
     for (const t of tTasks) {
@@ -75,11 +53,14 @@ function buildDashboardData(tasks: DBTask[]) {
       ...data,
     }));
 
+    // Count unique task codes as proxy for team size
+    const uniqueTasks = new Set(tTasks.map(t => t.task_code));
+
     return {
       name,
-      color: TEAM_COLORS[name],
-      members: TEAM_MEMBERS[name],
-      memberNames: TEAM_MEMBER_NAMES[name],
+      color: getTeamColor(index),
+      members: Math.max(1, Math.ceil(uniqueTasks.size / 10)), // estimate members
+      memberNames: [], // no member data from XLSX
       categories,
     };
   });
@@ -150,12 +131,11 @@ export type DashboardData = ReturnType<typeof buildDashboardData>;
 
 export function useDashboardData() {
   const [months, setMonths] = useState<MonthOption[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState<string>("static"); // "static" = hardcoded data
+  const [selectedMonth, setSelectedMonth] = useState<string>("static");
   const [dbTasks, setDbTasks] = useState<DBTask[] | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Load available months
   const fetchMonths = useCallback(async () => {
     const { data, error } = await supabase
       .from("sprint_reports")
@@ -180,7 +160,6 @@ export function useDashboardData() {
     fetchMonths();
   }, [fetchMonths]);
 
-  // Load tasks for selected month
   useEffect(() => {
     if (selectedMonth === "static") {
       setDbTasks(null);
@@ -193,7 +172,7 @@ export function useDashboardData() {
     setLoading(true);
     supabase
       .from("report_tasks")
-      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes")
+      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad")
       .eq("report_id", monthOption.id)
       .then(({ data, error }) => {
         setLoading(false);
@@ -208,7 +187,6 @@ export function useDashboardData() {
 
   const dashboardData: DashboardData = useMemo(() => {
     if (selectedMonth === "static" || !dbTasks) {
-      // Use hardcoded data
       return {
         teams: staticData.teams,
         categoryTotals: staticData.categoryTotals,

@@ -1,12 +1,16 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { TeamData } from "@/data/dashboardData";
-import { getTeamTotalHours } from "@/data/dashboardData";
+import { getTeamTotalHours, getTeamColor } from "@/data/dashboardData";
 
-const COLORS = [
+const DEFAULT_COLORS = [
   "hsl(280, 67%, 56%)",
   "hsl(38, 92%, 50%)",
   "hsl(160, 84%, 39%)",
   "hsl(210, 100%, 56%)",
+  "hsl(0, 84%, 60%)",
+  "hsl(190, 90%, 50%)",
+  "hsl(330, 80%, 55%)",
+  "hsl(60, 70%, 45%)",
 ];
 
 interface TeamDistributionChartProps {
@@ -30,7 +34,7 @@ export function TeamDistributionChart({ teams }: TeamDistributionChartProps) {
             <PieChart>
               <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0}>
                 {data.map((_, index) => (
-                  <Cell key={index} fill={COLORS[index]} fillOpacity={0.85} />
+                  <Cell key={index} fill={DEFAULT_COLORS[index % DEFAULT_COLORS.length]} fillOpacity={0.85} />
                 ))}
               </Pie>
               <Tooltip
@@ -43,7 +47,7 @@ export function TeamDistributionChart({ teams }: TeamDistributionChartProps) {
         <div className="space-y-3 flex-1">
           {data.map((d, i) => (
             <div key={d.name} className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[i] }} />
+              <div className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: DEFAULT_COLORS[i % DEFAULT_COLORS.length] }} />
               <span className="text-xs flex-1">{d.name}</span>
               <span className="text-xs font-mono text-muted-foreground">{d.value}h</span>
               <span className="text-[10px] font-mono text-muted-foreground w-10 text-right">

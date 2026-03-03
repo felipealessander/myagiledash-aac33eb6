@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
@@ -33,32 +32,71 @@ interface ImportDialogProps {
   onImported: () => void;
 }
 
+interface FileUploadAreaProps {
+  label: string;
+  description: string;
+  file: File | null;
+  onFileChange: (file: File | null) => void;
+  optional?: boolean;
+}
+
+function FileUploadArea({ label, description, file, onFileChange, optional }: FileUploadAreaProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs">
+        {label} {optional && <span className="text-muted-foreground font-normal">(opcional)</span>}
+      </Label>
+      <p className="text-[10px] text-muted-foreground">{description}</p>
+      <div
+        className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
+        onClick={() => inputRef.current?.click()}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          className="hidden"
+          onChange={(e) => onFileChange(e.target.files?.[0] || null)}
+        />
+        {file ? (
+          <p className="text-xs text-primary font-medium">{file.name}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Clique para selecionar</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ImportDialog({ onImported }: ImportDialogProps) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [categoryFile, setCategoryFile] = useState<File | null>(null);
   const [billingFile, setBillingFile] = useState<File | null>(null);
+  const [squadFile, setSquadFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const categoryRef = useRef<HTMLInputElement>(null);
-  const billingRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleImport = async () => {
     if (!month || !year || !categoryFile || !billingFile) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" });
+      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
 
     setImporting(true);
 
     try {
-      const [catBuf, billBuf] = await Promise.all([
-        categoryFile.arrayBuffer(),
-        billingFile.arrayBuffer(),
-      ]);
+      const filePromises = [categoryFile.arrayBuffer(), billingFile.arrayBuffer()];
+      if (squadFile) filePromises.push(squadFile.arrayBuffer());
+      
+      const buffers = await Promise.all(filePromises);
+      const [catBuf, billBuf] = buffers;
+      const squadBuf = buffers[2] || undefined;
 
-      const tasks = mergeReports(catBuf, billBuf);
+      const tasks = mergeReports(catBuf, billBuf, squadBuf);
 
       if (tasks.length === 0) {
         toast({ title: "Nenhuma tarefa encontrada nos arquivos", variant: "destructive" });
@@ -69,7 +107,6 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
       const monthKey = `${year}-${month}`;
       const monthLabel = `${MONTHS.find(m => m.value === month)?.label} ${year}`;
 
-      // Upsert report
       const { data: report, error: reportError } = await supabase
         .from("sprint_reports")
         .upsert({ month: monthKey, label: monthLabel }, { onConflict: "month" })
@@ -78,10 +115,8 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
 
       if (reportError) throw reportError;
 
-      // Delete existing tasks for this report
       await supabase.from("report_tasks").delete().eq("report_id", report.id);
 
-      // Insert new tasks in batches of 100
       const batchSize = 100;
       for (let i = 0; i < tasks.length; i += batchSize) {
         const batch = tasks.slice(i, i + batchSize).map(t => ({
@@ -90,6 +125,7 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
           title: t.title,
           category: t.category,
           billing_status: t.billingStatus,
+          squad: t.squad,
           estimated_minutes: t.estimatedMinutes,
           spent_minutes: t.spentMinutes,
         }));
@@ -98,14 +134,18 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
         if (error) throw error;
       }
 
+      // Count unique squads
+      const squads = new Set(tasks.map(t => t.squad));
+
       toast({
         title: "Importação concluída!",
-        description: `${tasks.length} tarefas importadas para ${monthLabel}`,
+        description: `${tasks.length} tarefas importadas para ${monthLabel} (${squads.size} squads)`,
       });
 
       setOpen(false);
       setCategoryFile(null);
       setBillingFile(null);
+      setSquadFile(null);
       setMonth("");
       onImported();
     } catch (err: any) {
@@ -133,7 +173,6 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* Month/Year selection */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label className="text-xs">Mês</Label>
@@ -163,51 +202,27 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
             </div>
           </div>
 
-          {/* Category file */}
-          <div className="space-y-2">
-            <Label className="text-xs">Relatório por Categoria (.xlsx)</Label>
-            <p className="text-[10px] text-muted-foreground">Arquivo com tarefas agrupadas por tipo (Atendimento, Tarefa, etc.)</p>
-            <div
-              className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => categoryRef.current?.click()}
-            >
-              <input
-                ref={categoryRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={(e) => setCategoryFile(e.target.files?.[0] || null)}
-              />
-              {categoryFile ? (
-                <p className="text-xs text-primary font-medium">{categoryFile.name}</p>
-              ) : (
-                <p className="text-xs text-muted-foreground">Clique para selecionar</p>
-              )}
-            </div>
-          </div>
+          <FileUploadArea
+            label="Relatório por Categoria (.xlsx)"
+            description="Arquivo com tarefas agrupadas por tipo (Atendimento, Tarefa, etc.)"
+            file={categoryFile}
+            onFileChange={setCategoryFile}
+          />
 
-          {/* Billing file */}
-          <div className="space-y-2">
-            <Label className="text-xs">Relatório por Faturamento (.xlsx)</Label>
-            <p className="text-[10px] text-muted-foreground">Arquivo com tarefas agrupadas por status de faturamento</p>
-            <div
-              className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => billingRef.current?.click()}
-            >
-              <input
-                ref={billingRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={(e) => setBillingFile(e.target.files?.[0] || null)}
-              />
-              {billingFile ? (
-                <p className="text-xs text-primary font-medium">{billingFile.name}</p>
-              ) : (
-                <p className="text-xs text-muted-foreground">Clique para selecionar</p>
-              )}
-            </div>
-          </div>
+          <FileUploadArea
+            label="Relatório por Faturamento (.xlsx)"
+            description="Arquivo com tarefas agrupadas por status de faturamento"
+            file={billingFile}
+            onFileChange={setBillingFile}
+          />
+
+          <FileUploadArea
+            label="Relatório por Squad (.xlsx)"
+            description="Arquivo com tarefas agrupadas por squad/time. Squads novas serão criadas automaticamente."
+            file={squadFile}
+            onFileChange={setSquadFile}
+            optional
+          />
 
           <Button onClick={handleImport} disabled={importing} className="w-full gap-2">
             {importing ? (
