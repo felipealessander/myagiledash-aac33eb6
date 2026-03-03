@@ -18,6 +18,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { LastSyncBadge } from "@/components/dashboard/LastSyncBadge";
 
 const Index = () => {
   const { user, signOut } = useAuth();
