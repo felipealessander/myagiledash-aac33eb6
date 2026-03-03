@@ -20,11 +20,14 @@ export type Database = {
           billing_status: string | null
           category: string | null
           created_at: string
+          created_at_yt: string | null
           estimated_minutes: number | null
           id: string
           report_id: string
+          resolved_at: string | null
           spent_minutes: number | null
           squad: string | null
+          status: string | null
           task_code: string
           title: string | null
         }
@@ -33,11 +36,14 @@ export type Database = {
           billing_status?: string | null
           category?: string | null
           created_at?: string
+          created_at_yt?: string | null
           estimated_minutes?: number | null
           id?: string
           report_id: string
+          resolved_at?: string | null
           spent_minutes?: number | null
           squad?: string | null
+          status?: string | null
           task_code: string
           title?: string | null
         }
@@ -46,11 +52,14 @@ export type Database = {
           billing_status?: string | null
           category?: string | null
           created_at?: string
+          created_at_yt?: string | null
           estimated_minutes?: number | null
           id?: string
           report_id?: string
+          resolved_at?: string | null
           spent_minutes?: number | null
           squad?: string | null
+          status?: string | null
           task_code?: string
           title?: string | null
         }

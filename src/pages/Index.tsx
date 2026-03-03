@@ -8,6 +8,9 @@ import { TeamDistributionChart } from "@/components/dashboard/TeamDistributionCh
 import { BillingOverviewChart } from "@/components/dashboard/BillingOverviewChart";
 import { BillingComparisonChart } from "@/components/dashboard/BillingComparisonChart";
 import { BillingKpiCards } from "@/components/dashboard/BillingKpiCards";
+import { LeadTimeChart } from "@/components/dashboard/LeadTimeChart";
+import { ThroughputChart } from "@/components/dashboard/ThroughputChart";
+import { WIPChart } from "@/components/dashboard/WIPChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -18,7 +21,7 @@ import { Link } from "react-router-dom";
 const Index = () => {
   const { user, signOut } = useAuth();
   const { months, selectedMonth, setSelectedMonth, dashboardData, loading, refetchMonths } = useDashboardData();
-  const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent } = dashboardData;
+  const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, throughputByWeek, wipBySquad } = dashboardData;
 
   const overrun = totalEstimated > 0 ? (((totalSpent - totalEstimated) / totalEstimated) * 100).toFixed(0) : "0";
 
@@ -106,6 +109,25 @@ const Index = () => {
             <TeamDistributionChart teams={teams} />
             <TaskTable categoryTotals={categoryTotals} />
           </div>
+
+          {/* Agile Metrics Section */}
+          {selectedMonth !== "static" && (leadTimeBySquad?.length > 0 || throughputByWeek?.length > 0 || wipBySquad?.length > 0) && (
+            <>
+              <div className="pt-2">
+                <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  Métricas Ágeis
+                </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <LeadTimeChart data={leadTimeBySquad || []} />
+                  <ThroughputChart data={throughputByWeek || []} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <WIPChart data={wipBySquad || []} />
+              </div>
+            </>
+          )}
 
           {/* Billing Section */}
           <div className="pt-2">
