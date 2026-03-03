@@ -9,7 +9,7 @@ import { BillingOverviewChart } from "@/components/dashboard/BillingOverviewChar
 import { BillingComparisonChart } from "@/components/dashboard/BillingComparisonChart";
 import { BillingKpiCards } from "@/components/dashboard/BillingKpiCards";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
-import { ImportDialog } from "@/components/dashboard/ImportDialog";
+import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-3">
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
-            {user && <ImportDialog onImported={refetchMonths} />}
+            {user && <YouTrackSyncDialog onImported={refetchMonths} />}
             {user ? (
               <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
                 <LogOut className="h-3.5 w-3.5" />
