@@ -5,20 +5,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-async function fetchJson(url: string, token: string) {
-  const res = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`API error [${res.status}]: ${text.substring(0, 200)}`)
+async function fetchJson(url: string, token: string, timeoutMs = 15000) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+      signal: controller.signal,
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`API error [${res.status}]: ${text.substring(0, 200)}`)
+    }
+
+    const ct = res.headers.get('content-type') || ''
+    if (!ct.includes('application/json')) {
+      const text = await res.text()
+      throw new Error(`Non-JSON response. Check YOUTRACK_URL. Response: ${text.substring(0, 200)}`)
+    }
+
+    return res.json()
+  } finally {
+    clearTimeout(timer)
   }
-  const ct = res.headers.get('content-type') || ''
-  if (!ct.includes('application/json')) {
-    const text = await res.text()
-    throw new Error(`Non-JSON response. Check YOUTRACK_URL. Response: ${text.substring(0, 200)}`)
-  }
-  return res.json()
 }
 
 async function fetchAllPages(baseUrl: string, token: string, top = 500) {
