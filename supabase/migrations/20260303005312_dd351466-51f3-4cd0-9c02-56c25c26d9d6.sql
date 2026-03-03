@@ -1,0 +1,1 @@
+ALTER TABLE public.report_tasks ADD COLUMN squad TEXT;

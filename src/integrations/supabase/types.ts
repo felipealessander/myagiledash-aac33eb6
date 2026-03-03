@@ -23,6 +23,7 @@ export type Database = {
           id: string
           report_id: string
           spent_minutes: number | null
+          squad: string | null
           task_code: string
           title: string | null
         }
@@ -34,6 +35,7 @@ export type Database = {
           id?: string
           report_id: string
           spent_minutes?: number | null
+          squad?: string | null
           task_code: string
           title?: string | null
         }
@@ -45,6 +47,7 @@ export type Database = {
           id?: string
           report_id?: string
           spent_minutes?: number | null
+          squad?: string | null
           task_code?: string
           title?: string | null
         }

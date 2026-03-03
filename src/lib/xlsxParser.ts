@@ -25,9 +25,7 @@ function parseTimeToMinutes(timeStr: string): number {
   if (hoursMatch) totalMinutes += parseInt(hoursMatch[1]) * 60;
   if (minutesMatch) totalMinutes += parseInt(minutesMatch[1]);
 
-  // Handle case like "85h" without minutes
   if (!hoursMatch && !minutesMatch) {
-    // Try parsing as plain number (hours)
     const num = parseFloat(str);
     if (!isNaN(num)) totalMinutes = Math.round(num * 60);
   }
@@ -61,14 +59,11 @@ export function parseReportXlsx(file: ArrayBuffer): ParsedGroup[] {
     const col2 = String(row[2] || "").trim();
     const col3 = String(row[3] || "").trim();
 
-    // Skip header row
     if (col0 === "Group/Item") continue;
 
-    // Check if this is a group header (no task code, text in col0 only)
     const taskCode = extractTaskCode(col0);
 
     if (!taskCode && col0 && !col1.startsWith("[")) {
-      // This is a group header row
       if (currentGroup) groups.push(currentGroup);
       currentGroup = {
         groupName: col0,
@@ -77,7 +72,6 @@ export function parseReportXlsx(file: ArrayBuffer): ParsedGroup[] {
         totalSpentMinutes: parseTimeToMinutes(col3),
       };
     } else if (taskCode && currentGroup) {
-      // This is a task row
       currentGroup.tasks.push({
         taskCode,
         title: col1.replace(/^\[.*?\]\s*/, "").replace(/[\[\]]/g, ""),
@@ -97,6 +91,7 @@ export interface MergedTask {
   title: string;
   category: string;
   billingStatus: string;
+  squad: string;
   estimatedMinutes: number;
   spentMinutes: number;
 }
@@ -109,6 +104,7 @@ const CATEGORY_NAMES = [
   "Melhoria",
   "Tarefa",
   "Épico",
+  "Planejamento",
 ];
 
 const BILLING_NAMES = [
@@ -128,7 +124,6 @@ function normalizeGroupName(name: string): { type: "category" | "billing"; norma
     if (lower === bill.toLowerCase()) return { type: "billing", normalized: bill };
   }
 
-  // Fuzzy match
   if (lower.includes("faturável") || lower.includes("faturavel")) {
     if (lower.includes("não") || lower.includes("nao")) return { type: "billing", normalized: "Não Faturável" };
     if (lower.includes("nenhum")) return { type: "billing", normalized: "Nenhum Faturável" };
@@ -140,10 +135,12 @@ function normalizeGroupName(name: string): { type: "category" | "billing"; norma
 
 export function mergeReports(
   categoryFile: ArrayBuffer,
-  billingFile: ArrayBuffer
+  billingFile: ArrayBuffer,
+  squadFile?: ArrayBuffer
 ): MergedTask[] {
   const categoryGroups = parseReportXlsx(categoryFile);
   const billingGroups = parseReportXlsx(billingFile);
+  const squadGroups = squadFile ? parseReportXlsx(squadFile) : [];
 
   // Build task map from category file
   const taskMap = new Map<string, MergedTask>();
@@ -157,7 +154,8 @@ export function mergeReports(
         taskCode: task.taskCode,
         title: task.title,
         category: categoryName,
-        billingStatus: "Nenhum Faturável", // default
+        billingStatus: "Nenhum Faturável",
+        squad: "Sem Squad",
         estimatedMinutes: task.estimatedMinutes,
         spentMinutes: task.spentMinutes,
       });
@@ -174,12 +172,34 @@ export function mergeReports(
       if (existing) {
         existing.billingStatus = billingName;
       } else {
-        // Task only in billing file
         taskMap.set(task.taskCode, {
           taskCode: task.taskCode,
           title: task.title,
-          category: "Tarefa", // default
+          category: "Tarefa",
           billingStatus: billingName,
+          squad: "Sem Squad",
+          estimatedMinutes: task.estimatedMinutes,
+          spentMinutes: task.spentMinutes,
+        });
+      }
+    }
+  }
+
+  // Enrich with squad data
+  for (const group of squadGroups) {
+    const squadName = group.groupName;
+
+    for (const task of group.tasks) {
+      const existing = taskMap.get(task.taskCode);
+      if (existing) {
+        existing.squad = squadName;
+      } else {
+        taskMap.set(task.taskCode, {
+          taskCode: task.taskCode,
+          title: task.title,
+          category: "Tarefa",
+          billingStatus: "Nenhum Faturável",
+          squad: squadName,
           estimatedMinutes: task.estimatedMinutes,
           spentMinutes: task.spentMinutes,
         });

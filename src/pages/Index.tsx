@@ -36,20 +36,16 @@ const Index = () => {
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
             <ImportDialog onImported={refetchMonths} />
             <div className="hidden lg:flex items-center gap-2">
-              {teams.map(t => {
-                const dotClass: Record<string, string> = {
-                  NaN: "bg-team-nan",
-                  "Golden Gate": "bg-team-golden-gate",
-                  Code418: "bg-team-code418",
-                  Tesseract: "bg-team-tesseract",
-                };
-                return (
+            {teams.map((t, i) => (
                   <span key={t.name} className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground">
-                    <span className={`h-1.5 w-1.5 rounded-full ${dotClass[t.name] || "bg-muted-foreground"}`} />
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: t.color.startsWith("var(") ? undefined : t.color }}
+                      {...(t.color.startsWith("var(") ? { className: `h-1.5 w-1.5 rounded-full bg-muted-foreground` } : {})}
+                    />
                     {t.name}
                   </span>
-                );
-              })}
+                ))}
             </div>
           </div>
         </div>
@@ -75,9 +71,9 @@ const Index = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
               Visão por Time
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${teams.length <= 4 ? 'lg:grid-cols-4' : teams.length <= 6 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
               {teams.map((team, i) => (
-                <TeamCard key={team.name} team={team} delay={200 + i * 50} />
+                <TeamCard key={team.name} team={team} teamIndex={i} delay={200 + i * 50} />
               ))}
             </div>
           </div>

@@ -1,8 +1,8 @@
 // Data extracted from the Report_Time_Felipe.xlsx spreadsheet
-// Distributed across the 4 teams: NaN, Golden Gate, Code418, Tesseract
+// Teams are now dynamic based on imported data
 
-export type TeamName = "NaN" | "Golden Gate" | "Code418" | "Tesseract";
-export type CategoryName = "Atendimento" | "Auxílio técnico" | "Erro script" | "Incidente" | "Melhoria" | "Tarefa" | "Épico";
+export type TeamName = string;
+export type CategoryName = string;
 
 export interface TeamData {
   name: TeamName;
@@ -12,6 +12,23 @@ export interface TeamData {
   categories: { name: CategoryName; spentHours: number; estimatedHours: number; taskCount: number }[];
 }
 
+// Dynamic color palette for teams
+const TEAM_COLOR_PALETTE = [
+  "hsl(217, 91%, 60%)",  // blue
+  "hsl(142, 71%, 45%)",  // green
+  "hsl(38, 92%, 50%)",   // amber
+  "hsl(280, 67%, 55%)",  // purple
+  "hsl(0, 84%, 60%)",    // red
+  "hsl(190, 90%, 50%)",  // cyan
+  "hsl(330, 80%, 55%)",  // pink
+  "hsl(60, 70%, 45%)",   // yellow-green
+];
+
+export function getTeamColor(index: number): string {
+  return TEAM_COLOR_PALETTE[index % TEAM_COLOR_PALETTE.length];
+}
+
+// Static data for fallback
 export const teams: TeamData[] = [
   {
     name: "NaN",
@@ -76,8 +93,8 @@ export const teams: TeamData[] = [
 ];
 
 // Summary totals from spreadsheet
-export const totalEstimated = 776.83; // 776h 50m
-export const totalSpent = 2262.52; // 2262h 31m
+export const totalEstimated = 776.83;
+export const totalSpent = 2262.52;
 export const totalTasks = 147;
 
 export const categoryTotals: { name: CategoryName; hours: number; count: number }[] = [
@@ -109,7 +126,7 @@ export function getTeamVelocity(team: TeamData) {
   return Math.round((estimated / spent) * 100);
 }
 
-// Billing data extracted from Report_Time_Felipe_2.xlsx
+// Billing data
 export type BillingStatus = "Faturável" | "Não Faturável" | "Nenhum Faturável";
 
 export interface BillingData {
@@ -127,8 +144,8 @@ export const billingData: BillingData[] = [
     status: "Faturável",
     label: "Faturável",
     description: "Atividades marcadas como faturáveis ao cliente",
-    estimatedHours: 144.5, // 144h 30m
-    spentHours: 184.25, // 184h 15m
+    estimatedHours: 144.5,
+    spentHours: 184.25,
     taskCount: 11,
     color: "hsl(var(--primary))",
   },
@@ -136,8 +153,8 @@ export const billingData: BillingData[] = [
     status: "Não Faturável",
     label: "Não Faturável",
     description: "Atividades explicitamente marcadas como não faturáveis",
-    estimatedHours: 110.5, // 110h 30m
-    spentHours: 159.15, // 159h 9m
+    estimatedHours: 110.5,
+    spentHours: 159.15,
     taskCount: 10,
     color: "hsl(var(--warning))",
   },
@@ -145,8 +162,8 @@ export const billingData: BillingData[] = [
     status: "Nenhum Faturável",
     label: "Sem Marcação",
     description: "A opção de 'Faturável' não foi preenchida na tarefa",
-    estimatedHours: 521.83, // 521h 50m
-    spentHours: 1923.12, // 1923h 7m
+    estimatedHours: 521.83,
+    spentHours: 1923.12,
     taskCount: 176,
     color: "hsl(var(--muted-foreground))",
   },
