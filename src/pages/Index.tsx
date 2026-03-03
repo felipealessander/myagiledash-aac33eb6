@@ -1,4 +1,4 @@
-import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2 } from "lucide-react";
+import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogIn, LogOut } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { TeamCard } from "@/components/dashboard/TeamCard";
 import { CategoryChart } from "@/components/dashboard/CategoryChart";
@@ -11,8 +11,12 @@ import { BillingKpiCards } from "@/components/dashboard/BillingKpiCards";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { ImportDialog } from "@/components/dashboard/ImportDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Index = () => {
+  const { user, signOut } = useAuth();
   const { months, selectedMonth, setSelectedMonth, dashboardData, loading, refetchMonths } = useDashboardData();
   const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent } = dashboardData;
 
@@ -34,18 +38,31 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-3">
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
-            <ImportDialog onImported={refetchMonths} />
+            {user && <ImportDialog onImported={refetchMonths} />}
+            {user ? (
+              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
+                <LogOut className="h-3.5 w-3.5" />
+                Sair
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
+                <Link to="/auth">
+                  <LogIn className="h-3.5 w-3.5" />
+                  Entrar
+                </Link>
+              </Button>
+            )}
             <div className="hidden lg:flex items-center gap-2">
-            {teams.map((t, i) => (
-                  <span key={t.name} className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground">
-                    <span
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: t.color.startsWith("var(") ? undefined : t.color }}
-                      {...(t.color.startsWith("var(") ? { className: `h-1.5 w-1.5 rounded-full bg-muted-foreground` } : {})}
-                    />
-                    {t.name}
-                  </span>
-                ))}
+              {teams.map((t, i) => (
+                <span key={t.name} className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: t.color.startsWith("var(") ? undefined : t.color }}
+                    {...(t.color.startsWith("var(") ? { className: `h-1.5 w-1.5 rounded-full bg-muted-foreground` } : {})}
+                  />
+                  {t.name}
+                </span>
+              ))}
             </div>
           </div>
         </div>
