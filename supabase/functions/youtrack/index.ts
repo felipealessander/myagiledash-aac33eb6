@@ -151,7 +151,9 @@ Deno.serve(async (req) => {
               })
 
               if (enteredInProgress) {
-                startedAtMap[act.target.id] = new Date(act.timestamp).toISOString()
+                const startedAt = new Date(act.timestamp).toISOString()
+                startedAtMap[act.target.id] = startedAt
+                startedAtMap[issueId] = startedAt
                 break
               }
             }
