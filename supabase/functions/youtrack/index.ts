@@ -82,6 +82,85 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Fetch state change activities to determine "started_at" (when moved to In Progress)
+    const issueIds = allIssues.map(i => i.id)
+    const startedAtMap = new Map<string, string>() // issue id -> ISO timestamp
+
+    if (issueIds.length > 0) {
+      try {
+        // Fetch activities in bulk using activitiesPage endpoint
+        const activityFields = 'target(id,idReadable),timestamp,field(id,name),added(name),removed(name)'
+        const activityQuery = `project: ${project}`
+        if (dateFrom) {
+          // Use same query scope
+        }
+
+        // We'll fetch activities for the specific issues using their IDs
+        // Process in batches to avoid URL length limits
+        const batchSize = 50
+        for (let i = 0; i < allIssues.length; i += batchSize) {
+          const batch = allIssues.slice(i, i + batchSize)
+          const issueIdList = batch.map((iss: any) => iss.idReadable).join(', ')
+          const actQuery = `issue id: ${issueIdList}`
+          
+          let actSkip = 0
+          let actHasMore = true
+
+          while (actHasMore) {
+            const actUrl = `${YOUTRACK_URL}/api/activities?query=${encodeURIComponent(actQuery)}&fields=${encodeURIComponent(activityFields)}&categories=CustomFieldCategory&$top=500&$skip=${actSkip}`
+
+            const actResponse = await fetch(actUrl, {
+              headers: {
+                'Authorization': `Bearer ${YOUTRACK_TOKEN}`,
+                'Accept': 'application/json',
+              },
+            })
+
+            if (!actResponse.ok) {
+              console.error(`Activities API error: ${actResponse.status}`)
+              actHasMore = false
+              break
+            }
+
+            const actContentType = actResponse.headers.get('content-type') || ''
+            if (!actContentType.includes('application/json')) {
+              actHasMore = false
+              break
+            }
+
+            const activities = await actResponse.json()
+
+            for (const act of activities) {
+              // Look for State field changes where added value indicates "In Progress" or similar
+              if (act.field?.name === 'State' && act.added && act.target?.id) {
+                const addedNames = Array.isArray(act.added) ? act.added : [act.added]
+                for (const added of addedNames) {
+                  const name = (added.name || '').toLowerCase()
+                  if (name.includes('progress') || name.includes('andamento') || name.includes('em desenvolvimento') || name.includes('in progress') || name.includes('doing')) {
+                    const issueId = act.target.id
+                    const ts = new Date(act.timestamp).toISOString()
+                    // Keep the earliest "started" timestamp
+                    if (!startedAtMap.has(issueId) || ts < startedAtMap.get(issueId)!) {
+                      startedAtMap.set(issueId, ts)
+                    }
+                  }
+                }
+              }
+            }
+
+            if (activities.length < 500) {
+              actHasMore = false
+            } else {
+              actSkip += 500
+            }
+          }
+        }
+      } catch (actError) {
+        console.error('Error fetching activities for cycle time:', actError)
+        // Non-fatal: cycle time will just be null
+      }
+    }
+
     function getField(issue: any, name: string): string | null {
       const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
       if (!cf || !cf.value) return null
@@ -110,6 +189,7 @@ Deno.serve(async (req) => {
         status: getField(issue, 'State') || 'Open',
         createdAt: new Date(issue.created).toISOString(),
         resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
+        startedAt: startedAtMap.get(issue.id) || null,
       }
     })
 

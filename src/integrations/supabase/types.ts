@@ -27,6 +27,7 @@ export type Database = {
           resolved_at: string | null
           spent_minutes: number | null
           squad: string | null
+          started_at: string | null
           status: string | null
           task_code: string
           title: string | null
@@ -43,6 +44,7 @@ export type Database = {
           resolved_at?: string | null
           spent_minutes?: number | null
           squad?: string | null
+          started_at?: string | null
           status?: string | null
           task_code: string
           title?: string | null
@@ -59,6 +61,7 @@ export type Database = {
           resolved_at?: string | null
           spent_minutes?: number | null
           squad?: string | null
+          started_at?: string | null
           status?: string | null
           task_code?: string
           title?: string | null
