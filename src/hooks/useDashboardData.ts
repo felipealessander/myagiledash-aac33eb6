@@ -19,9 +19,11 @@ interface DBTask {
   estimated_minutes: number | null;
   spent_minutes: number | null;
   squad: string | null;
+  assignee: string | null;
 }
 
-const SQUAD_MEMBERS: Record<string, string[]> = {
+// Fallback hardcoded members for static data only
+const SQUAD_MEMBERS_STATIC: Record<string, string[]> = {
   "NaN": ["Felipe Souza", "Ana Clara", "Lucas Martins", "Juliana Costa", "Pedro Henrique", "Mariana Lima"],
   "Golden Gate": ["Rafael Oliveira", "Camila Santos", "Bruno Almeida", "Fernanda Rocha", "Thiago Pereira"],
   "Code418": ["Diego Silva", "Isabela Ferreira", "Gustavo Ribeiro", "Larissa Mendes", "Vinícius Cardoso"],
@@ -62,15 +64,17 @@ function buildDashboardData(tasks: DBTask[]) {
       ...data,
     }));
 
-    // Count unique task codes as proxy for team size
-    const uniqueTasks = new Set(tTasks.map(t => t.task_code));
-
-    const memberNames = SQUAD_MEMBERS[name] || [];
+    // Extract unique assignees from the tasks for this squad
+    const assigneeSet = new Set<string>();
+    for (const t of tTasks) {
+      if (t.assignee) assigneeSet.add(t.assignee);
+    }
+    const memberNames = Array.from(assigneeSet).sort();
 
     return {
       name,
       color: getTeamColor(index),
-      members: memberNames.length || Math.max(1, Math.ceil(uniqueTasks.size / 10)),
+      members: memberNames.length || 1,
       memberNames,
       categories,
     };
@@ -195,7 +199,7 @@ export function useDashboardData() {
     setLoading(true);
     supabase
       .from("report_tasks")
-      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad")
+      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee")
       .eq("report_id", monthOption.id)
       .then(({ data, error }) => {
         setLoading(false);

@@ -96,6 +96,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
           category: t.category,
           billing_status: t.billingStatus,
           squad: t.squad,
+          assignee: t.assignee,
           estimated_minutes: t.estimatedMinutes,
           spent_minutes: t.spentMinutes,
         }));
