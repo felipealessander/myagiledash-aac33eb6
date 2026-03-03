@@ -81,15 +81,34 @@ Deno.serve(async (req) => {
     const issueIds = url.searchParams.get('issueIds')
 
     // MODE: activities - fetch started_at for specific issue IDs
-    if (mode === 'activities' && issueIds) {
-      const ids = issueIds.split(',')
+    if (mode === 'activities') {
+      let ids: string[] = []
+
+      if (req.method === 'POST') {
+        const body = await req.json().catch(() => ({})) as { issueIds?: string[] | string }
+        if (Array.isArray(body.issueIds)) {
+          ids = body.issueIds.filter(Boolean)
+        } else if (typeof body.issueIds === 'string') {
+          ids = body.issueIds.split(',').map((id) => id.trim()).filter(Boolean)
+        }
+      } else if (issueIds) {
+        ids = issueIds.split(',').map((id) => id.trim()).filter(Boolean)
+      }
+
+      if (ids.length === 0) {
+        return new Response(
+          JSON.stringify({ startedAt: {} }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       const startedAtMap: Record<string, string> = {}
 
       try {
         const actFields = 'target(id),timestamp,field(name),added(name)'
         const idQueries = ids.map(id => `issue id: ${id}`).join(' or ')
         const actUrl = `${base}/api/activities?query=${encodeURIComponent(`(${idQueries})`)}&fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory`
-        const activities = await fetchAllPages(actUrl, YOUTRACK_TOKEN, 500)
+        const activities = await fetchAllPages(actUrl, YOUTRACK_TOKEN, 200)
 
         const idSet = new Set(ids)
         for (const act of activities) {

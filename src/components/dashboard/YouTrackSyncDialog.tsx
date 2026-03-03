@@ -88,7 +88,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       setPhaseLabel(`${tasks.length} tarefas encontradas. Buscando dados de cycle time...`);
 
       // Step 2: Fetch activities in batches of 50 issue IDs
-      const activityBatchSize = 50;
+      const activityBatchSize = 20;
       const startedAtMap: Record<string, string> = {};
       const issueIdsWithYtId = tasks.filter((t: any) => t.id);
       const totalActBatches = Math.ceil(issueIdsWithYtId.length / activityBatchSize);
@@ -101,8 +101,13 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
 
         const batchIds = issueIdsWithYtId.slice(i, i + activityBatchSize).map((t: any) => t.id);
         try {
-          const actUrl = buildUrl({ mode: "activities", issueIds: batchIds.join(",") });
-          const actRes = await fetch(actUrl);
+          const actUrl = buildUrl({ mode: "activities" });
+          const actRes = await fetch(actUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ issueIds: batchIds }),
+          });
+
           if (actRes.ok) {
             const { startedAt } = await actRes.json();
             if (startedAt) Object.assign(startedAtMap, startedAt);
