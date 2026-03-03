@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
       query += ` created: ${dateFrom} .. ${dateTo || 'Today'}`
     }
 
-    const fields = 'id,idReadable,summary,created,resolved,customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation))'
+    const fields = 'id,idReadable,summary,created,resolved,customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation)),timeTracking(estimation(minutes),spentTime(minutes))'
 
     const allIssues: any[] = []
     let skip = 0
@@ -94,18 +94,23 @@ Deno.serve(async (req) => {
       return cf.value.minutes || 0
     }
 
-    const tasks = allIssues.map((issue) => ({
-      taskCode: issue.idReadable,
-      title: issue.summary,
-      category: getField(issue, 'Type') || 'Tarefa',
-      billingStatus: getField(issue, 'Faturável') || 'Nenhum Faturável',
-      squad: getField(issue, 'Squad') || 'Sem Squad',
-      estimatedMinutes: getMinutes(issue, 'Estimativa'),
-      spentMinutes: getMinutes(issue, 'Tempo Gasto'),
-      status: getField(issue, 'State') || 'Open',
-      createdAt: new Date(issue.created).toISOString(),
-      resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
-    }))
+    const tasks = allIssues.map((issue) => {
+      const estimationFromField = getMinutes(issue, 'Estimativa')
+      const spentFromField = getMinutes(issue, 'Tempo gasto')
+
+      return {
+        taskCode: issue.idReadable,
+        title: issue.summary,
+        category: getField(issue, 'Type') || 'Tarefa',
+        billingStatus: getField(issue, 'Faturável') || 'Nenhum Faturável',
+        squad: getField(issue, 'Squad') || 'Sem Squad',
+        estimatedMinutes: estimationFromField,
+        spentMinutes: spentFromField,
+        status: getField(issue, 'State') || 'Open',
+        createdAt: new Date(issue.created).toISOString(),
+        resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
+      }
+    })
 
     return new Response(
       JSON.stringify({ tasks, total: tasks.length }),
