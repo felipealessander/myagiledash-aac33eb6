@@ -145,8 +145,8 @@ function buildDashboardData(tasks: DBTask[]) {
   const billingTotalEstimated = billingData.reduce((s, b) => s + b.estimatedHours, 0);
   const billingTotalTasks = billingData.reduce((s, b) => s + b.taskCount, 0);
 
-  // Agile metrics - Lead Time (use same population as cycle time: only tasks with started_at)
-  const resolvedTasks = tasks.filter(t => t.created_at_yt && t.resolved_at && t.started_at);
+  // Agile metrics - Lead Time: created_at_yt -> resolved_at (todas as tarefas resolvidas)
+  const resolvedTasks = tasks.filter(t => t.created_at_yt && t.resolved_at);
   const leadTimes = resolvedTasks.map(t => {
     const created = new Date(t.created_at_yt!).getTime();
     const resolved = new Date(t.resolved_at!).getTime();
