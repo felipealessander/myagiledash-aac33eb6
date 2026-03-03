@@ -65,7 +65,10 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url)
-    const mode = url.searchParams.get('mode')
+    const requestBody = req.method === 'POST'
+      ? await req.json().catch(() => ({})) as { mode?: string; issueIds?: string[] | string }
+      : {}
+    const mode = url.searchParams.get('mode') || requestBody.mode || null
 
     // Health check
     if (!mode && !url.searchParams.get('dateFrom')) {
