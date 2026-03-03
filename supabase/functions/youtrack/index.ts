@@ -132,18 +132,22 @@ Deno.serve(async (req) => {
         }
 
         for (const issueId of ids) {
-          const actFields = 'target(id),timestamp,field(name),added(name),removed(name)'
-          const actUrl = `${base}/api/activities?query=${encodeURIComponent(`issue id: ${issueId}`)}&fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory&$top=120`
+          const actFields = 'target(id),timestamp,field(name),added(name,presentation,text),removed(name,presentation,text)'
+          const actUrl = `${base}/api/activities?query=${encodeURIComponent(`issue id: ${issueId}`)}&fields=${encodeURIComponent(actFields)}&$top=120`
 
           const activities = await fetchJson(actUrl, YOUTRACK_TOKEN, 10000).catch(() => []) as any[]
           if (!Array.isArray(activities) || activities.length === 0) continue
 
           const ordered = [...activities].sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
           for (const act of ordered) {
-            if (act.field?.name !== 'State' || !act.target?.id || !act.added) continue
+            if (!act.target?.id || !act.added) continue
 
             const addedValues = Array.isArray(act.added) ? act.added : [act.added]
-            const enteredInProgress = addedValues.some((added: any) => isStartState(added?.name || ''))
+            const enteredInProgress = addedValues.some((added: any) => {
+              const raw = added?.name || added?.presentation || added?.text || ''
+              return isStartState(raw)
+            })
+
             if (enteredInProgress) {
               startedAtMap[act.target.id] = new Date(act.timestamp).toISOString()
               break
