@@ -99,11 +99,10 @@ Deno.serve(async (req) => {
       let ids: string[] = []
 
       if (req.method === 'POST') {
-        const body = await req.json().catch(() => ({})) as { issueIds?: string[] | string }
-        if (Array.isArray(body.issueIds)) {
-          ids = body.issueIds.filter(Boolean)
-        } else if (typeof body.issueIds === 'string') {
-          ids = body.issueIds.split(',').map((id) => id.trim()).filter(Boolean)
+        if (Array.isArray(requestBody.issueIds)) {
+          ids = requestBody.issueIds.filter(Boolean)
+        } else if (typeof requestBody.issueIds === 'string') {
+          ids = requestBody.issueIds.split(',').map((id) => id.trim()).filter(Boolean)
         }
       } else if (issueIds) {
         ids = issueIds.split(',').map((id) => id.trim()).filter(Boolean)
