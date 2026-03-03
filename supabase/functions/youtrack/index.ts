@@ -25,7 +25,8 @@ async function fetchAllPages(baseUrl: string, token: string, top = 500) {
   const all: any[] = []
   let skip = 0
   while (true) {
-    const url = `${baseUrl}&$top=${top}&$skip=${skip}`
+    const sep = baseUrl.includes('?') ? '&' : '?'
+    const url = `${baseUrl}${sep}$top=${top}&$skip=${skip}`
     const page = await fetchJson(url, token)
     all.push(...page)
     if (page.length < top) break
@@ -54,54 +55,61 @@ Deno.serve(async (req) => {
     const project = url.searchParams.get('project') || 'ATT'
     const dateFrom = url.searchParams.get('dateFrom')
     const dateTo = url.searchParams.get('dateTo')
+    const mode = url.searchParams.get('mode') || 'issues' // 'issues' or 'activities'
+    const issueIds = url.searchParams.get('issueIds') // comma-separated, for activities mode
 
-    let query = `project: ${project}`
-    if (dateFrom) {
-      query += ` created: ${dateFrom} .. ${dateTo || 'Today'}`
-    }
+    const base = YOUTRACK_URL.replace(/\/+$/, '')
 
-    // Step 1: Fetch issues
-    const fields = 'id,idReadable,summary,created,resolved,customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation)),reporter(login,fullName),assignee(login,fullName)'
-    const issuesUrl = `${YOUTRACK_URL}/api/issues?query=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}`
-    const allIssues = await fetchAllPages(issuesUrl, YOUTRACK_TOKEN)
+    // MODE: activities - fetch started_at for a batch of issue IDs
+    if (mode === 'activities' && issueIds) {
+      const ids = issueIds.split(',')
+      const startedAtMap: Record<string, string> = {}
 
-    // Step 2: Fetch state-change activities
-    const startedAtMap = new Map<string, string>()
-
-    if (allIssues.length > 0) {
       try {
         const actFields = 'target(id),timestamp,field(name),added(name)'
-        let actQuery = `project: ${project}`
-        if (dateFrom) {
-          actQuery += ` updated: ${dateFrom} .. ${dateTo || 'Today'}`
-        }
-        const actUrl = `${YOUTRACK_URL}/api/activities?query=${encodeURIComponent(actQuery)}&fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory`
-        const activities = await fetchAllPages(actUrl, YOUTRACK_TOKEN)
+        // Query activities for specific issues
+        const idQueries = ids.map(id => `issue id: ${id}`).join(' or ')
+        const actQuery = `(${idQueries})`
+        const actUrl = `${base}/api/activities?query=${encodeURIComponent(actQuery)}&fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory`
+        const activities = await fetchAllPages(actUrl, YOUTRACK_TOKEN, 500)
 
-        const issueIdSet = new Set(allIssues.map((i: any) => i.id))
-
+        const idSet = new Set(ids)
         for (const act of activities) {
           if (act.field?.name !== 'State' || !act.added || !act.target?.id) continue
-          if (!issueIdSet.has(act.target.id)) continue
+          if (!idSet.has(act.target.id)) continue
 
           const addedNames = Array.isArray(act.added) ? act.added : [act.added]
           for (const added of addedNames) {
             const name = (added.name || '').toLowerCase()
             if (name.includes('progress') || name.includes('andamento') || name.includes('desenvolvimento') || name.includes('doing')) {
               const ts = new Date(act.timestamp).toISOString()
-              const prev = startedAtMap.get(act.target.id)
+              const prev = startedAtMap[act.target.id]
               if (!prev || ts < prev) {
-                startedAtMap.set(act.target.id, ts)
+                startedAtMap[act.target.id] = ts
               }
             }
           }
         }
       } catch (e) {
-        console.error('Activities fetch error (non-fatal):', e)
+        console.error('Activities fetch error:', e)
       }
+
+      return new Response(
+        JSON.stringify({ startedAt: startedAtMap }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // Step 3: Map to response
+    // MODE: issues (default) - fetch issues only, no activities
+    let query = `project: ${project}`
+    if (dateFrom) {
+      query += ` created: ${dateFrom} .. ${dateTo || 'Today'}`
+    }
+
+    const fields = 'id,idReadable,summary,created,resolved,customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation)),reporter(login,fullName),assignee(login,fullName)'
+    const issuesUrl = `${base}/api/issues?query=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}`
+    const allIssues = await fetchAllPages(issuesUrl, YOUTRACK_TOKEN)
+
     function getField(issue: any, name: string): string | null {
       const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
       if (!cf || !cf.value) return null
@@ -115,6 +123,7 @@ Deno.serve(async (req) => {
     }
 
     const tasks = allIssues.map((issue: any) => ({
+      id: issue.id,
       taskCode: issue.idReadable,
       title: issue.summary,
       category: getField(issue, 'Type') || 'Tarefa',
@@ -126,7 +135,6 @@ Deno.serve(async (req) => {
       status: getField(issue, 'State') || 'Open',
       createdAt: new Date(issue.created).toISOString(),
       resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
-      startedAt: startedAtMap.get(issue.id) || null,
     }))
 
     return new Response(
