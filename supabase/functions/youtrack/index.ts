@@ -53,6 +53,17 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const url = new URL(req.url)
+    const mode = url.searchParams.get('mode')
+
+    // Health check
+    if (!mode && !url.searchParams.get('dateFrom')) {
+      return new Response(
+        JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const YOUTRACK_URL = Deno.env.get('YOUTRACK_URL')
     const YOUTRACK_TOKEN = Deno.env.get('YOUTRACK_TOKEN')
 
@@ -64,11 +75,9 @@ Deno.serve(async (req) => {
     }
 
     const base = YOUTRACK_URL.replace(/\/+$/, '')
-    const url = new URL(req.url)
     const project = url.searchParams.get('project') || 'ATT'
     const dateFrom = url.searchParams.get('dateFrom')
     const dateTo = url.searchParams.get('dateTo')
-    const mode = url.searchParams.get('mode') || 'issues'
     const issueIds = url.searchParams.get('issueIds')
 
     // MODE: activities - fetch started_at for specific issue IDs
