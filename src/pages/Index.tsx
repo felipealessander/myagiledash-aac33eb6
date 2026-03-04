@@ -35,6 +35,14 @@ const Index = () => {
 
   const overrun = totalEstimated > 0 ? (((totalSpent - totalEstimated) / totalEstimated) * 100).toFixed(0) : "0";
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -52,20 +60,11 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <LastSyncBadge />
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
-            {user && <YouTrackSyncDialog onImported={refetchMonths} />}
-            {user ? (
-              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
-                <LogOut className="h-3.5 w-3.5" />
-                Sair
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
-                <Link to="/auth">
-                  <LogIn className="h-3.5 w-3.5" />
-                  Entrar
-                </Link>
-              </Button>
-            )}
+            <YouTrackSyncDialog onImported={refetchMonths} />
+            <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
+              <LogOut className="h-3.5 w-3.5" />
+              Sair
+            </Button>
             <div className="hidden lg:flex items-center gap-2">
               {allTeams.map((t, i) => (
                 <button
