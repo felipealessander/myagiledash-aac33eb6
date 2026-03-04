@@ -1,4 +1,5 @@
-import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogIn, LogOut, Gauge } from "lucide-react";
+import { useEffect } from "react";
+import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogOut, Gauge } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { TeamCard } from "@/components/dashboard/TeamCard";
 import { CategoryChart } from "@/components/dashboard/CategoryChart";
@@ -17,15 +18,30 @@ import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { LastSyncBadge } from "@/components/dashboard/LastSyncBadge";
 
 const Index = () => {
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [authLoading, user, navigate]);
+
   const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
   const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, cycleTimeBySquad, throughputByWeek, wipBySquad } = dashboardData;
 
   const overrun = totalEstimated > 0 ? (((totalSpent - totalEstimated) / totalEstimated) * 100).toFixed(0) : "0";
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,20 +60,11 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <LastSyncBadge />
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
-            {user && <YouTrackSyncDialog onImported={refetchMonths} />}
-            {user ? (
-              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
-                <LogOut className="h-3.5 w-3.5" />
-                Sair
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
-                <Link to="/auth">
-                  <LogIn className="h-3.5 w-3.5" />
-                  Entrar
-                </Link>
-              </Button>
-            )}
+            <YouTrackSyncDialog onImported={refetchMonths} />
+            <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
+              <LogOut className="h-3.5 w-3.5" />
+              Sair
+            </Button>
             <div className="hidden lg:flex items-center gap-2">
               {allTeams.map((t, i) => (
                 <button
