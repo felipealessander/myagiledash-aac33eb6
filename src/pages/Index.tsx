@@ -21,7 +21,8 @@ import { Link } from "react-router-dom";
 import { LastSyncBadge } from "@/components/dashboard/LastSyncBadge";
 
 const Index = () => {
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
   const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
   const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, cycleTimeBySquad, throughputByWeek, wipBySquad } = dashboardData;
 
