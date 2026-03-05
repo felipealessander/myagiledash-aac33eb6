@@ -190,6 +190,36 @@ const Index = () => {
                 <ThroughputChart data={throughputByWeek || []} />
                 <WIPChart data={wipBySquad || []} />
               </div>
+              {/* Rework Section */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <KpiCard
+                  title="Tarefas com Retrabalho"
+                  value={reworkCount}
+                  subtitle={`${reworkRate}% do total`}
+                  icon={RotateCcw}
+                  variant="destructive"
+                  delay={0}
+                />
+                <KpiCard
+                  title="Total de Correções"
+                  value={reworkTotalCorrections}
+                  subtitle="Soma de correções aplicadas"
+                  icon={RotateCcw}
+                  variant="warning"
+                  delay={50}
+                />
+                <KpiCard
+                  title="Correções / Tarefa"
+                  value={reworkCount > 0 ? (reworkTotalCorrections / reworkCount).toFixed(1) : "0"}
+                  subtitle="Média por tarefa retrabalhada"
+                  icon={RotateCcw}
+                  variant="info"
+                  delay={100}
+                />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <ReworkChart data={reworkBySquad || []} />
+              </div>
             </>
           )}
 
