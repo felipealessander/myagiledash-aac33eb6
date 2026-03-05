@@ -139,13 +139,13 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
       for (let i = 0; i < tasks.length; i += batchSize) {
         const batch = tasks.slice(i, i + batchSize).map(t => ({
           report_id: report.id,
-          task_code: t.taskCode,
-          title: t.title,
-          category: t.category,
-          billing_status: t.billingStatus,
-          squad: t.squad,
-          estimated_minutes: t.estimatedMinutes,
-          spent_minutes: t.spentMinutes,
+          task_code: sanitize(t.taskCode, MAX_TASK_CODE_LENGTH),
+          title: sanitize(t.title, MAX_TEXT_LENGTH),
+          category: sanitize(t.category, 100),
+          billing_status: sanitize(t.billingStatus, 100),
+          squad: sanitize(t.squad, 100),
+          estimated_minutes: clampNum(t.estimatedMinutes),
+          spent_minutes: clampNum(t.spentMinutes),
         }));
 
         const { error } = await supabase.from("report_tasks").insert(batch);
