@@ -289,7 +289,7 @@ export function useDashboardData() {
         setLoading(false);
         if (error) {
           console.error("Error loading tasks:", error);
-          toast({ title: "Erro ao carregar dados", description: error.message, variant: "destructive" });
+          toast({ title: "Erro ao carregar dados", description: getSafeErrorMessage(error), variant: "destructive" });
           return;
         }
         setDbTasks(data || []);
