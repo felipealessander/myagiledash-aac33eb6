@@ -26,6 +26,7 @@ interface DBTask {
   resolved_at: string | null;
   started_at: string | null;
   tags: string[] | null;
+  corrections_count: number | null;
 }
 
 // Fallback hardcoded members for static data only
@@ -223,6 +224,23 @@ function buildDashboardData(tasks: DBTask[]) {
     return { squad: name, wip: openTasks.length };
   });
 
+  // Rework metrics (corrections_count > 0)
+  const reworkTasks = tasks.filter(t => (t.corrections_count || 0) > 0);
+  const reworkCount = reworkTasks.length;
+  const reworkTotalCorrections = reworkTasks.reduce((s, t) => s + (t.corrections_count || 0), 0);
+  const reworkRate = totalTasks > 0 ? Math.round((reworkCount / totalTasks) * 100 * 10) / 10 : 0;
+
+  const reworkBySquad: { squad: string; count: number; corrections: number; rate: number }[] = squadNames.map(name => {
+    const squadTasks = squadTasksMap.get(name) || [];
+    const squadRework = squadTasks.filter(t => (t.corrections_count || 0) > 0);
+    return {
+      squad: name,
+      count: squadRework.length,
+      corrections: squadRework.reduce((s, t) => s + (t.corrections_count || 0), 0),
+      rate: squadTasks.length > 0 ? Math.round((squadRework.length / squadTasks.length) * 100 * 10) / 10 : 0,
+    };
+  });
+
   return {
     teams,
     categoryTotals,
@@ -237,6 +255,10 @@ function buildDashboardData(tasks: DBTask[]) {
     cycleTimeBySquad,
     throughputByWeek,
     wipBySquad,
+    reworkCount,
+    reworkTotalCorrections,
+    reworkRate,
+    reworkBySquad,
   };
 }
 
@@ -287,7 +309,7 @@ export function useDashboardData() {
       const reportIds = yearMonths.map(m => m.id);
       supabase
         .from("report_tasks")
-        .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags")
+        .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count")
         .in("report_id", reportIds)
         .then(({ data, error }) => {
           setLoading(false);
@@ -310,7 +332,7 @@ export function useDashboardData() {
     setLoading(true);
     supabase
       .from("report_tasks")
-      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags")
+      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count")
       .eq("report_id", monthOption.id)
       .then(({ data, error }) => {
         setLoading(false);
@@ -325,7 +347,6 @@ export function useDashboardData() {
 
   const dashboardData: DashboardData = useMemo(() => {
     if (!dbTasks || dbTasks.length === 0) {
-      // Return empty dashboard when no data
       return {
         teams: [],
         categoryTotals: [],
@@ -340,6 +361,10 @@ export function useDashboardData() {
         cycleTimeBySquad: [],
         throughputByWeek: [],
         wipBySquad: [],
+        reworkCount: 0,
+        reworkTotalCorrections: 0,
+        reworkRate: 0,
+        reworkBySquad: [],
       };
     }
 

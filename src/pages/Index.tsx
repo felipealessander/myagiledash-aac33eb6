@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogOut, Gauge } from "lucide-react";
+import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogOut, Gauge, RotateCcw } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { TeamCard } from "@/components/dashboard/TeamCard";
 import { CategoryChart } from "@/components/dashboard/CategoryChart";
@@ -13,6 +13,7 @@ import { LeadTimeChart } from "@/components/dashboard/LeadTimeChart";
 import { ThroughputChart } from "@/components/dashboard/ThroughputChart";
 import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
+import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -31,7 +32,7 @@ const Index = () => {
   }, [authLoading, user, navigate]);
 
   const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
-  const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, cycleTimeBySquad, throughputByWeek, wipBySquad } = dashboardData;
+  const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, cycleTimeBySquad, throughputByWeek, wipBySquad, reworkCount, reworkTotalCorrections, reworkRate, reworkBySquad } = dashboardData;
 
   const overrun = totalEstimated > 0 ? (((totalSpent - totalEstimated) / totalEstimated) * 100).toFixed(0) : "0";
 
@@ -188,6 +189,36 @@ const Index = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ThroughputChart data={throughputByWeek || []} />
                 <WIPChart data={wipBySquad || []} />
+              </div>
+              {/* Rework Section */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <KpiCard
+                  title="Tarefas com Retrabalho"
+                  value={reworkCount}
+                  subtitle={`${reworkRate}% do total`}
+                  icon={RotateCcw}
+                  variant="destructive"
+                  delay={0}
+                />
+                <KpiCard
+                  title="Total de Correções"
+                  value={reworkTotalCorrections}
+                  subtitle="Soma de correções aplicadas"
+                  icon={RotateCcw}
+                  variant="warning"
+                  delay={50}
+                />
+                <KpiCard
+                  title="Correções / Tarefa"
+                  value={reworkCount > 0 ? (reworkTotalCorrections / reworkCount).toFixed(1) : "0"}
+                  subtitle="Média por tarefa retrabalhada"
+                  icon={RotateCcw}
+                  variant="info"
+                  delay={100}
+                />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <ReworkChart data={reworkBySquad || []} />
               </div>
             </>
           )}

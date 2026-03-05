@@ -19,6 +19,7 @@ export type Database = {
           assignee: string | null
           billing_status: string | null
           category: string | null
+          corrections_count: number | null
           created_at: string
           created_at_yt: string | null
           estimated_minutes: number | null
@@ -37,6 +38,7 @@ export type Database = {
           assignee?: string | null
           billing_status?: string | null
           category?: string | null
+          corrections_count?: number | null
           created_at?: string
           created_at_yt?: string | null
           estimated_minutes?: number | null
@@ -55,6 +57,7 @@ export type Database = {
           assignee?: string | null
           billing_status?: string | null
           category?: string | null
+          corrections_count?: number | null
           created_at?: string
           created_at_yt?: string | null
           estimated_minutes?: number | null

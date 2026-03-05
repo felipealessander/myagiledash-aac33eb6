@@ -58,6 +58,14 @@ function getMinutes(issue: any, name: string): number {
   return cf.value.minutes || 0
 }
 
+function getIntField(issue: any, name: string): number {
+  const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
+  if (!cf || cf.value == null) return 0
+  if (typeof cf.value === 'number') return cf.value
+  const parsed = parseInt(cf.value?.presentation || cf.value?.name || cf.value, 10)
+  return isNaN(parsed) ? 0 : parsed
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -195,6 +203,7 @@ Deno.serve(async (req) => {
       createdAt: new Date(issue.created).toISOString(),
       resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
       tags: (issue.tags || []).map((tag: any) => tag.name).filter(Boolean),
+      correctionsCount: getIntField(issue, 'Quantidade Correções'),
     }))
 
     return new Response(
