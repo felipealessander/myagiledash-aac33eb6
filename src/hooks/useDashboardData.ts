@@ -26,6 +26,7 @@ interface DBTask {
   resolved_at: string | null;
   started_at: string | null;
   tags: string[] | null;
+  corrections_count: number | null;
 }
 
 // Fallback hardcoded members for static data only
