@@ -224,6 +224,23 @@ function buildDashboardData(tasks: DBTask[]) {
     return { squad: name, wip: openTasks.length };
   });
 
+  // Rework metrics (corrections_count > 0)
+  const reworkTasks = tasks.filter(t => (t.corrections_count || 0) > 0);
+  const reworkCount = reworkTasks.length;
+  const reworkTotalCorrections = reworkTasks.reduce((s, t) => s + (t.corrections_count || 0), 0);
+  const reworkRate = totalTasks > 0 ? Math.round((reworkCount / totalTasks) * 100 * 10) / 10 : 0;
+
+  const reworkBySquad: { squad: string; count: number; corrections: number; rate: number }[] = squadNames.map(name => {
+    const squadTasks = squadTasksMap.get(name) || [];
+    const squadRework = squadTasks.filter(t => (t.corrections_count || 0) > 0);
+    return {
+      squad: name,
+      count: squadRework.length,
+      corrections: squadRework.reduce((s, t) => s + (t.corrections_count || 0), 0),
+      rate: squadTasks.length > 0 ? Math.round((squadRework.length / squadTasks.length) * 100 * 10) / 10 : 0,
+    };
+  });
+
   return {
     teams,
     categoryTotals,
@@ -238,6 +255,10 @@ function buildDashboardData(tasks: DBTask[]) {
     cycleTimeBySquad,
     throughputByWeek,
     wipBySquad,
+    reworkCount,
+    reworkTotalCorrections,
+    reworkRate,
+    reworkBySquad,
   };
 }
 
