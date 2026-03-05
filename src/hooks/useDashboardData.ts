@@ -24,6 +24,7 @@ interface DBTask {
   created_at_yt: string | null;
   resolved_at: string | null;
   started_at: string | null;
+  tags: string[] | null;
 }
 
 // Fallback hardcoded members for static data only
