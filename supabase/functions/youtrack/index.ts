@@ -203,6 +203,7 @@ Deno.serve(async (req) => {
       createdAt: new Date(issue.created).toISOString(),
       resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
       tags: (issue.tags || []).map((tag: any) => tag.name).filter(Boolean),
+      correctionsCount: getIntField(issue, 'Quantidade Correções'),
     }))
 
     return new Response(
