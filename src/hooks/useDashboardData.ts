@@ -350,9 +350,7 @@ export function useDashboardData() {
 
   const filteredDashboardData: DashboardData = useMemo(() => {
     if (!selectedSquad) return dashboardData;
-    // Re-build from filtered tasks
-    if (selectedMonth === "static" || !dbTasks) {
-      // Filter static teams
+    if (!dbTasks || dbTasks.length === 0) {
       const filtered = {
         ...dashboardData,
         teams: dashboardData.teams.filter(t => t.name === selectedSquad),
