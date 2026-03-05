@@ -194,6 +194,7 @@ Deno.serve(async (req) => {
       status: getField(issue, 'State') || 'Open',
       createdAt: new Date(issue.created).toISOString(),
       resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
+      tags: (issue.tags || []).map((tag: any) => tag.name).filter(Boolean),
     }))
 
     return new Response(
