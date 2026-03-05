@@ -9,6 +9,7 @@ const categoryColors: Record<string, string> = {
   "Melhoria": "bg-team-nan/15 text-team-nan",
   "Tarefa": "bg-team-code418/15 text-team-code418",
   "Épico": "bg-team-tesseract/15 text-team-tesseract",
+  "DeadLetter": "bg-destructive/20 text-destructive",
 };
 
 interface TaskTableProps {
