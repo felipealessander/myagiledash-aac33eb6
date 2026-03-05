@@ -24,6 +24,7 @@ interface DBTask {
   created_at_yt: string | null;
   resolved_at: string | null;
   started_at: string | null;
+  tags: string[] | null;
 }
 
 // Fallback hardcoded members for static data only
@@ -55,7 +56,9 @@ function buildDashboardData(tasks: DBTask[]) {
     const categoryMap = new Map<string, { spentHours: number; estimatedHours: number; taskCount: number }>();
 
     for (const t of tTasks) {
-      const cat = t.category || "Tarefa";
+      // If task has DeadLetter tag, override category to "DeadLetter"
+      const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase() === 'deadletter');
+      const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
       const entry = categoryMap.get(cat) || { spentHours: 0, estimatedHours: 0, taskCount: 0 };
       entry.spentHours += (t.spent_minutes || 0) / 60;
       entry.estimatedHours += (t.estimated_minutes || 0) / 60;
@@ -87,7 +90,8 @@ function buildDashboardData(tasks: DBTask[]) {
   // Category totals
   const catMap = new Map<string, { hours: number; count: number }>();
   for (const t of tasks) {
-    const cat = t.category || "Tarefa";
+    const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase() === 'deadletter');
+    const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
     const entry = catMap.get(cat) || { hours: 0, count: 0 };
     entry.hours += (t.spent_minutes || 0) / 60;
     entry.count += 1;
@@ -278,7 +282,7 @@ export function useDashboardData() {
     setLoading(true);
     supabase
       .from("report_tasks")
-      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at")
+      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags")
       .eq("report_id", monthOption.id)
       .then(({ data, error }) => {
         setLoading(false);

@@ -29,6 +29,7 @@ export type Database = {
           squad: string | null
           started_at: string | null
           status: string | null
+          tags: string[] | null
           task_code: string
           title: string | null
         }
@@ -46,6 +47,7 @@ export type Database = {
           squad?: string | null
           started_at?: string | null
           status?: string | null
+          tags?: string[] | null
           task_code: string
           title?: string | null
         }
@@ -63,6 +65,7 @@ export type Database = {
           squad?: string | null
           started_at?: string | null
           status?: string | null
+          tags?: string[] | null
           task_code?: string
           title?: string | null
         }

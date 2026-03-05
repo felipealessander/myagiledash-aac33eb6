@@ -160,6 +160,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
           created_at_yt: t.createdAt,
           resolved_at: t.resolvedAt,
           started_at: startedAtMap[t.taskCode] || startedAtMap[t.id] || (t.spentMinutes > 0 ? t.createdAt : null),
+          tags: t.tags || [],
         }));
 
         const { error } = await supabase.from("report_tasks").insert(batch);
