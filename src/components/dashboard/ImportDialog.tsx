@@ -7,6 +7,11 @@ import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { mergeReports } from "@/lib/xlsxParser";
 import { useToast } from "@/hooks/use-toast";
+import { getSafeErrorMessage } from "@/lib/safeError";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_TASK_CODE_LENGTH = 50;
+const MAX_TEXT_LENGTH = 500;
 
 const MONTHS = [
   { value: "01", label: "Janeiro" },
