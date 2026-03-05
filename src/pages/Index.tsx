@@ -13,6 +13,7 @@ import { LeadTimeChart } from "@/components/dashboard/LeadTimeChart";
 import { ThroughputChart } from "@/components/dashboard/ThroughputChart";
 import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
+import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
