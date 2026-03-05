@@ -244,7 +244,7 @@ export type DashboardData = ReturnType<typeof buildDashboardData>;
 
 export function useDashboardData() {
   const [months, setMonths] = useState<MonthOption[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState<string>("static");
+  const [selectedMonth, setSelectedMonth] = useState<string>("year-2026");
   const [dbTasks, setDbTasks] = useState<DBTask[] | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -274,13 +274,38 @@ export function useDashboardData() {
   }, [fetchMonths]);
 
   useEffect(() => {
-    if (selectedMonth === "static") {
-      setDbTasks(null);
+    // Year consolidation: load tasks from ALL reports of that year
+    if (selectedMonth.startsWith("year-")) {
+      const year = selectedMonth.replace("year-", "");
+      const yearMonths = months.filter(m => m.value.startsWith(year));
+      if (yearMonths.length === 0) {
+        setDbTasks([]);
+        return;
+      }
+
+      setLoading(true);
+      const reportIds = yearMonths.map(m => m.id);
+      supabase
+        .from("report_tasks")
+        .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags")
+        .in("report_id", reportIds)
+        .then(({ data, error }) => {
+          setLoading(false);
+          if (error) {
+            console.error("Error loading year tasks:", error);
+            toast({ title: "Erro ao carregar dados", description: getSafeErrorMessage(error), variant: "destructive" });
+            return;
+          }
+          setDbTasks(data || []);
+        });
       return;
     }
 
     const monthOption = months.find(m => m.value === selectedMonth);
-    if (!monthOption) return;
+    if (!monthOption) {
+      setDbTasks(null);
+      return;
+    }
 
     setLoading(true);
     supabase
@@ -299,17 +324,18 @@ export function useDashboardData() {
   }, [selectedMonth, months, toast]);
 
   const dashboardData: DashboardData = useMemo(() => {
-    if (selectedMonth === "static" || !dbTasks) {
+    if (!dbTasks || dbTasks.length === 0) {
+      // Return empty dashboard when no data
       return {
-        teams: staticData.teams,
-        categoryTotals: staticData.categoryTotals,
-        billingData: staticData.billingData,
-        totalSpent: staticData.totalSpent,
-        totalEstimated: staticData.totalEstimated,
-        totalTasks: staticData.totalTasks,
-        billingTotalSpent: staticData.billingTotalSpent,
-        billingTotalEstimated: staticData.billingTotalEstimated,
-        billingTotalTasks: staticData.billingTotalTasks,
+        teams: [],
+        categoryTotals: [],
+        billingData: [],
+        totalSpent: 0,
+        totalEstimated: 0,
+        totalTasks: 0,
+        billingTotalSpent: 0,
+        billingTotalEstimated: 0,
+        billingTotalTasks: 0,
         leadTimeBySquad: [],
         cycleTimeBySquad: [],
         throughputByWeek: [],
@@ -318,15 +344,13 @@ export function useDashboardData() {
     }
 
     return buildDashboardData(dbTasks);
-  }, [selectedMonth, dbTasks]);
+  }, [dbTasks]);
 
   const [selectedSquad, setSelectedSquad] = useState<string | null>(null);
 
   const filteredDashboardData: DashboardData = useMemo(() => {
     if (!selectedSquad) return dashboardData;
-    // Re-build from filtered tasks
-    if (selectedMonth === "static" || !dbTasks) {
-      // Filter static teams
+    if (!dbTasks || dbTasks.length === 0) {
       const filtered = {
         ...dashboardData,
         teams: dashboardData.teams.filter(t => t.name === selectedSquad),

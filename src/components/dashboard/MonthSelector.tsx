@@ -9,6 +9,9 @@ interface MonthSelectorProps {
 }
 
 export function MonthSelector({ months, selected, onSelect }: MonthSelectorProps) {
+  // Extract unique years from available months
+  const years = Array.from(new Set(months.map(m => m.value.slice(0, 4)))).sort().reverse();
+
   return (
     <div className="flex items-center gap-2">
       <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -17,7 +20,11 @@ export function MonthSelector({ months, selected, onSelect }: MonthSelectorProps
           <SelectValue placeholder="Selecione o período" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="static">Dados iniciais</SelectItem>
+          {years.map(year => (
+            <SelectItem key={`year-${year}`} value={`year-${year}`}>
+              📊 Ano {year} (Consolidado)
+            </SelectItem>
+          ))}
           {months.map(m => (
             <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
           ))}
