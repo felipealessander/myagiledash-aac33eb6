@@ -166,9 +166,9 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
       setSquadFile(null);
       setMonth("");
       onImported();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Import error:", err);
-      toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
+      toast({ title: "Erro na importação", description: getSafeErrorMessage(err), variant: "destructive" });
     } finally {
       setImporting(false);
     }
