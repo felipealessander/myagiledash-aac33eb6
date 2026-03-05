@@ -91,6 +91,15 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
       return;
     }
 
+    // Validate file sizes
+    const allFiles = [categoryFile, billingFile, squadFile].filter(Boolean) as File[];
+    for (const f of allFiles) {
+      if (f.size > MAX_FILE_SIZE) {
+        toast({ title: `Arquivo "${f.name}" excede o limite de 10MB`, variant: "destructive" });
+        return;
+      }
+    }
+
     setImporting(true);
 
     try {
@@ -108,6 +117,10 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
         setImporting(false);
         return;
       }
+
+      // Validate and sanitize task data
+      const sanitize = (s: string, max: number) => (s || "").slice(0, max).trim();
+      const clampNum = (n: number) => Math.max(0, Math.min(n, 999999));
 
       const monthKey = `${year}-${month}`;
       const monthLabel = `${MONTHS.find(m => m.value === month)?.label} ${year}`;
