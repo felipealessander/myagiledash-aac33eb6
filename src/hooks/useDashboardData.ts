@@ -90,7 +90,8 @@ function buildDashboardData(tasks: DBTask[]) {
   // Category totals
   const catMap = new Map<string, { hours: number; count: number }>();
   for (const t of tasks) {
-    const cat = t.category || "Tarefa";
+    const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase() === 'deadletter');
+    const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
     const entry = catMap.get(cat) || { hours: 0, count: 0 };
     entry.hours += (t.spent_minutes || 0) / 60;
     entry.count += 1;
