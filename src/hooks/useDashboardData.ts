@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getSafeErrorMessage } from "@/lib/safeError";
 import type { TeamData, CategoryName, BillingData, BillingStatus } from "@/data/dashboardData";
 import { getTeamColor } from "@/data/dashboardData";
 import * as staticData from "@/data/dashboardData";
@@ -288,7 +289,7 @@ export function useDashboardData() {
         setLoading(false);
         if (error) {
           console.error("Error loading tasks:", error);
-          toast({ title: "Erro ao carregar dados", description: error.message, variant: "destructive" });
+          toast({ title: "Erro ao carregar dados", description: getSafeErrorMessage(error), variant: "destructive" });
           return;
         }
         setDbTasks(data || []);

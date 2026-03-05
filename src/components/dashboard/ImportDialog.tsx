@@ -7,6 +7,11 @@ import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { mergeReports } from "@/lib/xlsxParser";
 import { useToast } from "@/hooks/use-toast";
+import { getSafeErrorMessage } from "@/lib/safeError";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_TASK_CODE_LENGTH = 50;
+const MAX_TEXT_LENGTH = 500;
 
 const MONTHS = [
   { value: "01", label: "Janeiro" },
@@ -86,6 +91,15 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
       return;
     }
 
+    // Validate file sizes
+    const allFiles = [categoryFile, billingFile, squadFile].filter(Boolean) as File[];
+    for (const f of allFiles) {
+      if (f.size > MAX_FILE_SIZE) {
+        toast({ title: `Arquivo "${f.name}" excede o limite de 10MB`, variant: "destructive" });
+        return;
+      }
+    }
+
     setImporting(true);
 
     try {
@@ -104,6 +118,10 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
         return;
       }
 
+      // Validate and sanitize task data
+      const sanitize = (s: string, max: number) => (s || "").slice(0, max).trim();
+      const clampNum = (n: number) => Math.max(0, Math.min(n, 999999));
+
       const monthKey = `${year}-${month}`;
       const monthLabel = `${MONTHS.find(m => m.value === month)?.label} ${year}`;
 
@@ -121,13 +139,13 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
       for (let i = 0; i < tasks.length; i += batchSize) {
         const batch = tasks.slice(i, i + batchSize).map(t => ({
           report_id: report.id,
-          task_code: t.taskCode,
-          title: t.title,
-          category: t.category,
-          billing_status: t.billingStatus,
-          squad: t.squad,
-          estimated_minutes: t.estimatedMinutes,
-          spent_minutes: t.spentMinutes,
+          task_code: sanitize(t.taskCode, MAX_TASK_CODE_LENGTH),
+          title: sanitize(t.title, MAX_TEXT_LENGTH),
+          category: sanitize(t.category, 100),
+          billing_status: sanitize(t.billingStatus, 100),
+          squad: sanitize(t.squad, 100),
+          estimated_minutes: clampNum(t.estimatedMinutes),
+          spent_minutes: clampNum(t.spentMinutes),
         }));
 
         const { error } = await supabase.from("report_tasks").insert(batch);
@@ -148,9 +166,9 @@ export function ImportDialog({ onImported }: ImportDialogProps) {
       setSquadFile(null);
       setMonth("");
       onImported();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Import error:", err);
-      toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
+      toast({ title: "Erro na importação", description: getSafeErrorMessage(err), variant: "destructive" });
     } finally {
       setImporting(false);
     }
