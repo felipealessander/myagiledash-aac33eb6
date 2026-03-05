@@ -347,7 +347,6 @@ export function useDashboardData() {
 
   const dashboardData: DashboardData = useMemo(() => {
     if (!dbTasks || dbTasks.length === 0) {
-      // Return empty dashboard when no data
       return {
         teams: [],
         categoryTotals: [],
@@ -362,6 +361,10 @@ export function useDashboardData() {
         cycleTimeBySquad: [],
         throughputByWeek: [],
         wipBySquad: [],
+        reworkCount: 0,
+        reworkTotalCorrections: 0,
+        reworkRate: 0,
+        reworkBySquad: [],
       };
     }
 
