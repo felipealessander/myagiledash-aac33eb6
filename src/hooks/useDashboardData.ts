@@ -57,7 +57,7 @@ function buildDashboardData(tasks: DBTask[]) {
 
     for (const t of tTasks) {
       // If task has DeadLetter tag, override category to "DeadLetter"
-      const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase() === 'deadletter');
+      const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter'));
       const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
       const entry = categoryMap.get(cat) || { spentHours: 0, estimatedHours: 0, taskCount: 0 };
       entry.spentHours += (t.spent_minutes || 0) / 60;
