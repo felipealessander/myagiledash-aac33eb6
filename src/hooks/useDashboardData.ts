@@ -72,12 +72,14 @@ function buildDashboardData(tasks: DBTask[]) {
       ...data,
     }));
 
-    // Extract unique assignees from the tasks for this squad
-    const assigneeSet = new Set<string>();
-    for (const t of tTasks) {
-      if (t.assignee) assigneeSet.add(t.assignee);
-    }
-    const memberNames = Array.from(assigneeSet).sort();
+    // Known team members override
+    const TEAM_MEMBERS: Record<string, string[]> = {
+      "Code418": ["Michelle Victoriano", "Raphael Maia", "Tais Marcolino", "Anderson Nóbrega"],
+      "Golden Gate": ["João Ostrovski", "José Vitor", "João Griebner", "Lucas Ramos"],
+      "Tesseract": ["Carol Schlickmann", "Davi Santos", "João Neres", "Mauricio Verona"],
+    };
+
+    const memberNames = TEAM_MEMBERS[name] || [];
 
     return {
       name,
