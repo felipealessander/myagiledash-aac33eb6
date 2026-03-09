@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ startedAt: startedAtMap }),
+        JSON.stringify({ startedAt: startedAtMap, qaReturns: qaReturnsMap }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
