@@ -126,8 +126,9 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
           });
 
           if (actRes.ok) {
-            const { startedAt } = await actRes.json();
-            if (startedAt) Object.assign(startedAtMap, startedAt);
+            const data = await actRes.json();
+            if (data.startedAt) Object.assign(startedAtMap, data.startedAt);
+            if (data.qaReturns) Object.assign(qaReturnsMap, data.qaReturns);
           }
         } catch {
           // Non-fatal: continue without cycle time for this batch
