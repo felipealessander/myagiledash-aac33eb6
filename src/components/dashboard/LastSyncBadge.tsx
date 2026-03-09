@@ -9,7 +9,7 @@ export function LastSyncBadge() {
 
   const fetchLastSync = async () => {
     const { data } = await supabase
-      .from("sprint_reports")
+      .from("report_tasks")
       .select("created_at")
       .order("created_at", { ascending: false })
       .limit(1)
