@@ -126,31 +126,38 @@ Deno.serve(async (req) => {
       const startedAtMap: Record<string, string> = {}
 
       try {
+        // States that indicate work has started (first transition to any of these = started_at)
+        const START_STATES = [
+          'em desenvolvimento',
+          'code review',
+          'aguardando merge',
+          'teste qa',
+          'teste dev',
+          'em discovery',
+          'validação - técnica',
+          'validação',
+          'concluida',
+          'arquivado',
+          'priorizado para release',
+        ]
+
         const isStartState = (value: string) => {
-          const name = value.toLowerCase()
-          return (
-            name.includes('progress') ||
-            name.includes('andamento') ||
-            name.includes('desenvolvimento') ||
-            name.includes('doing') ||
-            name.includes('review') ||
-            name.includes('teste') ||
-            name.includes('discovery')
-          )
+          const lower = value.toLowerCase().trim()
+          return START_STATES.some(s => lower.includes(s) || s.includes(lower))
         }
 
         for (const issueId of ids) {
           try {
-            const actFields = 'target(id),timestamp,field(name),added(name,presentation,text),removed(name,presentation,text)'
-            const issueFilter = /^[A-Z]+-\d+$/.test(issueId) ? `idReadable: ${issueId}` : `id: ${issueId}`
-            const actUrl = `${base}/api/activities?issueQuery=${encodeURIComponent(issueFilter)}&fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory&$top=120&reverse=false`
+            const actFields = 'timestamp,field(name),added(name,presentation,text)'
+            // Use the correct per-issue activities endpoint
+            const actUrl = `${base}/api/issues/${encodeURIComponent(issueId)}/activities?fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory&$top=200`
 
             const activities = await fetchJson(actUrl, YOUTRACK_TOKEN, 10000) as any[]
             if (!Array.isArray(activities) || activities.length === 0) continue
 
             const ordered = [...activities].sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
             for (const act of ordered) {
-              if (!act.target?.id || !act.added) continue
+              if (!act.added) continue
 
               const addedValues = Array.isArray(act.added) ? act.added : [act.added]
               const enteredInProgress = addedValues.some((added: any) => {
@@ -159,9 +166,7 @@ Deno.serve(async (req) => {
               })
 
               if (enteredInProgress) {
-                const startedAt = new Date(act.timestamp).toISOString()
-                startedAtMap[act.target.id] = startedAt
-                startedAtMap[issueId] = startedAt
+                startedAtMap[issueId] = new Date(act.timestamp).toISOString()
                 break
               }
             }
