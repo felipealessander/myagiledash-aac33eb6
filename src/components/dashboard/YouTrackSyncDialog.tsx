@@ -67,8 +67,8 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       const lastDay = new Date(yearNum, monthNum, 0).getDate();
       const dateTo = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
 
-      // Step 1: Fetch issues (fast, no activities)
-      const issuesUrl = buildUrl({ project, dateFrom, dateTo, mode: "issues" });
+      // Step 1: Fetch issues (using "work date" filter to capture all issues with time in period)
+      const issuesUrl = buildUrl({ project, dateFrom, dateTo });
       const issuesRes = await fetch(issuesUrl);
       if (!issuesRes.ok) {
         const err = await issuesRes.json().catch(() => ({ error: "Unknown error" }));
@@ -84,10 +84,26 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
         return;
       }
 
-      setProgress(30);
-      setPhaseLabel(`${tasks.length} tarefas encontradas. Buscando dados de cycle time...`);
+      setProgress(20);
+      setPhaseLabel(`${tasks.length} tarefas encontradas. Buscando horas do período...`);
 
-      // Step 2: Fetch activities in batches of 50 issue IDs
+      // Step 2: Fetch period-specific work items
+      let spentByIssue: Record<string, number> = {};
+      try {
+        const wiUrl = buildUrl({ project, dateFrom, dateTo, mode: "workitems" });
+        const wiRes = await fetch(wiUrl);
+        if (wiRes.ok) {
+          const wiData = await wiRes.json();
+          spentByIssue = wiData.spentByIssue || {};
+          setPhaseLabel(`Horas do período obtidas. Buscando dados de cycle time...`);
+        }
+      } catch {
+        // Non-fatal: fall back to cumulative spent_minutes from issues
+      }
+
+      setProgress(35);
+
+      // Step 3: Fetch activities in batches for cycle time
       const activityBatchSize = 20;
       const startedAtMap: Record<string, string> = {};
       const issueIdsWithYtId = tasks.filter((t: any) => t.id);
@@ -95,7 +111,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
 
       for (let i = 0; i < issueIdsWithYtId.length; i += activityBatchSize) {
         const batchIdx = Math.floor(i / activityBatchSize);
-        const batchProgress = 30 + Math.round((batchIdx / Math.max(totalActBatches, 1)) * 25);
+        const batchProgress = 35 + Math.round((batchIdx / Math.max(totalActBatches, 1)) * 20);
         setProgress(batchProgress);
         setPhaseLabel(`Buscando cycle time (lote ${batchIdx + 1}/${totalActBatches})...`);
 
@@ -120,7 +136,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       setProgress(55);
       setPhaseLabel("Salvando no banco de dados...");
 
-      // Step 3: Save to database
+      // Step 4: Save to database
       const monthKey = `${year}-${month}`;
       const monthLabel = `${MONTHS.find(m => m.value === month)?.label} ${year}`;
 
@@ -146,23 +162,29 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
         setProgress(batchProgress);
         setPhaseLabel(`Salvando lote ${batchIdx + 1}/${totalDbBatches} (${Math.min(i + dbBatchSize, tasks.length)}/${tasks.length})...`);
 
-        const batch = tasks.slice(i, i + dbBatchSize).map((t: any) => ({
-          report_id: report.id,
-          task_code: t.taskCode,
-          title: t.title,
-          category: t.category,
-          billing_status: t.billingStatus,
-          squad: t.squad,
-          assignee: t.assignee,
-          estimated_minutes: t.estimatedMinutes,
-          spent_minutes: t.spentMinutes,
-          status: t.status,
-          created_at_yt: t.createdAt,
-          resolved_at: t.resolvedAt,
-          started_at: startedAtMap[t.taskCode] || startedAtMap[t.id] || (t.spentMinutes > 0 ? t.createdAt : null),
-          tags: t.tags || [],
-          corrections_count: t.correctionsCount || 0,
-        }));
+        const batch = tasks.slice(i, i + dbBatchSize).map((t: any) => {
+          // Use period-specific hours from work items if available, otherwise fall back to cumulative
+          const periodSpent = spentByIssue[t.taskCode];
+          const spentMinutes = periodSpent !== undefined ? periodSpent : t.spentMinutes;
+
+          return {
+            report_id: report.id,
+            task_code: t.taskCode,
+            title: t.title,
+            category: t.category,
+            billing_status: t.billingStatus,
+            squad: t.squad,
+            assignee: t.assignee,
+            estimated_minutes: t.estimatedMinutes,
+            spent_minutes: spentMinutes,
+            status: t.status,
+            created_at_yt: t.createdAt,
+            resolved_at: t.resolvedAt,
+            started_at: startedAtMap[t.taskCode] || startedAtMap[t.id] || (spentMinutes > 0 ? t.createdAt : null),
+            tags: t.tags || [],
+            corrections_count: t.correctionsCount || 0,
+          };
+        });
 
         const { error } = await supabase.from("report_tasks").insert(batch);
         if (error) throw error;

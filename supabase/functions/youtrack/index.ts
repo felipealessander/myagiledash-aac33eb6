@@ -102,6 +102,37 @@ Deno.serve(async (req) => {
     const dateTo = url.searchParams.get('dateTo')
     const issueIds = url.searchParams.get('issueIds')
 
+    // MODE: workitems - fetch period-specific work items
+    if (mode === 'workitems') {
+      if (!dateFrom || !dateTo) {
+        return new Response(
+          JSON.stringify({ error: 'dateFrom and dateTo are required for workitems mode' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const wiFields = 'id,issue(id,idReadable),duration(minutes),date,author(login,fullName)'
+      const wiQuery = `project: ${project}`
+      const wiBaseUrl = `${base}/api/workItems?query=${encodeURIComponent(wiQuery)}&startDate=${dateFrom}&endDate=${dateTo}&fields=${encodeURIComponent(wiFields)}`
+
+      const allWorkItems = await fetchAllPages(wiBaseUrl, YOUTRACK_TOKEN, 500)
+
+      // Group by issue idReadable, sum minutes within the period
+      const spentByIssue: Record<string, number> = {}
+
+      for (const wi of allWorkItems) {
+        const issueKey = wi.issue?.idReadable
+        if (!issueKey) continue
+        const minutes = wi.duration?.minutes || 0
+        spentByIssue[issueKey] = (spentByIssue[issueKey] || 0) + minutes
+      }
+
+      return new Response(
+        JSON.stringify({ spentByIssue, totalWorkItems: allWorkItems.length }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // MODE: activities - fetch started_at for specific issue IDs
     if (mode === 'activities') {
       let ids: string[] = []
@@ -126,7 +157,6 @@ Deno.serve(async (req) => {
       const startedAtMap: Record<string, string> = {}
 
       try {
-        // States that indicate work has started (first transition to any of these = started_at)
         const START_STATES = [
           'em desenvolvimento',
           'code review',
@@ -149,7 +179,6 @@ Deno.serve(async (req) => {
         for (const issueId of ids) {
           try {
             const actFields = 'timestamp,field(name),added(name,presentation,text)'
-            // Use the correct per-issue activities endpoint
             const actUrl = `${base}/api/issues/${encodeURIComponent(issueId)}/activities?fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory&$top=200`
 
             const activities = await fetchJson(actUrl, YOUTRACK_TOKEN, 10000) as any[]
@@ -184,10 +213,10 @@ Deno.serve(async (req) => {
       )
     }
 
-    // MODE: issues (default)
+    // MODE: issues (default) - uses "work date" filter to capture all issues with time in period
     let query = `project: ${project}`
     if (dateFrom) {
-      query += ` created: ${dateFrom} .. ${dateTo || 'Today'}`
+      query += ` work date: ${dateFrom} .. ${dateTo || 'Today'}`
     }
 
     const fields = 'id,idReadable,summary,created,resolved,tags(name),customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation)),reporter(login,fullName),assignee(login,fullName)'
