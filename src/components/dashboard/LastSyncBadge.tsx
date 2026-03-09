@@ -26,7 +26,7 @@ export function LastSyncBadge() {
     // Listen for realtime changes
     const channel = supabase
       .channel("sync-badge")
-      .on("postgres_changes", { event: "*", schema: "public", table: "sprint_reports" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "report_tasks" }, () => {
         fetchLastSync();
       })
       .subscribe();
