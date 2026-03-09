@@ -21,7 +21,7 @@ export function TeamDistributionChart({ teams }: TeamDistributionChartProps) {
   const data = teams.map(t => ({
     name: t.name,
     value: Math.round(getTeamTotalHours(t)),
-  }));
+  })).sort((a, b) => b.value - a.value);
   const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
