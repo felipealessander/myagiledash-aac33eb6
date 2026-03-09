@@ -34,6 +34,8 @@ export function CategoryChart({ categoryTotals }: CategoryChartProps) {
             <YAxis tick={{ fill: "hsl(215, 15%, 52%)", fontSize: 10 }} axisLine={false} tickLine={false} unit="h" />
             <Tooltip
               contentStyle={{ background: "hsl(225, 22%, 11%)", border: "1px solid hsl(225, 15%, 18%)", borderRadius: "8px", fontSize: "12px", color: "hsl(210, 20%, 92%)" }}
+              labelStyle={{ color: "hsl(210, 20%, 92%)" }}
+              itemStyle={{ color: "hsl(210, 20%, 92%)" }}
               formatter={(value: number) => [`${value}h`, "Tempo gasto"]}
             />
             <Bar dataKey="hours" radius={[4, 4, 0, 0]}>

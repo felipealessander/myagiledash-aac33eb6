@@ -42,6 +42,8 @@ export function ThroughputChart({ data }: ThroughputChartProps) {
                   fontSize: "11px",
                   color: "hsl(var(--foreground))",
                 }}
+                labelStyle={{ color: "hsl(var(--foreground))" }}
+                itemStyle={{ color: "hsl(var(--foreground))" }}
                 formatter={(value: number) => [`${value} tarefas`, "Resolvidas"]}
               />
               <Area

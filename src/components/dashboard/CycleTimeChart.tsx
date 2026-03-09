@@ -42,6 +42,8 @@ export function CycleTimeChart({ data }: CycleTimeChartProps) {
                   fontSize: "11px",
                   color: "hsl(var(--foreground))",
                 }}
+                labelStyle={{ color: "hsl(var(--foreground))" }}
+                itemStyle={{ color: "hsl(var(--foreground))" }}
                 formatter={(value: number, name: string) => [`${value.toFixed(1)}d`, name]}
               />
               <Legend wrapperStyle={{ fontSize: "10px" }} />
