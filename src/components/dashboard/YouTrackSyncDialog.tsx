@@ -106,6 +106,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       // Step 3: Fetch activities in batches for cycle time
       const activityBatchSize = 20;
       const startedAtMap: Record<string, string> = {};
+      const qaReturnsMap: Record<string, number> = {};
       const issueIdsWithYtId = tasks.filter((t: any) => t.id);
       const totalActBatches = Math.ceil(issueIdsWithYtId.length / activityBatchSize);
 
