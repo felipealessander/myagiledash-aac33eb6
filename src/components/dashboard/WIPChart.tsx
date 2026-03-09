@@ -33,13 +33,15 @@ export function WIPChart({ data }: WIPChartProps) {
               <XAxis dataKey="squad" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
               <Tooltip
-              contentStyle={{
+                contentStyle={{
                   backgroundColor: "hsl(var(--card))",
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "8px",
                   fontSize: "11px",
                   color: "hsl(var(--foreground))",
                 }}
+                labelStyle={{ color: "hsl(var(--foreground))" }}
+                itemStyle={{ color: "hsl(var(--foreground))" }}
                 formatter={(value: number) => [`${value} tarefas`, "Em andamento"]}
               />
               <Bar dataKey="wip" name="WIP" radius={[4, 4, 0, 0]}>
