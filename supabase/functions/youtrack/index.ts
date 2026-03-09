@@ -178,27 +178,47 @@ Deno.serve(async (req) => {
 
         for (const issueId of ids) {
           try {
-            const actFields = 'timestamp,field(name),added(name,presentation,text)'
+            const actFields = 'timestamp,field(name),added(name,presentation,text),removed(name,presentation,text)'
             const actUrl = `${base}/api/issues/${encodeURIComponent(issueId)}/activities?fields=${encodeURIComponent(actFields)}&categories=CustomFieldCategory&$top=200`
 
             const activities = await fetchJson(actUrl, YOUTRACK_TOKEN, 10000) as any[]
             if (!Array.isArray(activities) || activities.length === 0) continue
 
             const ordered = [...activities].sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
+            let qaReturnCount = 0
+
             for (const act of ordered) {
               if (!act.added) continue
 
               const addedValues = Array.isArray(act.added) ? act.added : [act.added]
-              const enteredInProgress = addedValues.some((added: any) => {
-                const raw = added?.name || added?.presentation || added?.text || ''
-                return isStartState(raw)
-              })
 
-              if (enteredInProgress) {
-                startedAtMap[issueId] = new Date(act.timestamp).toISOString()
-                break
+              // Detect started_at (first entry into a work state)
+              if (!startedAtMap[issueId]) {
+                const enteredInProgress = addedValues.some((added: any) => {
+                  const raw = added?.name || added?.presentation || added?.text || ''
+                  return isStartState(raw)
+                })
+                if (enteredInProgress) {
+                  startedAtMap[issueId] = new Date(act.timestamp).toISOString()
+                }
+              }
+
+              // Detect QA → Dev transitions (rework)
+              const removedValues = Array.isArray(act.removed) ? act.removed : (act.removed ? [act.removed] : [])
+              const cameFromQA = removedValues.some((r: any) => {
+                const raw = (r?.name || r?.presentation || r?.text || '').toLowerCase().trim()
+                return raw.includes('teste qa')
+              })
+              const wentToDev = addedValues.some((a: any) => {
+                const raw = (a?.name || a?.presentation || a?.text || '').toLowerCase().trim()
+                return raw.includes('em desenvolvimento')
+              })
+              if (cameFromQA && wentToDev) {
+                qaReturnCount++
               }
             }
+
+            qaReturnsMap[issueId] = qaReturnCount
           } catch (issueError) {
             console.error(`Activities fetch failed for ${issueId}:`, issueError)
           }
