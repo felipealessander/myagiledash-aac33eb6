@@ -155,6 +155,7 @@ Deno.serve(async (req) => {
       }
 
       const startedAtMap: Record<string, string> = {}
+      const qaReturnsMap: Record<string, number> = {}
 
       try {
         const START_STATES = [
