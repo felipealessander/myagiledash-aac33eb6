@@ -25,9 +25,7 @@ export function ReworkChart({ data }: ReworkChartProps) {
         </CardContent>
       </Card>
     );
-              }}
-              labelStyle={{ color: "hsl(var(--foreground))" }}
-              itemStyle={{ color: "hsl(var(--foreground))" }}
+  }
 
   return (
     <Card>
@@ -51,6 +49,8 @@ export function ReworkChart({ data }: ReworkChartProps) {
                 fontSize: "12px",
                 color: "hsl(var(--foreground))",
               }}
+              labelStyle={{ color: "hsl(var(--foreground))" }}
+              itemStyle={{ color: "hsl(var(--foreground))" }}
               formatter={(value: number, name: string) => {
                 if (name === "corrections") return [value, "Total correções"];
                 if (name === "count") return [value, "Tarefas com retrabalho"];
