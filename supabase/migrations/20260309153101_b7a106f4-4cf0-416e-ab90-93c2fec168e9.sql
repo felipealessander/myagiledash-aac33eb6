@@ -1,0 +1,1 @@
+ALTER TABLE public.report_tasks ADD COLUMN IF NOT EXISTS qa_returns integer DEFAULT 0;
