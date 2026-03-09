@@ -49,7 +49,7 @@ async function fetchAllPages(baseUrl: string, token: string, top = 500) {
 function getField(issue: any, name: string): string | null {
   const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
   if (!cf || !cf.value) return null
-  return cf.value.name || cf.value.presentation || null
+  return cf.value.name || cf.value.fullName || cf.value.login || cf.value.presentation || null
 }
 
 function getMinutes(issue: any, name: string): number {
