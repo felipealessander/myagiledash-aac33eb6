@@ -106,6 +106,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       // Step 3: Fetch activities in batches for cycle time
       const activityBatchSize = 20;
       const startedAtMap: Record<string, string> = {};
+      const qaReturnsMap: Record<string, number> = {};
       const issueIdsWithYtId = tasks.filter((t: any) => t.id);
       const totalActBatches = Math.ceil(issueIdsWithYtId.length / activityBatchSize);
 
@@ -125,8 +126,9 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
           });
 
           if (actRes.ok) {
-            const { startedAt } = await actRes.json();
-            if (startedAt) Object.assign(startedAtMap, startedAt);
+            const data = await actRes.json();
+            if (data.startedAt) Object.assign(startedAtMap, data.startedAt);
+            if (data.qaReturns) Object.assign(qaReturnsMap, data.qaReturns);
           }
         } catch {
           // Non-fatal: continue without cycle time for this batch
@@ -183,6 +185,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
             started_at: startedAtMap[t.taskCode] || startedAtMap[t.id] || (spentMinutes > 0 ? t.createdAt : null),
             tags: t.tags || [],
             corrections_count: t.correctionsCount || 0,
+            qa_returns: qaReturnsMap[t.taskCode] || qaReturnsMap[t.id] || 0,
           };
         });
 

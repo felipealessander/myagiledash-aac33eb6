@@ -24,6 +24,7 @@ export type Database = {
           created_at_yt: string | null
           estimated_minutes: number | null
           id: string
+          qa_returns: number | null
           report_id: string
           resolved_at: string | null
           spent_minutes: number | null
@@ -43,6 +44,7 @@ export type Database = {
           created_at_yt?: string | null
           estimated_minutes?: number | null
           id?: string
+          qa_returns?: number | null
           report_id: string
           resolved_at?: string | null
           spent_minutes?: number | null
@@ -62,6 +64,7 @@ export type Database = {
           created_at_yt?: string | null
           estimated_minutes?: number | null
           id?: string
+          qa_returns?: number | null
           report_id?: string
           resolved_at?: string | null
           spent_minutes?: number | null
