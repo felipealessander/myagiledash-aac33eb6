@@ -25,7 +25,9 @@ export function ReworkChart({ data }: ReworkChartProps) {
         </CardContent>
       </Card>
     );
-  }
+              }}
+              labelStyle={{ color: "hsl(var(--foreground))" }}
+              itemStyle={{ color: "hsl(var(--foreground))" }}
 
   return (
     <Card>
