@@ -40,6 +40,7 @@ export function CycleTimeChart({ data }: CycleTimeChartProps) {
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "8px",
                   fontSize: "11px",
+                  color: "hsl(var(--foreground))",
                 }}
                 formatter={(value: number, name: string) => [`${value.toFixed(1)}d`, name]}
               />

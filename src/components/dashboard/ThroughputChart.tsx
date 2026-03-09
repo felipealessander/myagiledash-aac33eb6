@@ -40,6 +40,7 @@ export function ThroughputChart({ data }: ThroughputChartProps) {
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "8px",
                   fontSize: "11px",
+                  color: "hsl(var(--foreground))",
                 }}
                 formatter={(value: number) => [`${value} tarefas`, "Resolvidas"]}
               />
