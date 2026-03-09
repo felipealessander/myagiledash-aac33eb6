@@ -47,6 +47,7 @@ export function ReworkChart({ data }: ReworkChartProps) {
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
                 fontSize: "12px",
+                color: "hsl(var(--foreground))",
               }}
               formatter={(value: number, name: string) => {
                 if (name === "corrections") return [value, "Total correções"];
