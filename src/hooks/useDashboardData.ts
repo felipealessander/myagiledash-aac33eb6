@@ -379,11 +379,12 @@ export function useDashboardData() {
         reworkTotalCorrections: 0,
         reworkRate: 0,
         reworkBySquad: [],
+        incidentsCreatedInMonth: 0,
       };
     }
 
-    return buildDashboardData(dbTasks);
-  }, [dbTasks]);
+    return buildDashboardData(dbTasks, selectedMonth);
+  }, [dbTasks, selectedMonth]);
 
   const [selectedSquad, setSelectedSquad] = useState<string | null>(null);
 
