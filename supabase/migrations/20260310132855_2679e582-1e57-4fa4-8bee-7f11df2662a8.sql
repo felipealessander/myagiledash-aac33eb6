@@ -1,0 +1,1 @@
+ALTER TABLE public.sprint_reports ADD COLUMN sync_type text DEFAULT 'manual';
