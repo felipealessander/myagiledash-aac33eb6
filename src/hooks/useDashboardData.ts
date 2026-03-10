@@ -398,7 +398,7 @@ export function useDashboardData() {
       return filtered;
     }
     const filtered = dbTasks.filter(t => (t.squad || "Sem Squad") === selectedSquad);
-    return buildDashboardData(filtered);
+    return buildDashboardData(filtered, selectedMonth);
   }, [dashboardData, selectedSquad, selectedMonth, dbTasks]);
 
   return {
