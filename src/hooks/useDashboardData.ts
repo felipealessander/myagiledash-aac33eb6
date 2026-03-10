@@ -41,7 +41,7 @@ const SQUAD_MEMBERS_STATIC: Record<string, string[]> = {
   "TheBigBang": ["João Victor", "Amanda Nunes", "Caio Rezende"],
 };
 
-function buildDashboardData(tasks: DBTask[]) {
+function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
   const squadTasksMap = new Map<string, DBTask[]>();
 
   for (const task of tasks) {
@@ -242,6 +242,18 @@ function buildDashboardData(tasks: DBTask[]) {
     };
   });
 
+  // Incidents created in the selected month (by created_at_yt)
+  const incidentsCreatedInMonth = tasks.filter(t => {
+    const cat = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter')) ? "DeadLetter" : (t.category || "Tarefa");
+    if (cat !== "Incidente") return false;
+    if (!t.created_at_yt || !selectedMonth) return false;
+    const created = t.created_at_yt.slice(0, 7); // "YYYY-MM"
+    if (selectedMonth.startsWith("year-")) {
+      return created.startsWith(selectedMonth.replace("year-", ""));
+    }
+    return created === selectedMonth;
+  }).length;
+
   return {
     teams,
     categoryTotals,
@@ -260,6 +272,7 @@ function buildDashboardData(tasks: DBTask[]) {
     reworkTotalCorrections,
     reworkRate,
     reworkBySquad,
+    incidentsCreatedInMonth,
   };
 }
 
@@ -366,11 +379,12 @@ export function useDashboardData() {
         reworkTotalCorrections: 0,
         reworkRate: 0,
         reworkBySquad: [],
+        incidentsCreatedInMonth: 0,
       };
     }
 
-    return buildDashboardData(dbTasks);
-  }, [dbTasks]);
+    return buildDashboardData(dbTasks, selectedMonth);
+  }, [dbTasks, selectedMonth]);
 
   const [selectedSquad, setSelectedSquad] = useState<string | null>(null);
 
@@ -384,7 +398,7 @@ export function useDashboardData() {
       return filtered;
     }
     const filtered = dbTasks.filter(t => (t.squad || "Sem Squad") === selectedSquad);
-    return buildDashboardData(filtered);
+    return buildDashboardData(filtered, selectedMonth);
   }, [dashboardData, selectedSquad, selectedMonth, dbTasks]);
 
   return {
