@@ -150,7 +150,7 @@ const Index = () => {
                   <KpiCard
                     title="Lead Time Médio"
                     value={`${leadTimeBySquad.length > 0 ? (leadTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, leadTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d`}
-                    subtitle="Criação → Conclusão"
+                    subtitle={`P85: ${leadTimeBySquad.length > 0 ? (leadTimeBySquad.reduce((s, l) => s + l.p85 * l.count, 0) / Math.max(1, leadTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d · Criação → Conclusão`}
                     icon={Clock}
                     variant="info"
                     delay={0}
@@ -158,7 +158,7 @@ const Index = () => {
                   <KpiCard
                     title="Cycle Time Médio"
                     value={`${cycleTimeBySquad.length > 0 ? (cycleTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, cycleTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d`}
-                    subtitle="Em andamento → Conclusão"
+                    subtitle={`P85: ${cycleTimeBySquad.length > 0 ? (cycleTimeBySquad.reduce((s, l) => s + l.p85 * l.count, 0) / Math.max(1, cycleTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d · Em andamento → Conclusão`}
                     icon={Gauge}
                     variant="primary"
                     delay={50}
