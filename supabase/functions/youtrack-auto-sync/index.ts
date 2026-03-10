@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
     // Step 4: Upsert report and save tasks
     const { data: report, error: reportError } = await supabase
       .from('sprint_reports')
-      .upsert({ month: monthKey, label: monthLabel }, { onConflict: 'month' })
+      .upsert({ month: monthKey, label: monthLabel, sync_type: 'auto' }, { onConflict: 'month' })
       .select('id')
       .single()
 
