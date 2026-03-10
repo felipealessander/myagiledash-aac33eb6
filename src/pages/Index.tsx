@@ -110,7 +110,7 @@ const Index = () => {
             <KpiCard title="Horas Realizadas" value={`${totalSpent.toFixed(0)}h`} subtitle="Total de horas registradas" icon={Clock} variant="primary" delay={0} />
             <KpiCard title="Horas Estimadas" value={`${totalEstimated.toFixed(0)}h`} subtitle="Total previsto nas tarefas" icon={TrendingUp} variant="info" delay={50} />
             <KpiCard title="Total de Tarefas" value={totalTasks} subtitle="Itens rastreados no período" icon={ListTodo} variant="default" delay={100} />
-            <KpiCard title="Incidentes" value={categoryTotals.find(c => c.name === "Incidente")?.count ?? 0} subtitle="Tarefas do tipo Incidente" icon={AlertTriangle} variant="destructive" delay={150} />
+            <KpiCard title="Incidentes" value={incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={150} />
             <KpiCard title="Desvio de Estimativa" value={`+${overrun}%`} subtitle="Horas além do estimado" icon={AlertTriangle} variant="warning" delay={200} />
           </div>
 
