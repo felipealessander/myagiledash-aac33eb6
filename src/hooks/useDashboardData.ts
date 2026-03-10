@@ -41,7 +41,7 @@ const SQUAD_MEMBERS_STATIC: Record<string, string[]> = {
   "TheBigBang": ["João Victor", "Amanda Nunes", "Caio Rezende"],
 };
 
-function buildDashboardData(tasks: DBTask[]) {
+function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
   const squadTasksMap = new Map<string, DBTask[]>();
 
   for (const task of tasks) {
