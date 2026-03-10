@@ -54,8 +54,7 @@ const Index = () => {
               <BarChart3 className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h1 className="text-base font-bold tracking-tight">Sprint Dashboard</h1>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Gestão Ágil de Times</p>
+              <h1 className="text-base font-bold tracking-tight">Gestão Ágil de Times</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
