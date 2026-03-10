@@ -242,6 +242,18 @@ function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
     };
   });
 
+  // Incidents created in the selected month (by created_at_yt)
+  const incidentsCreatedInMonth = tasks.filter(t => {
+    const cat = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter')) ? "DeadLetter" : (t.category || "Tarefa");
+    if (cat !== "Incidente") return false;
+    if (!t.created_at_yt || !selectedMonth) return false;
+    const created = t.created_at_yt.slice(0, 7); // "YYYY-MM"
+    if (selectedMonth.startsWith("year-")) {
+      return created.startsWith(selectedMonth.replace("year-", ""));
+    }
+    return created === selectedMonth;
+  }).length;
+
   return {
     teams,
     categoryTotals,
@@ -260,6 +272,7 @@ function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
     reworkTotalCorrections,
     reworkRate,
     reworkBySquad,
+    incidentsCreatedInMonth,
   };
 }
 
