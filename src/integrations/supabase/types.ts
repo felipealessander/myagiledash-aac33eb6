@@ -91,18 +91,21 @@ export type Database = {
           id: string
           label: string | null
           month: string
+          sync_type: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           label?: string | null
           month: string
+          sync_type?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           label?: string | null
           month?: string
+          sync_type?: string | null
         }
         Relationships: []
       }

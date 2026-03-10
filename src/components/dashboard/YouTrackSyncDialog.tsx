@@ -144,7 +144,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
 
       const { data: report, error: reportError } = await supabase
         .from("sprint_reports")
-        .upsert({ month: monthKey, label: monthLabel }, { onConflict: "month" })
+        .upsert({ month: monthKey, label: monthLabel, sync_type: 'manual' }, { onConflict: "month" })
         .select("id")
         .single();
 
