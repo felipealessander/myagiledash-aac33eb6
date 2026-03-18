@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Individual = () => {
@@ -150,37 +149,35 @@ const Individual = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <TooltipProvider delayDuration={200}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="cursor-pointer">
-                            <KpiCard
-                              title="Cards Trabalhados"
-                              value={dev.totalTasks}
-                              subtitle={`${dev.completedTasks} concluídos`}
-                              icon={CheckCircle}
-                              variant="primary"
-                              delay={idx * 50 + 100}
-                            />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <div className="cursor-pointer">
+                          <KpiCard
+                            title="Cards Trabalhados"
+                            value={dev.totalTasks}
+                            subtitle={`${dev.completedTasks} concluídos · clique para ver`}
+                            icon={CheckCircle}
+                            variant="primary"
+                            delay={idx * 50 + 100}
+                          />
+                        </div>
+                      </PopoverTrigger>
+                      <PopoverContent side="bottom" align="start" className="p-0 w-80">
+                        <ScrollArea className="max-h-72">
+                          <div className="p-3 space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground mb-2">
+                              Cards ({dev.taskCards.length})
+                            </p>
+                            {dev.taskCards.map((tc, i) => (
+                              <div key={i} className="flex items-start gap-2 text-xs py-1.5 border-b border-border last:border-0">
+                                <span className="font-mono font-medium text-primary shrink-0">{tc.task_code}</span>
+                                <span className="text-foreground line-clamp-2">{tc.title || "—"}</span>
+                              </div>
+                            ))}
                           </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="p-0 max-w-sm">
-                          <ScrollArea className="max-h-64">
-                            <div className="p-3 space-y-1">
-                              <p className="text-xs font-semibold text-muted-foreground mb-2">
-                                Cards ({dev.taskCards.length})
-                              </p>
-                              {dev.taskCards.map((tc, i) => (
-                                <div key={i} className="flex items-start gap-2 text-xs py-1 border-b border-border last:border-0">
-                                  <span className="font-mono font-medium text-primary shrink-0">{tc.task_code}</span>
-                                  <span className="text-foreground truncate">{tc.title || "—"}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </ScrollArea>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                        </ScrollArea>
+                      </PopoverContent>
+                    </Popover>
                     <KpiCard
                       title="Horas Registradas"
                       value={`${dev.spentHours.toFixed(1)}h`}
