@@ -142,6 +142,12 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
           status: t.status,
         }));
 
+        const reworkCards: TaskCard[] = reworkTasks.map(t => ({
+          task_code: t.task_code,
+          title: t.title,
+          status: t.status,
+        }));
+
         return {
           name: assignee,
           displayName,
