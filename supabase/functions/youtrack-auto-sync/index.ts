@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     console.log(`[auto-sync] Starting sync for ${monthLabel} (${dateFrom} → ${dateTo})`)
 
     // Step 1: Fetch issues
-    const fields = 'id,idReadable,summary,created,resolved,tags(name),customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,minutes,presentation)),reporter(login,fullName),assignee(login,fullName)'
+    const fields = 'id,idReadable,summary,created,resolved,tags(name),customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,fullName,login,minutes,presentation)),reporter(login,fullName),assignee(login,fullName)'
     const query = `project: ${project} work date: ${dateFrom} .. ${dateTo}`
     const issuesUrl = `${base}/api/issues?query=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}`
     const allIssues = await fetchAllPages(issuesUrl, YOUTRACK_TOKEN)
