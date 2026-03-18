@@ -157,6 +157,7 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
           estimatedHours,
           reworkCount,
           reworkRate,
+          reworkCards,
           taskCards,
         };
       })
