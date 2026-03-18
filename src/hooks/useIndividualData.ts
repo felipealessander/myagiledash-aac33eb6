@@ -7,6 +7,12 @@ interface TeamMember {
   username: string;
 }
 
+interface TaskCard {
+  task_code: string;
+  title: string | null;
+  status: string | null;
+}
+
 interface DevMetric {
   name: string;
   displayName: string;
@@ -16,6 +22,7 @@ interface DevMetric {
   estimatedHours: number;
   reworkCount: number;
   reworkRate: number;
+  taskCards: TaskCard[];
 }
 
 export function useIndividualData(selectedMonth: string, months: MonthOption[]) {
