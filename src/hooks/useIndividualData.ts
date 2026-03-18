@@ -7,6 +7,12 @@ interface TeamMember {
   username: string;
 }
 
+interface TaskCard {
+  task_code: string;
+  title: string | null;
+  status: string | null;
+}
+
 interface DevMetric {
   name: string;
   displayName: string;
@@ -16,6 +22,7 @@ interface DevMetric {
   estimatedHours: number;
   reworkCount: number;
   reworkRate: number;
+  taskCards: TaskCard[];
 }
 
 export function useIndividualData(selectedMonth: string, months: MonthOption[]) {
@@ -59,7 +66,7 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
 
       const { data, error } = await supabase
         .from("report_tasks")
-        .select("assignee, status, spent_minutes, estimated_minutes, qa_returns, corrections_count")
+        .select("assignee, task_code, title, status, spent_minutes, estimated_minutes, qa_returns, corrections_count")
         .in("report_id", reportIds);
 
       setLoading(false);
@@ -128,6 +135,12 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
         const reworkCount = reworkTasks.length;
         const reworkRate = devTasks.length > 0 ? (reworkCount / devTasks.length) * 100 : 0;
 
+        const taskCards: TaskCard[] = devTasks.map(t => ({
+          task_code: t.task_code,
+          title: t.title,
+          status: t.status,
+        }));
+
         return {
           name: assignee,
           displayName,
@@ -137,6 +150,7 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
           estimatedHours,
           reworkCount,
           reworkRate,
+          taskCards,
         };
       })
       .sort((a, b) => b.spentHours - a.spentHours);
