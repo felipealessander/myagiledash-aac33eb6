@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
       category: getField(issue, 'Type') || 'Tarefa',
       billingStatus: getField(issue, 'Faturável') || 'Nenhum Faturável',
       squad: getField(issue, 'Squad') || 'Sem Squad',
-      assignee: getField(issue, 'Atribuído') || issue.assignee?.fullName || issue.assignee?.login || null,
+      assignee: getField(issue, 'Assignee') || issue.assignee?.fullName || issue.assignee?.login || null,
       estimatedMinutes: getMinutes(issue, 'Estimativa'),
       spentMinutes: getMinutes(issue, 'Tempo gasto'),
       status: getField(issue, 'State') || 'Open',
