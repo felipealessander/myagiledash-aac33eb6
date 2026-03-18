@@ -31,10 +31,15 @@ const Individual = () => {
     return devMetrics.filter(d => selectedDevs.includes(d.name));
   }, [devMetrics, selectedDevs]);
 
-  const toggleDev = (name: string) => {
+  const toggleDev = (key: string) => {
     setSelectedDevs(prev =>
-      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+      prev.includes(key) ? prev.filter(n => n !== key) : [...prev, key]
     );
+  };
+
+  const getDisplayName = (key: string) => {
+    const found = allDevNames.find(d => d.key === key);
+    return found ? found.display : key;
   };
 
   if (authLoading) {
@@ -83,16 +88,16 @@ const Individual = () => {
                   )}
                 </div>
                 <div className="max-h-60 overflow-y-auto p-2 space-y-1">
-                  {allDevNames.map(name => (
+                  {allDevNames.map(({ key, display }) => (
                     <label
-                      key={name}
+                      key={key}
                       className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
                     >
                       <Checkbox
-                        checked={selectedDevs.includes(name)}
-                        onCheckedChange={() => toggleDev(name)}
+                        checked={selectedDevs.includes(key)}
+                        onCheckedChange={() => toggleDev(key)}
                       />
-                      <span className="truncate">{name}</span>
+                      <span className="truncate">{display}</span>
                     </label>
                   ))}
                   {allDevNames.length === 0 && (
@@ -111,9 +116,9 @@ const Individual = () => {
 
       {selectedDevs.length > 0 && (
         <div className="container mx-auto px-4 pt-4 flex flex-wrap gap-2">
-          {selectedDevs.map(name => (
-            <Badge key={name} variant="secondary" className="gap-1 text-xs cursor-pointer" onClick={() => toggleDev(name)}>
-              {name}
+          {selectedDevs.map(key => (
+            <Badge key={key} variant="secondary" className="gap-1 text-xs cursor-pointer" onClick={() => toggleDev(key)}>
+              {getDisplayName(key)}
               <X className="h-3 w-3" />
             </Badge>
           ))}
@@ -138,7 +143,7 @@ const Individual = () => {
                     <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center">
                       <User className="h-3.5 w-3.5 text-primary" />
                     </div>
-                    {dev.name}
+                    {dev.displayName}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

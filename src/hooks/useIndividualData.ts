@@ -2,8 +2,14 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { MonthOption } from "@/hooks/useDashboardData";
 
+interface TeamMember {
+  name: string;
+  username: string;
+}
+
 interface DevMetric {
   name: string;
+  displayName: string;
   totalTasks: number;
   completedTasks: number;
   spentHours: number;
@@ -14,7 +20,20 @@ interface DevMetric {
 
 export function useIndividualData(selectedMonth: string, months: MonthOption[]) {
   const [tasks, setTasks] = useState<any[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      const { data } = await supabase
+        .from("team_members")
+        .select("name, username")
+        .eq("active", true)
+        .order("name");
+      if (data) setTeamMembers(data);
+    };
+    fetchMembers();
+  }, []);
 
   useEffect(() => {
     if (months.length === 0) return;
@@ -54,25 +73,49 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
     fetchTasks();
   }, [selectedMonth, months]);
 
-  const allDevNames = useMemo(() => {
-    const names = new Set<string>();
-    for (const t of tasks) {
-      if (t.assignee) names.add(t.assignee);
+  const memberMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of teamMembers) {
+      map.set(m.username, m.name);
+      map.set(m.name, m.name);
     }
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [tasks]);
+    return map;
+  }, [teamMembers]);
+
+  const memberSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const m of teamMembers) {
+      s.add(m.username);
+      s.add(m.name);
+    }
+    return s;
+  }, [teamMembers]);
+
+  const allDevNames = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const t of tasks) {
+      if (t.assignee && memberSet.has(t.assignee)) {
+        names.set(t.assignee, memberMap.get(t.assignee) || t.assignee);
+      }
+    }
+    return Array.from(names.entries())
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([key, display]) => ({ key, display }));
+  }, [tasks, memberSet, memberMap]);
 
   const devMetrics: DevMetric[] = useMemo(() => {
     const byDev = new Map<string, any[]>();
 
     for (const t of tasks) {
-      const name = t.assignee || "Não atribuído";
-      if (!byDev.has(name)) byDev.set(name, []);
-      byDev.get(name)!.push(t);
+      const assignee = t.assignee;
+      if (!assignee || !memberSet.has(assignee)) continue;
+      if (!byDev.has(assignee)) byDev.set(assignee, []);
+      byDev.get(assignee)!.push(t);
     }
 
     return Array.from(byDev.entries())
-      .map(([name, devTasks]) => {
+      .map(([assignee, devTasks]) => {
+        const displayName = memberMap.get(assignee) || assignee;
         const completedTasks = devTasks.filter(t => {
           const s = (t.status || "").toLowerCase();
           return s.includes("done") || s.includes("resolved") || s.includes("closed") || s.includes("conclu");
@@ -86,7 +129,8 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
         const reworkRate = devTasks.length > 0 ? (reworkCount / devTasks.length) * 100 : 0;
 
         return {
-          name,
+          name: assignee,
+          displayName,
           totalTasks: devTasks.length,
           completedTasks,
           spentHours,
@@ -96,7 +140,7 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
         };
       })
       .sort((a, b) => b.spentHours - a.spentHours);
-  }, [tasks]);
+  }, [tasks, memberSet, memberMap]);
 
   return { devMetrics, allDevNames, loading };
 }
