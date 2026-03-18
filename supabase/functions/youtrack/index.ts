@@ -234,31 +234,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    // MODE: debug - return raw custom fields for first issue
-    if (mode === 'debug') {
-      let query = `project: ${project}`
-      if (dateFrom) {
-        query += ` work date: ${dateFrom} .. ${dateTo || 'Today'}`
-      }
-      const fields = 'id,idReadable,summary,customFields($type,id,projectCustomField($type,id,field($type,id,name)),value($type,id,name,fullName,login,minutes,presentation,text)),reporter(login,fullName),assignee(login,fullName)'
-      const issuesUrl = `${base}/api/issues?query=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}&$top=3`
-      const issues = await fetchJson(issuesUrl, YOUTRACK_TOKEN)
-      const debugData = issues.map((issue: any) => ({
-        id: issue.idReadable,
-        summary: issue.summary,
-        assigneeTopLevel: issue.assignee,
-        customFieldNames: issue.customFields?.map((cf: any) => ({
-          name: cf.projectCustomField?.field?.name,
-          type: cf.$type,
-          value: cf.value,
-        })),
-      }))
-      return new Response(
-        JSON.stringify({ debugData }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     // MODE: issues (default) - uses "work date" filter to capture all issues with time in period
     let query = `project: ${project}`
     if (dateFrom) {
