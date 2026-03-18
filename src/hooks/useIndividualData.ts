@@ -66,7 +66,7 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
 
       const { data, error } = await supabase
         .from("report_tasks")
-        .select("assignee, status, spent_minutes, estimated_minutes, qa_returns, corrections_count")
+        .select("assignee, task_code, title, status, spent_minutes, estimated_minutes, qa_returns, corrections_count")
         .in("report_id", reportIds);
 
       setLoading(false);
