@@ -22,6 +22,7 @@ interface DevMetric {
   estimatedHours: number;
   reworkCount: number;
   reworkRate: number;
+  reworkCards: TaskCard[];
   taskCards: TaskCard[];
 }
 
