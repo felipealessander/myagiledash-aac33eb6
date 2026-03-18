@@ -186,14 +186,39 @@ const Individual = () => {
                       variant="info"
                       delay={idx * 50 + 150}
                     />
-                    <KpiCard
-                      title="Retrabalho"
-                      value={dev.reworkCount}
-                      subtitle={`${dev.reworkRate.toFixed(1)}% dos cards`}
-                      icon={RotateCcw}
-                      variant={dev.reworkRate > 20 ? "destructive" : dev.reworkRate > 10 ? "warning" : "default"}
-                      delay={idx * 50 + 200}
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <div className="cursor-pointer">
+                          <KpiCard
+                            title="Retrabalho"
+                            value={dev.reworkCount}
+                            subtitle={`${dev.reworkRate.toFixed(1)}% dos cards · clique para ver`}
+                            icon={RotateCcw}
+                            variant={dev.reworkRate > 20 ? "destructive" : dev.reworkRate > 10 ? "warning" : "default"}
+                            delay={idx * 50 + 200}
+                          />
+                        </div>
+                      </PopoverTrigger>
+                      <PopoverContent side="bottom" align="start" className="p-0 w-80">
+                        <ScrollArea className="max-h-72">
+                          <div className="p-3 space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground mb-2">
+                              Cards com retrabalho ({dev.reworkCards.length})
+                            </p>
+                            {dev.reworkCards.length === 0 ? (
+                              <p className="text-xs text-muted-foreground text-center py-3">Nenhum card com retrabalho</p>
+                            ) : (
+                              dev.reworkCards.map((tc, i) => (
+                                <div key={i} className="flex items-start gap-2 text-xs py-1.5 border-b border-border last:border-0">
+                                  <span className="font-mono font-medium text-primary shrink-0">{tc.task_code}</span>
+                                  <span className="text-foreground line-clamp-2">{tc.title || "—"}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </CardContent>
               </Card>
