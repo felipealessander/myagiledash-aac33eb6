@@ -54,6 +54,14 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
     fetchTasks();
   }, [selectedMonth, months]);
 
+  const allDevNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const t of tasks) {
+      if (t.assignee) names.add(t.assignee);
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [tasks]);
+
   const devMetrics: DevMetric[] = useMemo(() => {
     const byDev = new Map<string, any[]>();
 
@@ -90,5 +98,5 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
       .sort((a, b) => b.spentHours - a.spentHours);
   }, [tasks]);
 
-  return { devMetrics, loading };
+  return { devMetrics, allDevNames, loading };
 }
