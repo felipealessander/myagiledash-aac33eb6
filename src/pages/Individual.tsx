@@ -150,14 +150,37 @@ const Individual = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <KpiCard
-                      title="Cards Trabalhados"
-                      value={dev.totalTasks}
-                      subtitle={`${dev.completedTasks} concluídos`}
-                      icon={CheckCircle}
-                      variant="primary"
-                      delay={idx * 50 + 100}
-                    />
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="cursor-pointer">
+                            <KpiCard
+                              title="Cards Trabalhados"
+                              value={dev.totalTasks}
+                              subtitle={`${dev.completedTasks} concluídos`}
+                              icon={CheckCircle}
+                              variant="primary"
+                              delay={idx * 50 + 100}
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="p-0 max-w-sm">
+                          <ScrollArea className="max-h-64">
+                            <div className="p-3 space-y-1">
+                              <p className="text-xs font-semibold text-muted-foreground mb-2">
+                                Cards ({dev.taskCards.length})
+                              </p>
+                              {dev.taskCards.map((tc, i) => (
+                                <div key={i} className="flex items-start gap-2 text-xs py-1 border-b border-border last:border-0">
+                                  <span className="font-mono font-medium text-primary shrink-0">{tc.task_code}</span>
+                                  <span className="text-foreground truncate">{tc.title || "—"}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <KpiCard
                       title="Horas Registradas"
                       value={`${dev.spentHours.toFixed(1)}h`}
