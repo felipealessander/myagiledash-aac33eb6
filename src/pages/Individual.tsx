@@ -12,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Individual = () => {
   const { user, loading: authLoading, signOut } = useAuth();
