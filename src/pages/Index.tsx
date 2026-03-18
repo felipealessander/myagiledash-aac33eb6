@@ -49,7 +49,7 @@ const Index = () => {
       {/* Header */}
       <header className="border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pl-10">
             <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
               <BarChart3 className="h-4 w-4 text-primary" />
             </div>
