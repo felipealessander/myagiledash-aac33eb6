@@ -135,6 +135,12 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
         const reworkCount = reworkTasks.length;
         const reworkRate = devTasks.length > 0 ? (reworkCount / devTasks.length) * 100 : 0;
 
+        const taskCards: TaskCard[] = devTasks.map(t => ({
+          task_code: t.task_code,
+          title: t.title,
+          status: t.status,
+        }));
+
         return {
           name: assignee,
           displayName,
@@ -144,6 +150,7 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
           estimatedHours,
           reworkCount,
           reworkRate,
+          taskCards,
         };
       })
       .sort((a, b) => b.spentHours - a.spentHours);
