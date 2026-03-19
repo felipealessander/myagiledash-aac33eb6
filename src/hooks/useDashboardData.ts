@@ -182,7 +182,7 @@ function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
   }
 
   // Cycle Time by squad (started_at -> resolved_at)
-  const cycleTimeTasks = tasks.filter(t => t.started_at && t.resolved_at);
+  const cycleTimeTasks = tasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico");
   const cycleTimeBySquad: { squad: string; avg: number; median: number; p85: number; count: number }[] = [];
   for (const squadName of squadNames) {
     const squadCycle = cycleTimeTasks.filter(t => (t.squad || "Sem Squad") === squadName);
