@@ -610,9 +610,9 @@ export function useDashboardData() {
   }, [isYearView, selectedMonth, months]);
 
   const monthlyTrend: MonthlyTrendPoint[] = useMemo(() => {
-    if (!dbTasks || dbTasks.length === 0 || yearMonthsForTrend.length === 0) return [];
-    return buildMonthlyTrend(dbTasks, yearMonthsForTrend);
-  }, [dbTasks, yearMonthsForTrend]);
+    if (!dbTasksForTrend || dbTasksForTrend.length === 0 || yearMonthsForTrend.length === 0) return [];
+    return buildMonthlyTrend(dbTasksForTrend, yearMonthsForTrend);
+  }, [dbTasksForTrend, yearMonthsForTrend]);
 
   return {
     months,
