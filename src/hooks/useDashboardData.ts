@@ -262,12 +262,6 @@ function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
     const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter'));
     const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
     if (cat !== "Incidente") continue;
-    if (!t.created_at_yt || !selectedMonth) continue;
-    const created = t.created_at_yt.slice(0, 7);
-    const inPeriod = selectedMonth.startsWith("year-")
-      ? created.startsWith(selectedMonth.replace("year-", ""))
-      : created === selectedMonth;
-    if (!inPeriod) continue;
     const clientName = t.client || "Sem Cliente";
     clientIncidentMap.set(clientName, (clientIncidentMap.get(clientName) || 0) + 1);
   }
