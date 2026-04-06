@@ -277,8 +277,13 @@ Deno.serve(async (req) => {
       client: getField(issue, 'Cliente') || null,
     }))
 
+    // Debug: include custom field names in response
+    const debugFieldNames = allIssues.length > 0
+      ? (allIssues[0].customFields || []).map((f: any) => f.projectCustomField?.field?.name)
+      : [];
+
     return new Response(
-      JSON.stringify({ tasks, total: tasks.length }),
+      JSON.stringify({ tasks, total: tasks.length, debugFieldNames }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
