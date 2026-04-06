@@ -130,7 +130,7 @@ export function MonthlyTrendCharts({ data }: Props) {
       {/* CFD - Cumulative Flow Diagram */}
       <div className="gradient-card rounded-lg border border-border p-5">
         <h3 className="text-sm font-semibold mb-1">CFD – Diagrama de Fluxo Acumulativo</h3>
-        <p className="text-xs text-muted-foreground mb-4">Acúmulo de tarefas por fase do fluxo Kanban ao longo dos meses</p>
+        <p className="text-xs text-muted-foreground mb-4">Quantidade acumulada de tarefas por fase do Kanban — a distância vertical entre as bandas representa o WIP de cada etapa</p>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
@@ -139,10 +139,10 @@ export function MonthlyTrendCharts({ data }: Props) {
               <YAxis tick={axisTickStyle} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "hsl(210, 20%, 92%)" }} />
               <Legend wrapperStyle={{ fontSize: "11px" }} />
-              <Area dataKey="cfdDone" name="Concluído" stackId="cfd" fill="hsl(160, 84%, 39%)" fillOpacity={0.75} stroke="hsl(160, 84%, 39%)" strokeWidth={1.5} />
-              <Area dataKey="cfdQA" name="Validação / QA" stackId="cfd" fill="hsl(38, 92%, 50%)" fillOpacity={0.75} stroke="hsl(38, 92%, 50%)" strokeWidth={1.5} />
-              <Area dataKey="cfdDev" name="Desenvolvimento" stackId="cfd" fill="hsl(210, 100%, 56%)" fillOpacity={0.75} stroke="hsl(210, 100%, 56%)" strokeWidth={1.5} />
               <Area dataKey="cfdBacklog" name="Backlog" stackId="cfd" fill="hsl(215, 15%, 52%)" fillOpacity={0.55} stroke="hsl(215, 15%, 52%)" strokeWidth={1.5} />
+              <Area dataKey="cfdDev" name="Desenvolvimento" stackId="cfd" fill="hsl(210, 100%, 56%)" fillOpacity={0.75} stroke="hsl(210, 100%, 56%)" strokeWidth={1.5} />
+              <Area dataKey="cfdQA" name="Validação / QA" stackId="cfd" fill="hsl(38, 92%, 50%)" fillOpacity={0.75} stroke="hsl(38, 92%, 50%)" strokeWidth={1.5} />
+              <Area dataKey="cfdDone" name="Concluído" stackId="cfd" fill="hsl(160, 84%, 39%)" fillOpacity={0.75} stroke="hsl(160, 84%, 39%)" strokeWidth={1.5} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
