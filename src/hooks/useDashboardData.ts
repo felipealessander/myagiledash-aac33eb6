@@ -415,7 +415,7 @@ export function useDashboardData() {
       const reportIds = yearMonths.map(m => m.id);
       supabase
         .from("report_tasks")
-        .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+        .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
         .in("report_id", reportIds)
         .then(({ data, error }) => {
           setLoading(false);
