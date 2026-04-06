@@ -28,6 +28,7 @@ interface DBTask {
   tags: string[] | null;
   corrections_count: number | null;
   qa_returns: number | null;
+  client: string | null;
 }
 
 // Fallback hardcoded members for static data only
