@@ -326,7 +326,7 @@ function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrend
     tasksByReportId.get(rid)!.push(t);
   }
 
-  return months
+  const result = months
     .slice()
     .sort((a, b) => a.value.localeCompare(b.value))
     .map(m => {
