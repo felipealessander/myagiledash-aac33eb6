@@ -528,6 +528,31 @@ export function useDashboardData() {
         }
         setDbTasks(data || []);
       });
+
+    // Also load all year tasks for the trend chart
+    const year = selectedMonth.slice(0, 4);
+    const yearMonths = months.filter(m => m.value.startsWith(year));
+    const yearReportIds = yearMonths.map(m => m.id);
+    const fetchYearForTrend = async () => {
+      const allTasks: any[] = [];
+      for (const rid of yearReportIds) {
+        let from = 0;
+        const pageSize = 1000;
+        while (true) {
+          const { data, error } = await supabase
+            .from("report_tasks")
+            .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+            .eq("report_id", rid)
+            .range(from, from + pageSize - 1);
+          if (error) break;
+          allTasks.push(...(data || []));
+          if (!data || data.length < pageSize) break;
+          from += pageSize;
+        }
+      }
+      setDbTasksForTrend(allTasks);
+    };
+    fetchYearForTrend();
   }, [selectedMonth, months, toast]);
 
   const dashboardData: DashboardData = useMemo(() => {
