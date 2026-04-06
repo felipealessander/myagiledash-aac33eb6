@@ -42,7 +42,21 @@ const SQUAD_MEMBERS_STATIC: Record<string, string[]> = {
   "TheBigBang": ["João Victor", "Amanda Nunes", "Caio Rezende"],
 };
 
-function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
+// Helper: check if a task status is "archived" (should be excluded from all metrics)
+function isArchived(status: string | null): boolean {
+  return (status || '').toLowerCase().trim().includes('arquivado');
+}
+
+// Helper: check if a task status is "done" (delivered)
+function isDoneStatus(status: string | null): boolean {
+  const s = (status || '').toLowerCase().trim();
+  return s.includes('conclu') || s.includes('done') || s.includes('delivery');
+}
+
+function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
+  // Exclude archived tasks from ALL calculations
+  const tasks = rawTasks.filter(t => !isArchived(t.status));
+
   const squadTasksMap = new Map<string, DBTask[]>();
 
   for (const task of tasks) {
