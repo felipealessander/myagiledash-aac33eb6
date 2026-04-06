@@ -329,7 +329,10 @@ export interface MonthlyTrendPoint {
   cfdDone: number;
 }
 
-function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrendPoint[] {
+function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTrendPoint[] {
+  // Exclude archived tasks from trend calculations
+  const tasks = rawTasks.filter(t => !isArchived(t.status));
+
   const tasksByReportId = new Map<string, DBTask[]>();
   for (const t of tasks) {
     const rid = (t as any).report_id as string;
@@ -371,13 +374,13 @@ function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrend
       const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000));
       const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
 
-      const throughput = mTasks.filter(t => t.resolved_at).length;
+      // Throughput: count tasks with done status (aligned with CFD definition)
+      const throughput = mTasks.filter(t => isDoneStatus(t.status)).length;
 
-      // CFD status grouping (4 Kanban phases)
-      const doneStatuses = ['concluida', 'arquivado', 'delivery'];
+      // CFD status grouping (3 Kanban phases — archived already excluded)
+      const doneStatuses = ['concluida', 'delivery'];
       const qaStatuses = ['teste qa', 'teste dev', 'homologação', 'homologacao', 'validação', 'code review', 'aguardando merge'];
       const devStatuses = ['em desenvolvimento', 'em discovery', 'estudo'];
-      // Everything else = Backlog (Aberta, Aguardando desenvolvimento, Aguardando Discovery, Levantamento de Requisitos, Interrompido)
       let cfdDone = 0, cfdQA = 0, cfdDev = 0, cfdBacklog = 0;
       for (const t of mTasks) {
         const s = (t.status || '').toLowerCase().trim();
