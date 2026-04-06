@@ -18,18 +18,38 @@ import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { LastSyncBadge } from "@/components/dashboard/LastSyncBadge";
+import { ShieldAlert } from "lucide-react";
 
 const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { approved, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
     }
   }, [authLoading, user, navigate]);
+
+  // Show pending approval message
+  if (!authLoading && !roleLoading && user && !approved) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <ShieldAlert className="h-12 w-12 text-warning mx-auto" />
+          <h2 className="text-xl font-bold text-foreground">Acesso Pendente</h2>
+          <p className="text-muted-foreground text-sm">
+            Sua conta foi criada, mas ainda precisa ser aprovada por um administrador. 
+            Você será notificado quando o acesso for liberado.
+          </p>
+          <Button variant="outline" onClick={signOut}>Sair</Button>
+        </div>
+      </div>
+    );
+  }
 
   const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
   const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, cycleTimeBySquad, throughputByWeek, wipBySquad, reworkCount, reworkTotalCorrections, reworkRate, reworkBySquad, incidentsCreatedInMonth } = dashboardData;

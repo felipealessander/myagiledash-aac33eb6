@@ -1,6 +1,7 @@
-import { BarChart3, Users } from "lucide-react";
+import { BarChart3, Users, Shield, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   Sidebar,
   SidebarContent,
@@ -13,18 +14,18 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
-  { title: "Dashboard", url: "/", icon: BarChart3 },
-  { title: "Desempenho Individual", url: "/individual", icon: Users },
-];
-
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const currentPath = location.pathname;
+  const { isAdmin, canViewIndividual } = useUserRole();
 
-  const isActive = (path: string) => currentPath === path;
+  const items = [
+    { title: "Dashboard", url: "/", icon: BarChart3, show: true },
+    { title: "Desempenho Individual", url: "/individual", icon: Users, show: canViewIndividual },
+    { title: "Administração", url: "/admin", icon: Shield, show: isAdmin },
+    { title: "Meu Perfil", url: "/profile", icon: User, show: true },
+  ];
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -33,21 +34,23 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-muted-foreground">Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="hover:bg-accent/50"
-                      activeClassName="bg-primary/10 text-primary font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {items
+                .filter((item) => item.show)
+                .map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end
+                        className="hover:bg-accent/50"
+                        activeClassName="bg-primary/10 text-primary font-medium"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
