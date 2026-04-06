@@ -407,7 +407,6 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
 
   return result;
 }
-}
 
 export function useDashboardData() {
   const [months, setMonths] = useState<MonthOption[]>([]);
