@@ -18,12 +18,15 @@ const COLORS = [
 export function IncidentsByClientChart({ data }: IncidentsByClientChartProps) {
   if (data.length === 0) return null;
 
+  const total = data.reduce((s, d) => s + d.count, 0);
+
   return (
     <Card className="gradient-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-destructive" />
           Incidentes por Cliente
+          <span className="ml-auto text-xs font-normal text-muted-foreground">Total: {total}</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -44,7 +47,9 @@ export function IncidentsByClientChart({ data }: IncidentsByClientChartProps) {
                 borderRadius: "8px",
                 fontSize: "12px",
               }}
-              formatter={(value: number) => [`${value} incidente${value !== 1 ? "s" : ""}`, "Quantidade"]}
+              formatter={(value: number) => [`${value} incidente${value !== 1 ? "s" : ""} (${total > 0 ? ((value / total) * 100).toFixed(1) : 0}%)`, "Quantidade"]}
+              labelStyle={{ color: "hsl(var(--foreground))" }}
+              itemStyle={{ color: "hsl(var(--foreground))" }}
             />
             <Bar dataKey="count" radius={[0, 4, 4, 0]}>
               {data.map((_, index) => (
