@@ -494,6 +494,18 @@ export function useDashboardData() {
     return buildDashboardData(filtered, selectedMonth);
   }, [dashboardData, selectedSquad, selectedMonth, dbTasks]);
 
+  const isYearView = selectedMonth.startsWith("year-");
+  const yearMonthsForTrend = useMemo(() => {
+    if (!isYearView) return [];
+    const year = selectedMonth.replace("year-", "");
+    return months.filter(m => m.value.startsWith(year));
+  }, [isYearView, selectedMonth, months]);
+
+  const monthlyTrend: MonthlyTrendPoint[] = useMemo(() => {
+    if (!isYearView || !dbTasks || dbTasks.length === 0) return [];
+    return buildMonthlyTrend(dbTasks, yearMonthsForTrend);
+  }, [isYearView, dbTasks, yearMonthsForTrend]);
+
   return {
     months,
     selectedMonth,
@@ -504,5 +516,7 @@ export function useDashboardData() {
     refetchMonths: fetchMonths,
     selectedSquad,
     setSelectedSquad,
+    monthlyTrend,
+    isYearView,
   };
 }
