@@ -501,6 +501,7 @@ export function useDashboardData() {
           }
         }
         setDbTasks(allTasks);
+        setDbTasksForTrend(allTasks);
         setLoading(false);
       };
       fetchAllYearTasks();
