@@ -230,13 +230,10 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     .sort(([a], [b]) => a.localeCompare(b))
     .forEach(([week, count]) => throughputByWeek.push({ week, count }));
 
-  // WIP: tasks with status not resolved/done
+  // WIP: tasks with status not done/delivered
   const wipBySquad: { squad: string; wip: number }[] = squadNames.map(name => {
     const squadTasks = squadTasksMap.get(name) || [];
-    const openTasks = squadTasks.filter(t => {
-      const s = (t.status || "").toLowerCase();
-      return !s.includes("done") && !s.includes("resolved") && !s.includes("closed") && !s.includes("conclu");
-    });
+    const openTasks = squadTasks.filter(t => !isDoneStatus(t.status));
     return { squad: name, wip: openTasks.length };
   });
 
