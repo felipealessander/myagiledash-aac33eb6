@@ -240,6 +240,7 @@ const Index = () => {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ReworkChart data={reworkBySquad || []} />
+                <IncidentsByClientChart data={incidentsByClient || []} />
               </div>
             </>
           )}
