@@ -361,6 +361,17 @@ function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrend
 
       const throughput = mTasks.filter(t => t.resolved_at).length;
 
+      // CFD status grouping
+      const doneStatuses = ['concluida', 'arquivado'];
+      const backlogStatuses = ['aberta', 'aguardando desenvolvimento', 'aguardando discovery', 'levantamento de requisitos'];
+      let cfdDone = 0, cfdBacklog = 0, cfdInProgress = 0;
+      for (const t of mTasks) {
+        const s = (t.status || '').toLowerCase().trim();
+        if (doneStatuses.some(ds => s.includes(ds))) cfdDone++;
+        else if (backlogStatuses.some(bs => s.includes(bs))) cfdBacklog++;
+        else cfdInProgress++;
+      }
+
       return {
         month: m.value,
         label: m.label,
@@ -372,8 +383,22 @@ function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrend
         leadTimeAvg,
         cycleTimeAvg,
         throughput,
+        cfdBacklog, cfdInProgress, cfdDone,
       };
     });
+
+  // Make CFD cumulative
+  let cumBacklog = 0, cumInProgress = 0, cumDone = 0;
+  for (const point of result) {
+    cumBacklog += point.cfdBacklog;
+    cumInProgress += point.cfdInProgress;
+    cumDone += point.cfdDone;
+    point.cfdBacklog = cumBacklog;
+    point.cfdInProgress = cumInProgress;
+    point.cfdDone = cumDone;
+  }
+
+  return result;
 }
 
 export function useDashboardData() {
