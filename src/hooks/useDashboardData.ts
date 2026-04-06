@@ -402,6 +402,7 @@ export function useDashboardData() {
         reworkRate: 0,
         reworkBySquad: [],
         incidentsCreatedInMonth: 0,
+        incidentsByClient: [],
       };
     }
 
