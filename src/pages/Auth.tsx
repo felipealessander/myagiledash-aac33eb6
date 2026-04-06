@@ -11,6 +11,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -30,12 +31,18 @@ export default function Auth() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { full_name: fullName },
+        },
       });
       if (error) {
         toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Verifique seu e-mail", description: "Enviamos um link de confirmação para seu e-mail." });
+        toast({
+          title: "Cadastro realizado",
+          description: "Verifique seu e-mail. Após confirmação, um administrador precisará aprovar seu acesso.",
+        });
       }
     }
 
@@ -54,6 +61,12 @@ export default function Auth() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!isLogin && (
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-xs">Nome completo</Label>
+              <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Seu nome" />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-xs">E-mail</Label>
             <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
