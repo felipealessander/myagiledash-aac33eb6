@@ -255,6 +255,26 @@ function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
     return created === selectedMonth;
   }).length;
 
+  // Incidents by client
+  const incidentsByClient: { client: string; count: number }[] = [];
+  const clientIncidentMap = new Map<string, number>();
+  for (const t of tasks) {
+    const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter'));
+    const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
+    if (cat !== "Incidente") continue;
+    if (!t.created_at_yt || !selectedMonth) continue;
+    const created = t.created_at_yt.slice(0, 7);
+    const inPeriod = selectedMonth.startsWith("year-")
+      ? created.startsWith(selectedMonth.replace("year-", ""))
+      : created === selectedMonth;
+    if (!inPeriod) continue;
+    const clientName = t.client || "Sem Cliente";
+    clientIncidentMap.set(clientName, (clientIncidentMap.get(clientName) || 0) + 1);
+  }
+  Array.from(clientIncidentMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([client, count]) => incidentsByClient.push({ client, count }));
+
   return {
     teams,
     categoryTotals,
@@ -274,6 +294,7 @@ function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
     reworkRate,
     reworkBySquad,
     incidentsCreatedInMonth,
+    incidentsByClient,
   };
 }
 
