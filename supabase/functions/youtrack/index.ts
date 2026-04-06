@@ -244,6 +244,8 @@ Deno.serve(async (req) => {
     const issuesUrl = `${base}/api/issues?query=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}`
     const allIssues = await fetchAllPages(issuesUrl, YOUTRACK_TOKEN)
 
+
+
     const tasks = allIssues.map((issue: any) => ({
       id: issue.id,
       taskCode: issue.idReadable,
