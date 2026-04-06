@@ -405,19 +405,6 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       };
     });
 
-  // Make CFD cumulative
-  let cumBacklog = 0, cumDev = 0, cumQA = 0, cumDone = 0;
-  for (const point of result) {
-    cumBacklog += point.cfdBacklog;
-    cumDev += point.cfdDev;
-    cumQA += point.cfdQA;
-    cumDone += point.cfdDone;
-    point.cfdBacklog = cumBacklog;
-    point.cfdDev = cumDev;
-    point.cfdQA = cumQA;
-    point.cfdDone = cumDone;
-  }
-
   return result;
 }
 
