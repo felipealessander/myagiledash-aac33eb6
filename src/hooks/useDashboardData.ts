@@ -362,15 +362,18 @@ function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrend
 
       const throughput = mTasks.filter(t => t.resolved_at).length;
 
-      // CFD status grouping
-      const doneStatuses = ['concluida', 'arquivado'];
-      const backlogStatuses = ['aberta', 'aguardando desenvolvimento', 'aguardando discovery', 'levantamento de requisitos'];
-      let cfdDone = 0, cfdBacklog = 0, cfdInProgress = 0;
+      // CFD status grouping (4 Kanban phases)
+      const doneStatuses = ['concluida', 'arquivado', 'delivery'];
+      const qaStatuses = ['teste qa', 'teste dev', 'homologação', 'homologacao', 'validação', 'code review', 'aguardando merge'];
+      const devStatuses = ['em desenvolvimento', 'em discovery', 'estudo'];
+      // Everything else = Backlog (Aberta, Aguardando desenvolvimento, Aguardando Discovery, Levantamento de Requisitos, Interrompido)
+      let cfdDone = 0, cfdQA = 0, cfdDev = 0, cfdBacklog = 0;
       for (const t of mTasks) {
         const s = (t.status || '').toLowerCase().trim();
         if (doneStatuses.some(ds => s.includes(ds))) cfdDone++;
-        else if (backlogStatuses.some(bs => s.includes(bs))) cfdBacklog++;
-        else cfdInProgress++;
+        else if (qaStatuses.some(qs => s.includes(qs))) cfdQA++;
+        else if (devStatuses.some(ds => s.includes(ds))) cfdDev++;
+        else cfdBacklog++;
       }
 
       return {
@@ -384,18 +387,20 @@ function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrend
         leadTimeAvg,
         cycleTimeAvg,
         throughput,
-        cfdBacklog, cfdInProgress, cfdDone,
+        cfdBacklog, cfdDev, cfdQA, cfdDone,
       };
     });
 
   // Make CFD cumulative
-  let cumBacklog = 0, cumInProgress = 0, cumDone = 0;
+  let cumBacklog = 0, cumDev = 0, cumQA = 0, cumDone = 0;
   for (const point of result) {
     cumBacklog += point.cfdBacklog;
-    cumInProgress += point.cfdInProgress;
+    cumDev += point.cfdDev;
+    cumQA += point.cfdQA;
     cumDone += point.cfdDone;
     point.cfdBacklog = cumBacklog;
-    point.cfdInProgress = cumInProgress;
+    point.cfdDev = cumDev;
+    point.cfdQA = cumQA;
     point.cfdDone = cumDone;
   }
 
