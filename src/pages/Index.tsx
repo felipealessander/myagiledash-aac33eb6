@@ -29,6 +29,8 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { approved, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
+  const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
@@ -51,8 +53,6 @@ const Index = () => {
       </div>
     );
   }
-
-  const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
   const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, cycleTimeBySquad, throughputByWeek, wipBySquad, reworkCount, reworkTotalCorrections, reworkRate, reworkBySquad, incidentsCreatedInMonth, incidentsByClient } = dashboardData;
 
   const overrun = totalEstimated > 0 ? (((totalSpent - totalEstimated) / totalEstimated) * 100).toFixed(0) : "0";
