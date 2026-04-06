@@ -294,6 +294,82 @@ function buildDashboardData(tasks: DBTask[], selectedMonth?: string) {
 
 export type DashboardData = ReturnType<typeof buildDashboardData>;
 
+export interface MonthlyTrendPoint {
+  month: string;
+  label: string;
+  totalTasks: number;
+  totalSpentHours: number;
+  totalEstimatedHours: number;
+  incidentes: number;
+  melhorias: number;
+  deadLetters: number;
+  tarefas: number;
+  bugs: number;
+  epicos: number;
+  outros: number;
+  reworkRate: number;
+  leadTimeAvg: number;
+  cycleTimeAvg: number;
+  throughput: number;
+}
+
+function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrendPoint[] {
+  const tasksByReportId = new Map<string, DBTask[]>();
+  for (const t of tasks) {
+    const rid = (t as any).report_id as string;
+    if (!rid) continue;
+    if (!tasksByReportId.has(rid)) tasksByReportId.set(rid, []);
+    tasksByReportId.get(rid)!.push(t);
+  }
+
+  return months
+    .slice()
+    .sort((a, b) => a.value.localeCompare(b.value))
+    .map(m => {
+      const mTasks = tasksByReportId.get(m.id) || [];
+      const totalTasks = mTasks.length;
+      const totalSpentHours = mTasks.reduce((s, t) => s + (t.spent_minutes || 0) / 60, 0);
+      const totalEstimatedHours = mTasks.reduce((s, t) => s + (t.estimated_minutes || 0) / 60, 0);
+
+      let incidentes = 0, melhorias = 0, deadLetters = 0, tarefas = 0, bugs = 0, epicos = 0, outros = 0;
+      for (const t of mTasks) {
+        const hasDL = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter'));
+        const cat = hasDL ? "DeadLetter" : (t.category || "Tarefa");
+        if (cat === "Incidente") incidentes++;
+        else if (cat === "Melhoria") melhorias++;
+        else if (cat === "DeadLetter") deadLetters++;
+        else if (cat === "Tarefa") tarefas++;
+        else if (cat === "Bug") bugs++;
+        else if (cat === "Épico") epicos++;
+        else outros++;
+      }
+
+      const reworkCount = mTasks.filter(t => (t.qa_returns || 0) > 0 || (t.corrections_count || 0) > 0).length;
+      const reworkRate = totalTasks > 0 ? Math.round((reworkCount / totalTasks) * 1000) / 10 : 0;
+
+      const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico");
+      const leadTimes = resolved.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.created_at_yt!).getTime()) / 86400000));
+      const leadTimeAvg = leadTimes.length > 0 ? Math.round((leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length) * 10) / 10 : 0;
+
+      const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico");
+      const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000));
+      const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
+
+      return {
+        month: m.value,
+        label: m.label,
+        totalTasks,
+        totalSpentHours: Math.round(totalSpentHours),
+        totalEstimatedHours: Math.round(totalEstimatedHours),
+        incidentes, melhorias, deadLetters, tarefas, bugs, epicos, outros,
+        reworkRate,
+        leadTimeAvg,
+        cycleTimeAvg,
+        throughput: resolved.length,
+      };
+    });
+}
+
 export function useDashboardData() {
   const [months, setMonths] = useState<MonthOption[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>("year-2026");
@@ -339,7 +415,7 @@ export function useDashboardData() {
       const reportIds = yearMonths.map(m => m.id);
       supabase
         .from("report_tasks")
-        .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+        .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
         .in("report_id", reportIds)
         .then(({ data, error }) => {
           setLoading(false);
@@ -418,6 +494,18 @@ export function useDashboardData() {
     return buildDashboardData(filtered, selectedMonth);
   }, [dashboardData, selectedSquad, selectedMonth, dbTasks]);
 
+  const isYearView = selectedMonth.startsWith("year-");
+  const yearMonthsForTrend = useMemo(() => {
+    if (!isYearView) return [];
+    const year = selectedMonth.replace("year-", "");
+    return months.filter(m => m.value.startsWith(year));
+  }, [isYearView, selectedMonth, months]);
+
+  const monthlyTrend: MonthlyTrendPoint[] = useMemo(() => {
+    if (!isYearView || !dbTasks || dbTasks.length === 0) return [];
+    return buildMonthlyTrend(dbTasks, yearMonthsForTrend);
+  }, [isYearView, dbTasks, yearMonthsForTrend]);
+
   return {
     months,
     selectedMonth,
@@ -428,5 +516,7 @@ export function useDashboardData() {
     refetchMonths: fetchMonths,
     selectedSquad,
     setSelectedSquad,
+    monthlyTrend,
+    isYearView,
   };
 }

@@ -16,6 +16,7 @@ import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
+import { MonthlyTrendCharts } from "@/components/dashboard/MonthlyTrendCharts";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,7 +30,7 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { approved, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
+  const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad, monthlyTrend, isYearView } = useDashboardData();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -167,7 +168,17 @@ const Index = () => {
             </div>
           </section>
 
-          {/* ═══════ INCIDENTES ═══════ */}
+          {/* ═══════ EVOLUÇÃO MENSAL (só no ano consolidado) ═══════ */}
+          {isYearView && monthlyTrend.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+                <TrendingUp className="h-4 w-4" />
+                Evolução Mensal
+              </h2>
+              <MonthlyTrendCharts data={monthlyTrend} />
+            </section>
+          )}
+
           <section>
             <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
               <AlertTriangle className="h-4 w-4" />
