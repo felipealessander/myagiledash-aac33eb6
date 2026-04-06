@@ -245,28 +245,6 @@ const Index = () => {
                   <LeadTimeChart data={leadTimeBySquad || []} />
                   <CycleTimeChart data={cycleTimeBySquad || []} />
                 </div>
-                {!isYearView && monthlyTrend.length > 1 && (
-                  <div className="gradient-card rounded-lg border border-border p-5">
-                    <h3 className="text-sm font-semibold mb-1">Lead Time & Cycle Time – Evolução Mensal</h3>
-                    <p className="text-xs text-muted-foreground mb-4">Evolução mensal da previsibilidade (dias)</p>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={monthlyTrend.map(d => ({ ...d, shortLabel: d.label.slice(0, 3) }))} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="shortLabel" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
-                          <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} unit="d" />
-                          <RechartsTooltip
-                            contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "11px", color: "hsl(var(--foreground))" }}
-                            formatter={(v: number, name: string) => [`${v}d`, name === "leadTimeAvg" ? "Lead Time" : "Cycle Time"]}
-                          />
-                          <Legend wrapperStyle={{ fontSize: "11px" }} formatter={(v) => v === "leadTimeAvg" ? "Lead Time" : "Cycle Time"} />
-                          <Line dataKey="leadTimeAvg" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
-                          <Line dataKey="cycleTimeAvg" stroke="hsl(var(--warning))" strokeWidth={2} dot={{ r: 4 }} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <ThroughputChart data={throughputByWeek || []} />
                   <WIPChart data={wipBySquad || []} />
