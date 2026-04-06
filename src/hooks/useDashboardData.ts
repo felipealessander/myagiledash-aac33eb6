@@ -313,7 +313,8 @@ export interface MonthlyTrendPoint {
   throughput: number;
   // CFD cumulative fields
   cfdBacklog: number;
-  cfdInProgress: number;
+  cfdDev: number;
+  cfdQA: number;
   cfdDone: number;
 }
 
