@@ -437,6 +437,7 @@ export function useDashboardData() {
   const [months, setMonths] = useState<MonthOption[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>("year-2026");
   const [dbTasks, setDbTasks] = useState<DBTask[] | null>(null);
+  const [dbTasksForTrend, setDbTasksForTrend] = useState<DBTask[] | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
