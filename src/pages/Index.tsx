@@ -14,6 +14,7 @@ import { ThroughputChart } from "@/components/dashboard/ThroughputChart";
 import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { ReworkChart } from "@/components/dashboard/ReworkChart";
+import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
