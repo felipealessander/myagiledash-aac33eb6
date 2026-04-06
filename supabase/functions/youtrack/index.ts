@@ -244,6 +244,21 @@ Deno.serve(async (req) => {
     const issuesUrl = `${base}/api/issues?query=${encodeURIComponent(query)}&fields=${encodeURIComponent(fields)}`
     const allIssues = await fetchAllPages(issuesUrl, YOUTRACK_TOKEN)
 
+    // Debug: log custom field names from first issue
+    if (allIssues.length > 0) {
+      const fieldNames = (allIssues[0].customFields || []).map((f: any) => f.projectCustomField?.field?.name);
+      console.log('Custom field names:', JSON.stringify(fieldNames));
+      // Also log any field containing "client" or "cliente" (case-insensitive)
+      for (const issue of allIssues.slice(0, 3)) {
+        for (const cf of (issue.customFields || [])) {
+          const name = cf.projectCustomField?.field?.name || '';
+          if (name.toLowerCase().includes('client') || name.toLowerCase().includes('cliente')) {
+            console.log(`Field "${name}" value:`, JSON.stringify(cf.value));
+          }
+        }
+      }
+    }
+
     const tasks = allIssues.map((issue: any) => ({
       id: issue.id,
       taskCode: issue.idReadable,
