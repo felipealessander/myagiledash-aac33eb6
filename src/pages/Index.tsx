@@ -125,50 +125,77 @@ const Index = () => {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <main className="container mx-auto px-4 py-6 space-y-6">
-          {/* KPI Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <KpiCard title="Horas Realizadas" value={`${totalSpent.toFixed(0)}h`} subtitle="Total de horas registradas" icon={Clock} variant="primary" delay={0} />
-            <KpiCard title="Horas Estimadas" value={`${totalEstimated.toFixed(0)}h`} subtitle="Total previsto nas tarefas" icon={TrendingUp} variant="info" delay={50} />
-            <KpiCard title="Total de Tarefas" value={totalTasks} subtitle="Itens rastreados no período" icon={ListTodo} variant="default" delay={100} />
-            <KpiCard title="Incidentes" value={incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={150} />
-            <KpiCard title="Desvio de Estimativa" value={`+${overrun}%`} subtitle="Horas além do estimado" icon={AlertTriangle} variant="warning" delay={200} />
-          </div>
+        <main className="container mx-auto px-4 py-6 space-y-8">
 
-          {/* Team Cards */}
-          <div>
-            <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              Visão por Time
+          {/* ═══════ PRODUTO ═══════ */}
+          <section>
+            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+              <BarChart3 className="h-4 w-4" />
+              Produto
             </h2>
-            <div className={`grid grid-cols-1 sm:grid-cols-2 ${teams.length <= 4 ? 'lg:grid-cols-4' : teams.length <= 6 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
-              {teams.map((team, i) => (
-                <TeamCard key={team.name} team={team} teamIndex={i} delay={200 + i * 50} />
-              ))}
+            <div className="space-y-4">
+              {/* KPIs de Produto */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <KpiCard title="Horas Realizadas" value={`${totalSpent.toFixed(0)}h`} subtitle="Total de horas registradas" icon={Clock} variant="primary" delay={0} />
+                <KpiCard title="Horas Estimadas" value={`${totalEstimated.toFixed(0)}h`} subtitle="Total previsto nas tarefas" icon={TrendingUp} variant="info" delay={50} />
+                <KpiCard title="Total de Tarefas" value={totalTasks} subtitle="Itens rastreados no período" icon={ListTodo} variant="default" delay={100} />
+                <KpiCard title="Desvio de Estimativa" value={`${Number(overrun) >= 0 ? "+" : ""}${overrun}%`} subtitle="Horas além do estimado" icon={AlertTriangle} variant="warning" delay={150} />
+              </div>
+
+              {/* Visão por Time */}
+              <div>
+                <h3 className="text-xs font-medium mb-3 flex items-center gap-2 text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" />
+                  Visão por Time
+                </h3>
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${teams.length <= 4 ? 'lg:grid-cols-4' : teams.length <= 6 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
+                  {teams.map((team, i) => (
+                    <TeamCard key={team.name} team={team} teamIndex={i} delay={200 + i * 50} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Gráficos de Produto */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <CategoryChart categoryTotals={categoryTotals} />
+                <EstimationVsSpentChart teams={teams} />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <TeamDistributionChart teams={teams} />
+                <TaskTable categoryTotals={categoryTotals} />
+              </div>
             </div>
-          </div>
+          </section>
 
-          {/* Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <CategoryChart categoryTotals={categoryTotals} />
-            <EstimationVsSpentChart teams={teams} />
-          </div>
+          {/* ═══════ INCIDENTES ═══════ */}
+          <section>
+            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+              <AlertTriangle className="h-4 w-4" />
+              Incidentes
+            </h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <KpiCard title="Incidentes Criados" value={incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={0} />
+                <KpiCard title="Tarefas com Retrabalho" value={reworkCount} subtitle={`${reworkRate}% do total`} icon={RotateCcw} variant="destructive" delay={50} />
+                <KpiCard title="Total de Correções" value={reworkTotalCorrections} subtitle="Soma de correções aplicadas" icon={RotateCcw} variant="warning" delay={100} />
+                <KpiCard title="Correções / Tarefa" value={reworkCount > 0 ? (reworkTotalCorrections / reworkCount).toFixed(1) : "0"} subtitle="Média por tarefa retrabalhada" icon={RotateCcw} variant="info" delay={150} />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <ReworkChart data={reworkBySquad || []} />
+                <IncidentsByClientChart data={incidentsByClient || []} />
+              </div>
+            </div>
+          </section>
 
-          {/* Bottom Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <TeamDistributionChart teams={teams} />
-            <TaskTable categoryTotals={categoryTotals} />
-          </div>
-
-          {/* Agile Metrics Section */}
+          {/* ═══════ MÉTRICAS ÁGEIS ═══════ */}
           {selectedMonth !== "static" && (leadTimeBySquad?.length > 0 || cycleTimeBySquad?.length > 0 || throughputByWeek?.length > 0 || wipBySquad?.length > 0) && (
-            <>
-              <div className="pt-2">
-                <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  Métricas Ágeis
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <section>
+              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+                <TrendingUp className="h-4 w-4" />
+                Métricas Ágeis
+              </h2>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <KpiCard
                     title="Lead Time Médio"
                     value={`${leadTimeBySquad.length > 0 ? (leadTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, leadTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d`}
@@ -206,58 +233,28 @@ const Index = () => {
                   <LeadTimeChart data={leadTimeBySquad || []} />
                   <CycleTimeChart data={cycleTimeBySquad || []} />
                 </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <ThroughputChart data={throughputByWeek || []} />
+                  <WIPChart data={wipBySquad || []} />
+                </div>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <ThroughputChart data={throughputByWeek || []} />
-                <WIPChart data={wipBySquad || []} />
-              </div>
-              {/* Rework Section */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <KpiCard
-                  title="Tarefas com Retrabalho"
-                  value={reworkCount}
-                  subtitle={`${reworkRate}% do total`}
-                  icon={RotateCcw}
-                  variant="destructive"
-                  delay={0}
-                />
-                <KpiCard
-                  title="Total de Correções"
-                  value={reworkTotalCorrections}
-                  subtitle="Soma de correções aplicadas"
-                  icon={RotateCcw}
-                  variant="warning"
-                  delay={50}
-                />
-                <KpiCard
-                  title="Correções / Tarefa"
-                  value={reworkCount > 0 ? (reworkTotalCorrections / reworkCount).toFixed(1) : "0"}
-                  subtitle="Média por tarefa retrabalhada"
-                  icon={RotateCcw}
-                  variant="info"
-                  delay={100}
-                />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <ReworkChart data={reworkBySquad || []} />
-                <IncidentsByClientChart data={incidentsByClient || []} />
-              </div>
-            </>
+            </section>
           )}
 
-          {/* Billing Section */}
-          <div className="pt-2">
-            <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-muted-foreground" />
-              Classificação de Faturamento
+          {/* ═══════ FATURAMENTO ═══════ */}
+          <section>
+            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+              <Receipt className="h-4 w-4" />
+              Faturamento
             </h2>
-            <BillingKpiCards billingData={billingData} billingTotalSpent={billingTotalSpent} />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <BillingOverviewChart billingData={billingData} billingTotalSpent={billingTotalSpent} />
-            <BillingComparisonChart billingData={billingData} />
-          </div>
+            <div className="space-y-4">
+              <BillingKpiCards billingData={billingData} billingTotalSpent={billingTotalSpent} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <BillingOverviewChart billingData={billingData} billingTotalSpent={billingTotalSpent} />
+                <BillingComparisonChart billingData={billingData} />
+              </div>
+            </div>
+          </section>
         </main>
       )}
     </div>
