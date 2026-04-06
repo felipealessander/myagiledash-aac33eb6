@@ -311,6 +311,10 @@ export interface MonthlyTrendPoint {
   leadTimeAvg: number;
   cycleTimeAvg: number;
   throughput: number;
+  // CFD cumulative fields
+  cfdBacklog: number;
+  cfdInProgress: number;
+  cfdDone: number;
 }
 
 function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrendPoint[] {
