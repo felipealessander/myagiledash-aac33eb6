@@ -4,6 +4,7 @@ import { KpiCard } from "@/components/dashboard/KpiCard";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useIndividualData } from "@/hooks/useIndividualData";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -15,14 +16,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Individual = () => {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { canViewIndividual, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const [selectedDevs, setSelectedDevs] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
+    if (!authLoading && !roleLoading) {
+      if (!user) navigate("/auth");
+      else if (!canViewIndividual) navigate("/");
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, roleLoading, user, canViewIndividual, navigate]);
 
   const { months, selectedMonth, setSelectedMonth } = useDashboardData();
   const { devMetrics, allDevNames, loading } = useIndividualData(selectedMonth, months);
