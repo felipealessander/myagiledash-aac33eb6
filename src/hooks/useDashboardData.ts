@@ -355,6 +355,8 @@ function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrend
       const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000));
       const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
 
+      const throughput = mTasks.filter(t => t.resolved_at).length;
+
       return {
         month: m.value,
         label: m.label,
@@ -365,7 +367,7 @@ function buildMonthlyTrend(tasks: DBTask[], months: MonthOption[]): MonthlyTrend
         reworkRate,
         leadTimeAvg,
         cycleTimeAvg,
-        throughput: resolved.length,
+        throughput,
       };
     });
 }
