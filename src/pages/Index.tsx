@@ -16,6 +16,7 @@ import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
+import { MonthlyTrendCharts } from "@/components/dashboard/MonthlyTrendCharts";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
