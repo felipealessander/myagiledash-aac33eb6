@@ -168,7 +168,17 @@ const Index = () => {
             </div>
           </section>
 
-          {/* ═══════ INCIDENTES ═══════ */}
+          {/* ═══════ EVOLUÇÃO MENSAL (só no ano consolidado) ═══════ */}
+          {isYearView && monthlyTrend.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+                <TrendingUp className="h-4 w-4" />
+                Evolução Mensal
+              </h2>
+              <MonthlyTrendCharts data={monthlyTrend} />
+            </section>
+          )}
+
           <section>
             <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
               <AlertTriangle className="h-4 w-4" />
