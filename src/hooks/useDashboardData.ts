@@ -413,19 +413,33 @@ export function useDashboardData() {
 
       setLoading(true);
       const reportIds = yearMonths.map(m => m.id);
-      supabase
-        .from("report_tasks")
-        .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
-        .in("report_id", reportIds)
-        .then(({ data, error }) => {
-          setLoading(false);
-          if (error) {
-            console.error("Error loading year tasks:", error);
-            toast({ title: "Erro ao carregar dados", description: getSafeErrorMessage(error), variant: "destructive" });
-            return;
+      // Fetch all tasks across all months - paginate to avoid 1000-row limit
+      const fetchAllYearTasks = async () => {
+        const allTasks: any[] = [];
+        for (const rid of reportIds) {
+          let from = 0;
+          const pageSize = 1000;
+          while (true) {
+            const { data, error } = await supabase
+              .from("report_tasks")
+              .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+              .eq("report_id", rid)
+              .range(from, from + pageSize - 1);
+            if (error) {
+              console.error("Error loading year tasks:", error);
+              toast({ title: "Erro ao carregar dados", description: getSafeErrorMessage(error), variant: "destructive" });
+              setLoading(false);
+              return;
+            }
+            allTasks.push(...(data || []));
+            if (!data || data.length < pageSize) break;
+            from += pageSize;
           }
-          setDbTasks(data || []);
-        });
+        }
+        setDbTasks(allTasks);
+        setLoading(false);
+      };
+      fetchAllYearTasks();
       return;
     }
 
