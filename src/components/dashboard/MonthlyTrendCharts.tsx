@@ -1,6 +1,6 @@
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, ComposedChart, Area,
+  ResponsiveContainer, Legend, ComposedChart, Area, AreaChart,
 } from "recharts";
 import type { MonthlyTrendPoint } from "@/hooks/useDashboardData";
 
