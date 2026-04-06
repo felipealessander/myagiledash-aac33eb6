@@ -1,6 +1,6 @@
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, ComposedChart, Area,
+  ResponsiveContainer, Legend, ComposedChart, Area, AreaChart,
 } from "recharts";
 import type { MonthlyTrendPoint } from "@/hooks/useDashboardData";
 
@@ -124,6 +124,26 @@ export function MonthlyTrendCharts({ data }: Props) {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* CFD - Cumulative Flow Diagram */}
+      <div className="gradient-card rounded-lg border border-border p-5">
+        <h3 className="text-sm font-semibold mb-1">CFD – Diagrama de Fluxo Acumulativo</h3>
+        <p className="text-xs text-muted-foreground mb-4">Acúmulo de tarefas por estado ao longo dos meses</p>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+              <XAxis dataKey="shortLabel" tick={axisTickStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
+              <YAxis tick={axisTickStyle} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "hsl(210, 20%, 92%)" }} />
+              <Legend wrapperStyle={{ fontSize: "11px" }} />
+              <Area dataKey="cfdDone" name="Concluídas" stackId="cfd" fill="hsl(160, 84%, 39%)" fillOpacity={0.7} stroke="hsl(160, 84%, 39%)" />
+              <Area dataKey="cfdInProgress" name="Em Andamento" stackId="cfd" fill="hsl(210, 100%, 56%)" fillOpacity={0.7} stroke="hsl(210, 100%, 56%)" />
+              <Area dataKey="cfdBacklog" name="Backlog" stackId="cfd" fill="hsl(215, 15%, 52%)" fillOpacity={0.7} stroke="hsl(215, 15%, 52%)" />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
