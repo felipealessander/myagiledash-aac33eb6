@@ -14,6 +14,7 @@ import { ThroughputChart } from "@/components/dashboard/ThroughputChart";
 import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { ReworkChart } from "@/components/dashboard/ReworkChart";
+import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -52,7 +53,7 @@ const Index = () => {
   }
 
   const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad } = useDashboardData();
-  const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, cycleTimeBySquad, throughputByWeek, wipBySquad, reworkCount, reworkTotalCorrections, reworkRate, reworkBySquad, incidentsCreatedInMonth } = dashboardData;
+  const { teams, categoryTotals, billingData, totalSpent, totalEstimated, totalTasks, billingTotalSpent, leadTimeBySquad, cycleTimeBySquad, throughputByWeek, wipBySquad, reworkCount, reworkTotalCorrections, reworkRate, reworkBySquad, incidentsCreatedInMonth, incidentsByClient } = dashboardData;
 
   const overrun = totalEstimated > 0 ? (((totalSpent - totalEstimated) / totalEstimated) * 100).toFixed(0) : "0";
 
@@ -239,6 +240,7 @@ const Index = () => {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ReworkChart data={reworkBySquad || []} />
+                <IncidentsByClientChart data={incidentsByClient || []} />
               </div>
             </>
           )}

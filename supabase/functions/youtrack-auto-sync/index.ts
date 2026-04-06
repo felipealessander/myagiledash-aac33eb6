@@ -230,6 +230,7 @@ Deno.serve(async (req) => {
           tags: t.tags || [],
           corrections_count: t.correctionsCount || 0,
           qa_returns: qaReturnsMap[t.taskCode] || 0,
+          client: t.client || null,
         }
       })
 
