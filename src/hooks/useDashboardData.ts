@@ -376,11 +376,13 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       const reworkCount = mTasks.filter(t => (t.qa_returns || 0) > 0 || (t.corrections_count || 0) > 0).length;
       const reworkRate = totalTasks > 0 ? Math.round((reworkCount / totalTasks) * 1000) / 10 : 0;
 
-      const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico");
+      // Only count tasks resolved within THIS month for lead/cycle time
+      const isResolvedInThisMonth = (ra: string) => ra.slice(0, 7) === m.value;
+      const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && isResolvedInThisMonth(t.resolved_at!));
       const leadTimes = resolved.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.created_at_yt!).getTime()) / 86400000));
       const leadTimeAvg = leadTimes.length > 0 ? Math.round((leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length) * 10) / 10 : 0;
 
-      const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico");
+      const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && isResolvedInThisMonth(t.resolved_at!));
       const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000));
       const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
 
