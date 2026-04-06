@@ -573,15 +573,19 @@ export function useDashboardData() {
 
   const isYearView = selectedMonth.startsWith("year-");
   const yearMonthsForTrend = useMemo(() => {
-    if (!isYearView) return [];
-    const year = selectedMonth.replace("year-", "");
+    if (isYearView) {
+      const year = selectedMonth.replace("year-", "");
+      return months.filter(m => m.value.startsWith(year));
+    }
+    // For single month, get all months of the same year for context
+    const year = selectedMonth.slice(0, 4);
     return months.filter(m => m.value.startsWith(year));
   }, [isYearView, selectedMonth, months]);
 
   const monthlyTrend: MonthlyTrendPoint[] = useMemo(() => {
-    if (!isYearView || !dbTasks || dbTasks.length === 0) return [];
+    if (!dbTasks || dbTasks.length === 0 || yearMonthsForTrend.length === 0) return [];
     return buildMonthlyTrend(dbTasks, yearMonthsForTrend);
-  }, [isYearView, dbTasks, yearMonthsForTrend]);
+  }, [dbTasks, yearMonthsForTrend]);
 
   return {
     months,
