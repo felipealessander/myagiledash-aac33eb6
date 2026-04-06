@@ -53,42 +53,21 @@ export function MonthlyTrendCharts({ data }: Props) {
       </div>
 
       {/* Hours: Estimated vs Spent */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="gradient-card rounded-lg border border-border p-5">
-          <h3 className="text-sm font-semibold mb-1">Horas Estimadas vs Realizadas</h3>
-          <p className="text-xs text-muted-foreground mb-4">Evolução mensal de esforço</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="shortLabel" tick={axisTickStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
-                <YAxis tick={axisTickStyle} axisLine={false} tickLine={false} unit="h" />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`${v}h`, name === "totalEstimatedHours" ? "Estimado" : "Realizado"]} />
-                <Legend wrapperStyle={{ fontSize: "11px" }} formatter={(v) => v === "totalEstimatedHours" ? "Estimado" : "Realizado"} />
-                <Area dataKey="totalEstimatedHours" fill="hsl(210, 100%, 56%)" fillOpacity={0.15} stroke="hsl(210, 100%, 56%)" strokeDasharray="5 5" />
-                <Line dataKey="totalSpentHours" stroke="hsl(160, 84%, 39%)" strokeWidth={2} dot={{ r: 4 }} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Lead Time & Cycle Time trends */}
-        <div className="gradient-card rounded-lg border border-border p-5">
-          <h3 className="text-sm font-semibold mb-1">Lead Time & Cycle Time</h3>
-          <p className="text-xs text-muted-foreground mb-4">Evolução mensal da previsibilidade (dias)</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="shortLabel" tick={axisTickStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
-                <YAxis tick={axisTickStyle} axisLine={false} tickLine={false} unit="d" />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`${v}d`, name === "leadTimeAvg" ? "Lead Time" : "Cycle Time"]} />
-                <Legend wrapperStyle={{ fontSize: "11px" }} formatter={(v) => v === "leadTimeAvg" ? "Lead Time" : "Cycle Time"} />
-                <Line dataKey="leadTimeAvg" stroke="hsl(210, 100%, 56%)" strokeWidth={2} dot={{ r: 4 }} />
-                <Line dataKey="cycleTimeAvg" stroke="hsl(38, 92%, 50%)" strokeWidth={2} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      <div className="gradient-card rounded-lg border border-border p-5">
+        <h3 className="text-sm font-semibold mb-1">Horas Estimadas vs Realizadas</h3>
+        <p className="text-xs text-muted-foreground mb-4">Evolução mensal de esforço</p>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+              <XAxis dataKey="shortLabel" tick={axisTickStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
+              <YAxis tick={axisTickStyle} axisLine={false} tickLine={false} unit="h" />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`${v}h`, name === "totalEstimatedHours" ? "Estimado" : "Realizado"]} />
+              <Legend wrapperStyle={{ fontSize: "11px" }} formatter={(v) => v === "totalEstimatedHours" ? "Estimado" : "Realizado"} />
+              <Area dataKey="totalEstimatedHours" fill="hsl(210, 100%, 56%)" fillOpacity={0.15} stroke="hsl(210, 100%, 56%)" strokeDasharray="5 5" />
+              <Line dataKey="totalSpentHours" stroke="hsl(160, 84%, 39%)" strokeWidth={2} dot={{ r: 4 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
