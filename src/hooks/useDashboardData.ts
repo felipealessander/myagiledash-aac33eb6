@@ -380,11 +380,13 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
 
       // Only count tasks resolved within THIS month for lead/cycle time
       const isResolvedInThisMonth = (ra: string) => ra.slice(0, 7) === m.value;
-      const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && isResolvedInThisMonth(t.resolved_at!));
+      // Exclude Qualidade squad from agile metrics in trend
+      const isQualidade = (t: DBTask) => (t.squad || '').toLowerCase().trim() === 'qualidade';
+      const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
       const leadTimes = resolved.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.created_at_yt!).getTime()) / 86400000));
       const leadTimeAvg = leadTimes.length > 0 ? Math.round((leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length) * 10) / 10 : 0;
 
-      const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && isResolvedInThisMonth(t.resolved_at!));
+      const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
       const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000));
       const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
 
