@@ -180,7 +180,9 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   };
 
   // Agile metrics - Lead Time: created_at_yt -> resolved_at (only tasks resolved within the period)
-  const resolvedTasks = tasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && isResolvedInPeriod(t.resolved_at!));
+  // Exclude "Qualidade" squad from agile metrics as their workflow differs significantly
+  const isQualidadeSquad = (t: DBTask) => (t.squad || '').toLowerCase().trim() === 'qualidade';
+  const resolvedTasks = tasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && !isQualidadeSquad(t) && isResolvedInPeriod(t.resolved_at!));
   const leadTimes = resolvedTasks.map(t => {
     const created = new Date(t.created_at_yt!).getTime();
     const resolved = new Date(t.resolved_at!).getTime();
@@ -207,7 +209,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   }
 
   // Cycle Time by squad (started_at -> resolved_at, only resolved within period)
-  const cycleTimeTasks = tasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && isResolvedInPeriod(t.resolved_at!));
+  const cycleTimeTasks = tasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && !isQualidadeSquad(t) && isResolvedInPeriod(t.resolved_at!));
   const cycleTimeBySquad: { squad: string; avg: number; median: number; p85: number; count: number }[] = [];
   for (const squadName of squadNames) {
     const squadCycle = cycleTimeTasks.filter(t => (t.squad || "Sem Squad") === squadName);
@@ -240,8 +242,8 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     .sort(([a], [b]) => a.localeCompare(b))
     .forEach(([week, count]) => throughputByWeek.push({ week, count }));
 
-  // WIP: tasks with status not done/delivered
-  const wipBySquad: { squad: string; wip: number }[] = squadNames.map(name => {
+  // WIP: tasks with status not done/delivered (exclude Qualidade squad)
+  const wipBySquad: { squad: string; wip: number }[] = squadNames.filter(n => n.toLowerCase() !== 'qualidade').map(name => {
     const squadTasks = squadTasksMap.get(name) || [];
     const openTasks = squadTasks.filter(t => !isDoneStatus(t.status));
     return { squad: name, wip: openTasks.length };
@@ -378,11 +380,13 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
 
       // Only count tasks resolved within THIS month for lead/cycle time
       const isResolvedInThisMonth = (ra: string) => ra.slice(0, 7) === m.value;
-      const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && isResolvedInThisMonth(t.resolved_at!));
+      // Exclude Qualidade squad from agile metrics in trend
+      const isQualidade = (t: DBTask) => (t.squad || '').toLowerCase().trim() === 'qualidade';
+      const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
       const leadTimes = resolved.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.created_at_yt!).getTime()) / 86400000));
       const leadTimeAvg = leadTimes.length > 0 ? Math.round((leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length) * 10) / 10 : 0;
 
-      const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && isResolvedInThisMonth(t.resolved_at!));
+      const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
       const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000));
       const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
 
