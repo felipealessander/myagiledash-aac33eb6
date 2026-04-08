@@ -32,13 +32,13 @@ async function fetchHoursForMonths(months: string[]): Promise<SquadHours[]> {
 
   const reportIds = reports.map((r) => r.id);
 
-  let allTasks: { squad: string | null; estimated_minutes: number | null; spent_minutes: number | null; status: string | null }[] = [];
+  let allTasks: { squad: string | null; estimated_minutes: number | null; spent_minutes: number | null; status: string | null; tags: string[] | null }[] = [];
   let from = 0;
   const PAGE = 1000;
   while (true) {
     const { data } = await supabase
       .from("report_tasks")
-      .select("squad, estimated_minutes, spent_minutes, status")
+      .select("squad, estimated_minutes, spent_minutes, status, tags")
       .in("report_id", reportIds)
       .range(from, from + PAGE - 1);
     if (!data || data.length === 0) break;
@@ -47,14 +47,20 @@ async function fetchHoursForMonths(months: string[]): Promise<SquadHours[]> {
     from += PAGE;
   }
 
-  const map = new Map<string, { estimated: number; spent: number }>();
+  const map = new Map<string, { estimated: number; spent: number; productSpent: number }>();
   for (const t of allTasks) {
     const status = (t.status || "").toLowerCase();
     if (status.includes("arquivado")) continue;
     const sq = t.squad || "Sem Squad";
-    const entry = map.get(sq) || { estimated: 0, spent: 0 };
+    const entry = map.get(sq) || { estimated: 0, spent: 0, productSpent: 0 };
+    const spent = (t.spent_minutes || 0) / 60;
     entry.estimated += (t.estimated_minutes || 0) / 60;
-    entry.spent += (t.spent_minutes || 0) / 60;
+    entry.spent += spent;
+    // Check if task has "Produto" tag (case-insensitive)
+    const hasProduto = (t.tags || []).some(tag => tag.toLowerCase() === "produto");
+    if (hasProduto) {
+      entry.productSpent += spent;
+    }
     map.set(sq, entry);
   }
 
