@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SQUAD_CAPACITY, computeCapacitySummaries, getWorkingDaysInMonth, type SquadCapacitySummary } from "@/data/squadCapacity";
 
+interface SquadHours { squad: string; estimated: number; spent: number; productSpent: number }
 export interface CapacityMonthOption {
   value: string;
   label: string;
