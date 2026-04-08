@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SQUAD_CAPACITY, computeCapacitySummaries, HOURS_PER_MONTH, PRODUCTIVE_HOURS_PER_MONTH, type SquadCapacitySummary } from "@/data/squadCapacity";
+import { SQUAD_CAPACITY, computeCapacitySummaries, getWorkingDaysInMonth, type SquadCapacitySummary } from "@/data/squadCapacity";
 
 export interface CapacityMonthOption {
   value: string;
@@ -31,7 +31,6 @@ async function fetchHoursForMonths(months: string[]): Promise<SquadHours[]> {
 
   const reportIds = reports.map((r) => r.id);
 
-  // Paginated fetch
   let allTasks: { squad: string | null; estimated_minutes: number | null; spent_minutes: number | null; status: string | null }[] = [];
   let from = 0;
   const PAGE = 1000;
@@ -67,8 +66,8 @@ export function useCapacityData() {
   const [loading, setLoading] = useState(true);
   const [hoursBySquad, setHoursBySquad] = useState<SquadHours[]>([]);
   const [avg3mBySquad, setAvg3mBySquad] = useState<SquadHours[]>([]);
+  const [avg3mWorkingDays, setAvg3mWorkingDays] = useState(22);
 
-  // Fetch available months
   useEffect(() => {
     async function fetchMonths() {
       const { data } = await supabase
@@ -92,7 +91,6 @@ export function useCapacityData() {
     fetchMonths();
   }, []);
 
-  // Fetch hours for selected month + last 3 months average
   useEffect(() => {
     if (!selectedMonth) return;
     async function fetchAll() {
@@ -107,13 +105,18 @@ export function useCapacityData() {
 
       setHoursBySquad(current);
 
-      // Average the prev3 data (divide by number of months that had data)
-      // We need to know how many months actually had reports
+      // Calculate average working days for the 3 previous months
       const { data: prev3Reports } = await supabase
         .from("sprint_reports")
         .select("month")
         .in("month", prev3);
-      const monthsWithData = new Set((prev3Reports || []).map((r) => r.month)).size || 1;
+      const monthsWithData = new Set((prev3Reports || []).map((r) => r.month));
+      const monthCount = monthsWithData.size || 1;
+
+      const avgWd = monthCount > 0
+        ? Array.from(monthsWithData).reduce((s, m) => s + getWorkingDaysInMonth(m), 0) / monthCount
+        : 22;
+      setAvg3mWorkingDays(Math.round(avgWd));
 
       const avgMap = new Map<string, { estimated: number; spent: number }>();
       for (const h of prev3Data) {
@@ -125,8 +128,8 @@ export function useCapacityData() {
       setAvg3mBySquad(
         Array.from(avgMap.entries()).map(([squad, data]) => ({
           squad,
-          estimated: data.estimated / monthsWithData,
-          spent: data.spent / monthsWithData,
+          estimated: data.estimated / monthCount,
+          spent: data.spent / monthCount,
         }))
       );
 
@@ -135,47 +138,51 @@ export function useCapacityData() {
     fetchAll();
   }, [selectedMonth]);
 
+  const workingDays = useMemo(
+    () => selectedMonth ? getWorkingDaysInMonth(selectedMonth) : 22,
+    [selectedMonth]
+  );
+
   const summaries = useMemo<SquadCapacitySummary[]>(
-    () => computeCapacitySummaries(SQUAD_CAPACITY, hoursBySquad),
-    [hoursBySquad]
+    () => computeCapacitySummaries(SQUAD_CAPACITY, hoursBySquad, workingDays),
+    [hoursBySquad, workingDays]
   );
 
   const avg3mSummaries = useMemo<SquadCapacitySummary[]>(
-    () => computeCapacitySummaries(SQUAD_CAPACITY, avg3mBySquad),
-    [avg3mBySquad]
+    () => computeCapacitySummaries(SQUAD_CAPACITY, avg3mBySquad, avg3mWorkingDays),
+    [avg3mBySquad, avg3mWorkingDays]
   );
 
   const totals = useMemo(() => {
-    const t = { members: 0, fte: 0, theoretical: 0, productive: 0, estimated: 0, spent: 0 };
+    const t = { members: 0, fte: 0, capacity: 0, estimated: 0, spent: 0 };
     for (const s of summaries) {
       t.members += s.totalMembers;
       t.fte += s.fteEquivalent;
-      t.theoretical += s.theoreticalHours;
-      t.productive += s.productiveHours;
+      t.capacity += s.capacityHours;
       t.estimated += s.estimatedHours;
       t.spent += s.spentHours;
     }
-    const deviation = t.productive > 0 ? t.spent - t.productive : 0;
+    const deviation = t.spent - t.capacity;
     return {
       ...t,
       deviation,
-      utilizationPct: t.productive > 0 ? parseFloat(((t.spent / t.productive) * 100).toFixed(1)) : 0,
-      estimationPct: t.productive > 0 ? parseFloat(((t.estimated / t.productive) * 100).toFixed(1)) : 0,
+      utilizationPct: t.capacity > 0 ? parseFloat(((t.spent / t.capacity) * 100).toFixed(1)) : 0,
+      estimationPct: t.capacity > 0 ? parseFloat(((t.estimated / t.capacity) * 100).toFixed(1)) : 0,
     };
   }, [summaries]);
 
   const avg3mTotals = useMemo(() => {
-    const t = { spent: 0, estimated: 0, productive: 0 };
+    const t = { spent: 0, estimated: 0, capacity: 0 };
     for (const s of avg3mSummaries) {
       t.spent += s.spentHours;
       t.estimated += s.estimatedHours;
-      t.productive += s.productiveHours;
+      t.capacity += s.capacityHours;
     }
     return {
       ...t,
-      utilizationPct: t.productive > 0 ? parseFloat(((t.spent / t.productive) * 100).toFixed(1)) : 0,
+      utilizationPct: t.capacity > 0 ? parseFloat(((t.spent / t.capacity) * 100).toFixed(1)) : 0,
     };
   }, [avg3mSummaries]);
 
-  return { months, selectedMonth, setSelectedMonth, summaries, avg3mSummaries, totals, avg3mTotals, loading };
+  return { months, selectedMonth, setSelectedMonth, summaries, avg3mSummaries, totals, avg3mTotals, loading, workingDays };
 }

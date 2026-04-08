@@ -1,40 +1,47 @@
 // Squad capacity data model
-// Each person: 160h/month theoretical, 128h/month productive (80% efficiency)
-
-export const HOURS_PER_DAY = 8;
-export const DAYS_PER_WEEK = 5;
-export const HOURS_PER_MONTH = 160; // 8 * 5 * 4
-export const EFFICIENCY_FACTOR = 0.8;
-export const PRODUCTIVE_HOURS_PER_MONTH = HOURS_PER_MONTH * EFFICIENCY_FACTOR; // 128h
+// Capacity = working days in month × hours/day per role × allocation
 
 export type MemberRole = "Líder Técnico" | "Dev Back-end" | "Dev Front-end" | "Arquiteto" | "QA";
+
+/** Hours per day by role */
+export const ROLE_HOURS_PER_DAY: Record<MemberRole, number> = {
+  "Líder Técnico": 2,
+  "Dev Back-end": 8,
+  "Dev Front-end": 8,
+  "Arquiteto": 2,
+  "QA": 8,
+};
 
 export interface SquadMember {
   name: string;
   role: MemberRole;
-  cross: boolean; // true = shared across squads
+  cross: boolean;
   /** Fraction of capacity allocated to this squad (0-1). 1 = dedicated */
   allocation: number;
 }
 
 export interface SquadCapacityConfig {
   name: string;
-  product: string; // product/domain name
+  product: string;
   members: SquadMember[];
 }
 
-// Cross-squad members and their allocation across squads:
-// Alexandre (Front-end): Golden Gate, Tesseract, CODE418 → 1/3 each ≈ 0.33
-// Sávio (Arquiteto): Golden Gate, Tesseract → 1/2 each = 0.50
-// Breno (QA): Golden Gate → 1.0 (only listed for GG)
-// Roberto (QA): Tesseract → 1.0 (only listed for Tesseract)
-// Tássio (Arquiteto): CODE418, TheBigBang-Cobrança → 1/2 each = 0.50
-// Felipe Mendes (Front-end): JRE, TheBigBang-Cobrança, CODE402 → 1/3 each ≈ 0.33
-// Jaison (Front-end): TheBigBang-Tributário → 1.0
-// Wendell (Arquiteto): JRE, TheBigBang-Tributário, CODE402 → 1/3 each ≈ 0.33
-// Pedro (QA): JRE, TheBigBang-Tributário → 1/2 each = 0.50
-// Henrique (QA): TheBigBang-Cobrança, CODE402 → 1/2 each = 0.50
+/**
+ * Calculate working days (Mon-Fri) in a given month.
+ * Does not account for holidays — can be enhanced later.
+ */
+export function getWorkingDaysInMonth(yearMonth: string): number {
+  const [y, m] = yearMonth.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(y, m - 1, d).getDay();
+    if (dow >= 1 && dow <= 5) count++;
+  }
+  return count;
+}
 
+// Squad definitions
 export const SQUAD_CAPACITY: SquadCapacityConfig[] = [
   {
     name: "Golden Gate",
@@ -133,24 +140,35 @@ export interface SquadCapacitySummary {
   name: string;
   product: string;
   totalMembers: number;
-  fteEquivalent: number; // sum of allocations
-  theoreticalHours: number;
-  productiveHours: number;
+  fteEquivalent: number;
+  capacityHours: number; // real capacity based on role hours × working days × allocation
   estimatedHours: number;
   spentHours: number;
-  utilizationPct: number; // spentHours / productiveHours * 100
-  estimationPct: number; // estimatedHours / productiveHours * 100
+  utilizationPct: number;
+  estimationPct: number;
   members: SquadMember[];
+  workingDays: number;
+}
+
+/**
+ * Compute capacity for a member based on their role, allocation, and working days.
+ */
+export function getMemberCapacity(member: SquadMember, workingDays: number): number {
+  const hoursPerDay = ROLE_HOURS_PER_DAY[member.role];
+  return workingDays * hoursPerDay * member.allocation;
 }
 
 export function computeCapacitySummaries(
   squadConfigs: SquadCapacityConfig[],
-  hoursData: { squad: string; estimated: number; spent: number }[]
+  hoursData: { squad: string; estimated: number; spent: number }[],
+  workingDays: number
 ): SquadCapacitySummary[] {
   return squadConfigs.map((sq) => {
+    const capacityHours = sq.members.reduce(
+      (sum, m) => sum + getMemberCapacity(m, workingDays),
+      0
+    );
     const fte = sq.members.reduce((sum, m) => sum + m.allocation, 0);
-    const theoretical = fte * HOURS_PER_MONTH;
-    const productive = fte * PRODUCTIVE_HOURS_PER_MONTH;
 
     const match = hoursData.find(
       (h) => h.squad.toLowerCase() === sq.name.toLowerCase()
@@ -163,13 +181,13 @@ export function computeCapacitySummaries(
       product: sq.product,
       totalMembers: sq.members.length,
       fteEquivalent: parseFloat(fte.toFixed(2)),
-      theoreticalHours: Math.round(theoretical),
-      productiveHours: Math.round(productive),
+      capacityHours: Math.round(capacityHours),
       estimatedHours: Math.round(estimated),
       spentHours: Math.round(spent),
-      utilizationPct: productive > 0 ? parseFloat(((spent / productive) * 100).toFixed(1)) : 0,
-      estimationPct: productive > 0 ? parseFloat(((estimated / productive) * 100).toFixed(1)) : 0,
+      utilizationPct: capacityHours > 0 ? parseFloat(((spent / capacityHours) * 100).toFixed(1)) : 0,
+      estimationPct: capacityHours > 0 ? parseFloat(((estimated / capacityHours) * 100).toFixed(1)) : 0,
       members: sq.members,
+      workingDays,
     };
   });
 }
