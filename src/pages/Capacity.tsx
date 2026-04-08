@@ -3,20 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCapacityData } from "@/hooks/useCapacityData";
+import { ROLE_HOURS_PER_DAY } from "@/data/squadCapacity";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BarChart3, Users, Clock, TrendingUp, Loader2, ShieldAlert, Gauge, AlertTriangle, TrendingDown, Activity } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
+import { BarChart3, Users, Clock, TrendingUp, Loader2, ShieldAlert, Gauge, AlertTriangle, TrendingDown, Activity, Calendar } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import { cn } from "@/lib/utils";
 import { getTeamColor } from "@/data/dashboardData";
+
+const SQUAD_COUNT = 7;
 
 const Capacity = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { approved, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  const { months, selectedMonth, setSelectedMonth, summaries, avg3mSummaries, totals, avg3mTotals, loading } = useCapacityData();
+  const { months, selectedMonth, setSelectedMonth, summaries, avg3mSummaries, totals, avg3mTotals, loading, workingDays } = useCapacityData();
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -62,15 +65,13 @@ const Capacity = () => {
     return "default" as const;
   };
 
-  // Chart: capacity vs realizado (with avg3m reference)
-  const chartData = summaries.map((s, i) => {
+  const chartData = summaries.map((s) => {
     const avg = avg3mSummaries.find((a) => a.name === s.name);
     return {
       name: s.name,
-      capacidade: s.productiveHours,
+      capacidade: s.capacityHours,
       realizado: s.spentHours,
       media3m: avg?.spentHours ?? 0,
-      desvio: s.spentHours - s.productiveHours,
     };
   });
 
@@ -88,6 +89,10 @@ const Capacity = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {workingDays} dias úteis
+            </span>
             {months.length > 0 && (
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                 <SelectTrigger className="w-[180px] h-8 text-xs">
@@ -123,15 +128,15 @@ const Capacity = () => {
               <KpiCard
                 title="Pessoas"
                 value={`${totals.fte.toFixed(1)} FTE`}
-                subtitle={`${totals.members} pessoas · ${SQUAD_CAPACITY_COUNT} squads`}
+                subtitle={`${totals.members} pessoas · ${SQUAD_COUNT} squads`}
                 icon={Users}
                 variant="primary"
                 delay={0}
               />
               <KpiCard
                 title="Capacidade Mensal"
-                value={`${totals.productive}h`}
-                subtitle={`${totals.theoretical}h brutas · 80% eficiência`}
+                value={`${totals.capacity}h`}
+                subtitle={`${workingDays} dias úteis × horas/papel`}
                 icon={Clock}
                 variant="info"
                 delay={50}
@@ -161,6 +166,15 @@ const Capacity = () => {
                 delay={200}
               />
             </div>
+
+            {/* Premissas */}
+            <div className="mt-3 flex flex-wrap gap-3 text-[9px] text-muted-foreground">
+              <span className="bg-muted rounded px-2 py-1">Líder Técnico: {ROLE_HOURS_PER_DAY["Líder Técnico"]}h/dia</span>
+              <span className="bg-muted rounded px-2 py-1">Dev Back-end: {ROLE_HOURS_PER_DAY["Dev Back-end"]}h/dia</span>
+              <span className="bg-muted rounded px-2 py-1">Dev Front-end: {ROLE_HOURS_PER_DAY["Dev Front-end"]}h/dia</span>
+              <span className="bg-muted rounded px-2 py-1">Arquiteto: {ROLE_HOURS_PER_DAY["Arquiteto"]}h/dia</span>
+              <span className="bg-muted rounded px-2 py-1">QA: {ROLE_HOURS_PER_DAY["QA"]}h/dia</span>
+            </div>
           </section>
 
           {/* ═══════ GRÁFICO COMPARATIVO ═══════ */}
@@ -171,7 +185,7 @@ const Capacity = () => {
             </h2>
             <div className="gradient-card rounded-lg border border-border p-5">
               <p className="text-xs text-muted-foreground mb-4">
-                Barra cinza = capacidade produtiva · Barra colorida = horas registradas · Linha tracejada = média 3 meses
+                Cinza = capacidade · Azul = horas registradas · Amarelo = média últimos 3 meses
               </p>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
@@ -187,7 +201,7 @@ const Capacity = () => {
                       }}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px" }} formatter={(v) => {
-                      const labels: Record<string, string> = { capacidade: "Capacidade Produtiva", realizado: "Horas Registradas", media3m: "Média 3 Meses" };
+                      const labels: Record<string, string> = { capacidade: "Capacidade", realizado: "Horas Registradas", media3m: "Média 3 Meses" };
                       return labels[v] || v;
                     }} />
                     <Bar dataKey="capacidade" fill="hsl(var(--muted-foreground))" opacity={0.25} radius={[4, 4, 0, 0]} />
@@ -208,8 +222,8 @@ const Capacity = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {summaries.map((squad, i) => {
                 const avg = avg3mSummaries.find((a) => a.name === squad.name);
-                const deviation = squad.spentHours - squad.productiveHours;
-                const deviationPct = squad.productiveHours > 0 ? ((deviation / squad.productiveHours) * 100).toFixed(1) : "0";
+                const deviation = squad.spentHours - squad.capacityHours;
+                const deviationPct = squad.capacityHours > 0 ? ((deviation / squad.capacityHours) * 100).toFixed(1) : "0";
 
                 return (
                   <div
@@ -233,13 +247,13 @@ const Capacity = () => {
                             {squad.fteEquivalent} FTE · {squad.totalMembers} pessoas
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent side="bottom" className="max-w-[280px]">
-                          <p className="text-[10px] font-semibold mb-1.5 text-muted-foreground uppercase tracking-wider">Composição do time</p>
+                        <TooltipContent side="bottom" className="max-w-[300px]">
+                          <p className="text-[10px] font-semibold mb-1.5 text-muted-foreground uppercase tracking-wider">Dedicados</p>
                           <ul className="space-y-0.5">
                             {squad.members.filter(m => !m.cross).map((m) => (
                               <li key={m.name} className="text-xs flex justify-between gap-4">
                                 <span>{m.name}</span>
-                                <span className="text-muted-foreground">{m.role}</span>
+                                <span className="text-muted-foreground">{m.role} · {ROLE_HOURS_PER_DAY[m.role]}h/dia</span>
                               </li>
                             ))}
                           </ul>
@@ -250,7 +264,7 @@ const Capacity = () => {
                                 {squad.members.filter(m => m.cross).map((m) => (
                                   <li key={m.name} className="text-xs flex justify-between gap-4">
                                     <span>{m.name}</span>
-                                    <span className="text-muted-foreground">{m.role} · {Math.round(m.allocation * 100)}%</span>
+                                    <span className="text-muted-foreground">{m.role} · {Math.round(m.allocation * 100)}% · {(ROLE_HOURS_PER_DAY[m.role] * m.allocation).toFixed(1)}h/dia</span>
                                   </li>
                                 ))}
                               </ul>
@@ -260,12 +274,12 @@ const Capacity = () => {
                       </Tooltip>
                     </div>
 
-                    {/* Core question: quanto pode vs quanto trabalhou vs desvio */}
+                    {/* Core metrics */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div className="space-y-1">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Pode trabalhar</span>
-                        <p className="text-xl font-bold font-mono">{squad.productiveHours}h</p>
-                        <p className="text-[10px] text-muted-foreground">{squad.totalMembers}p × {squad.fteEquivalent} FTE</p>
+                        <p className="text-xl font-bold font-mono">{squad.capacityHours}h</p>
+                        <p className="text-[10px] text-muted-foreground">{workingDays} dias × papel</p>
                       </div>
                       <div className="space-y-1">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Trabalhou</span>
@@ -306,7 +320,6 @@ const Capacity = () => {
                         {squad.utilizationPct > 100 && (
                           <div className="absolute inset-0 bg-destructive/20 rounded-full" />
                         )}
-                        {/* Avg 3m marker */}
                         {avg && avg.utilizationPct > 0 && (
                           <div
                             className="absolute top-0 h-full w-0.5 bg-warning"
@@ -324,7 +337,7 @@ const Capacity = () => {
                       </div>
                     </div>
 
-                    {/* Role breakdown pills */}
+                    {/* Role breakdown */}
                     <div className="flex flex-wrap gap-1.5">
                       {(["Líder Técnico", "Dev Back-end", "Dev Front-end", "Arquiteto", "QA"] as const).map((role) => {
                         const roleMembers = squad.members.filter((m) => m.role === role);
@@ -347,7 +360,5 @@ const Capacity = () => {
     </div>
   );
 };
-
-const SQUAD_CAPACITY_COUNT = 7;
 
 export default Capacity;
