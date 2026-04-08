@@ -125,11 +125,12 @@ export function useCapacityData() {
         : 22;
       setAvg3mWorkingDays(Math.round(avgWd));
 
-      const avgMap = new Map<string, { estimated: number; spent: number }>();
+      const avgMap = new Map<string, { estimated: number; spent: number; productSpent: number }>();
       for (const h of prev3Data) {
-        const entry = avgMap.get(h.squad) || { estimated: 0, spent: 0 };
+        const entry = avgMap.get(h.squad) || { estimated: 0, spent: 0, productSpent: 0 };
         entry.estimated += h.estimated;
         entry.spent += h.spent;
+        entry.productSpent += h.productSpent;
         avgMap.set(h.squad, entry);
       }
       setAvg3mBySquad(
@@ -137,6 +138,7 @@ export function useCapacityData() {
           squad,
           estimated: data.estimated / monthCount,
           spent: data.spent / monthCount,
+          productSpent: data.productSpent / monthCount,
         }))
       );
 
