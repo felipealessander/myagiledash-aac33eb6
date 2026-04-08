@@ -91,9 +91,13 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
 
     // Known team members override
     const TEAM_MEMBERS: Record<string, string[]> = {
-      "Code418": ["Michelle Victoriano", "Raphael Maia", "Tais Marcolino", "Anderson Nóbrega"],
-      "Golden Gate": ["João Ostrovski", "José Vitor", "João Griebner", "Lucas Ramos"],
-      "Tesseract": ["Carol Schlickmann", "Davi Santos", "João Neres", "Mauricio Verona"],
+      "Golden Gate": ["Renan", "João Ostrovski", "José Vitor", "João Griebner", "Lucas Ramos", "Alexandre (cross)", "Sávio (cross)", "Breno (cross)"],
+      "Tesseract": ["Guilherme", "Carol Schlickmann", "Davi Santos", "João Neres", "Mauricio Verona", "Alexandre (cross)", "Sávio (cross)", "Roberto (cross)"],
+      "Code418": ["Jhennyfer", "Michelle Victoriano", "Raphael Maia", "Tais Marcolino", "Anderson Nóbrega", "Alexandre (cross)", "Tássio (cross)"],
+      "JRE": ["Carlos Melo", "Kauan Mello", "Gustavo Rezin", "Felipe Mendes (cross)", "Wendell (cross)", "Pedro (cross)"],
+      "TheBigBang": ["Carlos Melo", "Gabriel Lopes", "Sthefanie", "Sheila", "Jaison (cross)", "Wendell (cross)", "Pedro (cross)"],
+      "TheBigBang-Cobrança": ["Ronaldo", "Kauan Paiva", "Nicolas", "Douglas Sheibler", "Felipe Mendes (cross)", "Tássio (cross)", "Henrique (cross)"],
+      "Code402": ["Eduarda", "João Marcelo", "Marcos Ghizo", "Felipe Mendes (cross)", "Wendell (cross)", "Henrique (cross)"],
     };
 
     const memberNames = TEAM_MEMBERS[name] || [];
