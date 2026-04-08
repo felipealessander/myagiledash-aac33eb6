@@ -18,11 +18,11 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { isAdmin, canViewIndividual } = useUserRole();
+  const { isAdmin, canViewIndividual, canViewCapacity } = useUserRole();
 
   const items = [
     { title: "Dashboard", url: "/", icon: BarChart3, show: true },
-    { title: "Capacidade", url: "/capacity", icon: Gauge, show: canViewIndividual },
+    { title: "Capacidade", url: "/capacity", icon: Gauge, show: canViewCapacity },
     { title: "Desempenho Individual", url: "/individual", icon: Users, show: canViewIndividual },
     { title: "Administração", url: "/admin", icon: Shield, show: isAdmin },
     { title: "Meu Perfil", url: "/profile", icon: User, show: true },
