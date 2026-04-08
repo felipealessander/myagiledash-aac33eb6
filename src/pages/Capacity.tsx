@@ -8,7 +8,7 @@ import { KpiCard } from "@/components/dashboard/KpiCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BarChart3, Users, Clock, TrendingUp, Loader2, ShieldAlert, Gauge, AlertTriangle, TrendingDown, Activity, Calendar } from "lucide-react";
+import { BarChart3, Users, Clock, TrendingUp, Loader2, ShieldAlert, Gauge, AlertTriangle, TrendingDown, Activity, Calendar, Package } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import { cn } from "@/lib/utils";
 import { getTeamColor } from "@/data/dashboardData";
@@ -124,7 +124,7 @@ const Capacity = () => {
               <Gauge className="h-4 w-4" />
               Resumo Executivo
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
               <KpiCard
                 title="Pessoas"
                 value={`${totals.fte.toFixed(1)} FTE`}
@@ -148,6 +148,14 @@ const Capacity = () => {
                 icon={TrendingUp}
                 variant={totals.utilizationPct > 100 ? "destructive" : totals.utilizationPct > 85 ? "warning" : "default"}
                 delay={100}
+              />
+              <KpiCard
+                title="Dedicado a Produto"
+                value={`${totals.productSpent}h`}
+                subtitle={`${totals.productPct}% do tempo registrado`}
+                icon={Package}
+                variant="primary"
+                delay={125}
               />
               <KpiCard
                 title="Desvio"
