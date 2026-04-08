@@ -283,7 +283,7 @@ const Capacity = () => {
                     </div>
 
                     {/* Core metrics */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       <div className="space-y-1">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Pode trabalhar</span>
                         <p className="text-xl font-bold font-mono">{squad.capacityHours}h</p>
@@ -294,6 +294,15 @@ const Capacity = () => {
                         <p className="text-xl font-bold font-mono">{squad.spentHours}h</p>
                         <p className={cn("text-[10px] font-medium", getUtilizationColor(squad.utilizationPct))}>
                           {squad.utilizationPct}% da capacidade
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                          <Package className="h-3 w-3" /> Produto
+                        </span>
+                        <p className="text-xl font-bold font-mono">{squad.productSpentHours}h</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {squad.productPct}% do registrado
                         </p>
                       </div>
                       <div className="space-y-1">
