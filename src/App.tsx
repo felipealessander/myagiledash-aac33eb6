@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Individual from "./pages/Individual";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
+import Capacity from "./pages/Capacity";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/individual" element={<Individual />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/capacity" element={<Capacity />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/auth" element={<Auth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

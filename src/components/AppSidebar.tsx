@@ -1,4 +1,4 @@
-import { BarChart3, Users, Shield, User } from "lucide-react";
+import { BarChart3, Users, Shield, User, Gauge } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -22,6 +22,7 @@ export function AppSidebar() {
 
   const items = [
     { title: "Dashboard", url: "/", icon: BarChart3, show: true },
+    { title: "Capacidade", url: "/capacity", icon: Gauge, show: canViewIndividual },
     { title: "Desempenho Individual", url: "/individual", icon: Users, show: canViewIndividual },
     { title: "Administração", url: "/admin", icon: Shield, show: isAdmin },
     { title: "Meu Perfil", url: "/profile", icon: User, show: true },
