@@ -163,13 +163,14 @@ export function useCapacityData() {
   );
 
   const totals = useMemo(() => {
-    const t = { members: 0, fte: 0, capacity: 0, estimated: 0, spent: 0 };
+    const t = { members: 0, fte: 0, capacity: 0, estimated: 0, spent: 0, productSpent: 0 };
     for (const s of summaries) {
       t.members += s.totalMembers;
       t.fte += s.fteEquivalent;
       t.capacity += s.capacityHours;
       t.estimated += s.estimatedHours;
       t.spent += s.spentHours;
+      t.productSpent += s.productSpentHours;
     }
     const deviation = t.spent - t.capacity;
     return {
@@ -177,6 +178,7 @@ export function useCapacityData() {
       deviation,
       utilizationPct: t.capacity > 0 ? parseFloat(((t.spent / t.capacity) * 100).toFixed(1)) : 0,
       estimationPct: t.capacity > 0 ? parseFloat(((t.estimated / t.capacity) * 100).toFixed(1)) : 0,
+      productPct: t.spent > 0 ? parseFloat(((t.productSpent / t.spent) * 100).toFixed(1)) : 0,
     };
   }, [summaries]);
 
