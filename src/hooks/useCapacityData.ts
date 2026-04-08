@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SQUAD_CAPACITY, computeCapacitySummaries, getWorkingDaysInMonth, type SquadCapacitySummary } from "@/data/squadCapacity";
 
+interface SquadHours { squad: string; estimated: number; spent: number; productSpent: number }
 export interface CapacityMonthOption {
   value: string;
   label: string;
@@ -31,13 +32,13 @@ async function fetchHoursForMonths(months: string[]): Promise<SquadHours[]> {
 
   const reportIds = reports.map((r) => r.id);
 
-  let allTasks: { squad: string | null; estimated_minutes: number | null; spent_minutes: number | null; status: string | null }[] = [];
+  let allTasks: { squad: string | null; estimated_minutes: number | null; spent_minutes: number | null; status: string | null; tags: string[] | null }[] = [];
   let from = 0;
   const PAGE = 1000;
   while (true) {
     const { data } = await supabase
       .from("report_tasks")
-      .select("squad, estimated_minutes, spent_minutes, status")
+      .select("squad, estimated_minutes, spent_minutes, status, tags")
       .in("report_id", reportIds)
       .range(from, from + PAGE - 1);
     if (!data || data.length === 0) break;
@@ -46,14 +47,20 @@ async function fetchHoursForMonths(months: string[]): Promise<SquadHours[]> {
     from += PAGE;
   }
 
-  const map = new Map<string, { estimated: number; spent: number }>();
+  const map = new Map<string, { estimated: number; spent: number; productSpent: number }>();
   for (const t of allTasks) {
     const status = (t.status || "").toLowerCase();
     if (status.includes("arquivado")) continue;
     const sq = t.squad || "Sem Squad";
-    const entry = map.get(sq) || { estimated: 0, spent: 0 };
+    const entry = map.get(sq) || { estimated: 0, spent: 0, productSpent: 0 };
+    const spent = (t.spent_minutes || 0) / 60;
     entry.estimated += (t.estimated_minutes || 0) / 60;
-    entry.spent += (t.spent_minutes || 0) / 60;
+    entry.spent += spent;
+    // Check if task has "Produto" tag (case-insensitive)
+    const hasProduto = (t.tags || []).some(tag => tag.toLowerCase() === "produto");
+    if (hasProduto) {
+      entry.productSpent += spent;
+    }
     map.set(sq, entry);
   }
 
@@ -118,11 +125,12 @@ export function useCapacityData() {
         : 22;
       setAvg3mWorkingDays(Math.round(avgWd));
 
-      const avgMap = new Map<string, { estimated: number; spent: number }>();
+      const avgMap = new Map<string, { estimated: number; spent: number; productSpent: number }>();
       for (const h of prev3Data) {
-        const entry = avgMap.get(h.squad) || { estimated: 0, spent: 0 };
+        const entry = avgMap.get(h.squad) || { estimated: 0, spent: 0, productSpent: 0 };
         entry.estimated += h.estimated;
         entry.spent += h.spent;
+        entry.productSpent += h.productSpent;
         avgMap.set(h.squad, entry);
       }
       setAvg3mBySquad(
@@ -130,6 +138,7 @@ export function useCapacityData() {
           squad,
           estimated: data.estimated / monthCount,
           spent: data.spent / monthCount,
+          productSpent: data.productSpent / monthCount,
         }))
       );
 
@@ -154,13 +163,14 @@ export function useCapacityData() {
   );
 
   const totals = useMemo(() => {
-    const t = { members: 0, fte: 0, capacity: 0, estimated: 0, spent: 0 };
+    const t = { members: 0, fte: 0, capacity: 0, estimated: 0, spent: 0, productSpent: 0 };
     for (const s of summaries) {
       t.members += s.totalMembers;
       t.fte += s.fteEquivalent;
       t.capacity += s.capacityHours;
       t.estimated += s.estimatedHours;
       t.spent += s.spentHours;
+      t.productSpent += s.productSpentHours;
     }
     const deviation = t.spent - t.capacity;
     return {
@@ -168,6 +178,7 @@ export function useCapacityData() {
       deviation,
       utilizationPct: t.capacity > 0 ? parseFloat(((t.spent / t.capacity) * 100).toFixed(1)) : 0,
       estimationPct: t.capacity > 0 ? parseFloat(((t.estimated / t.capacity) * 100).toFixed(1)) : 0,
+      productPct: t.spent > 0 ? parseFloat(((t.productSpent / t.spent) * 100).toFixed(1)) : 0,
     };
   }, [summaries]);
 

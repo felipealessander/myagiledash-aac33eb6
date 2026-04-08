@@ -8,7 +8,7 @@ import { KpiCard } from "@/components/dashboard/KpiCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BarChart3, Users, Clock, TrendingUp, Loader2, ShieldAlert, Gauge, AlertTriangle, TrendingDown, Activity, Calendar } from "lucide-react";
+import { BarChart3, Users, Clock, TrendingUp, Loader2, ShieldAlert, Gauge, AlertTriangle, TrendingDown, Activity, Calendar, Package } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import { cn } from "@/lib/utils";
 import { getTeamColor } from "@/data/dashboardData";
@@ -124,7 +124,7 @@ const Capacity = () => {
               <Gauge className="h-4 w-4" />
               Resumo Executivo
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
               <KpiCard
                 title="Pessoas"
                 value={`${totals.fte.toFixed(1)} FTE`}
@@ -148,6 +148,14 @@ const Capacity = () => {
                 icon={TrendingUp}
                 variant={totals.utilizationPct > 100 ? "destructive" : totals.utilizationPct > 85 ? "warning" : "default"}
                 delay={100}
+              />
+              <KpiCard
+                title="Dedicado a Produto"
+                value={`${totals.productSpent}h`}
+                subtitle={`${totals.productPct}% do tempo registrado`}
+                icon={Package}
+                variant="primary"
+                delay={125}
               />
               <KpiCard
                 title="Desvio"
@@ -275,7 +283,7 @@ const Capacity = () => {
                     </div>
 
                     {/* Core metrics */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       <div className="space-y-1">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Pode trabalhar</span>
                         <p className="text-xl font-bold font-mono">{squad.capacityHours}h</p>
@@ -286,6 +294,15 @@ const Capacity = () => {
                         <p className="text-xl font-bold font-mono">{squad.spentHours}h</p>
                         <p className={cn("text-[10px] font-medium", getUtilizationColor(squad.utilizationPct))}>
                           {squad.utilizationPct}% da capacidade
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                          <Package className="h-3 w-3" /> Produto
+                        </span>
+                        <p className="text-xl font-bold font-mono">{squad.productSpentHours}h</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {squad.productPct}% do registrado
                         </p>
                       </div>
                       <div className="space-y-1">

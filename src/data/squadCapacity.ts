@@ -141,9 +141,11 @@ export interface SquadCapacitySummary {
   product: string;
   totalMembers: number;
   fteEquivalent: number;
-  capacityHours: number; // real capacity based on role hours × working days × allocation
+  capacityHours: number;
   estimatedHours: number;
   spentHours: number;
+  productSpentHours: number; // hours on tasks tagged "Produto"
+  productPct: number; // productSpentHours / spentHours * 100
   utilizationPct: number;
   estimationPct: number;
   members: SquadMember[];
@@ -160,7 +162,7 @@ export function getMemberCapacity(member: SquadMember, workingDays: number): num
 
 export function computeCapacitySummaries(
   squadConfigs: SquadCapacityConfig[],
-  hoursData: { squad: string; estimated: number; spent: number }[],
+  hoursData: { squad: string; estimated: number; spent: number; productSpent: number }[],
   workingDays: number
 ): SquadCapacitySummary[] {
   return squadConfigs.map((sq) => {
@@ -175,6 +177,7 @@ export function computeCapacitySummaries(
     );
     const estimated = match?.estimated ?? 0;
     const spent = match?.spent ?? 0;
+    const productSpent = match?.productSpent ?? 0;
 
     return {
       name: sq.name,
@@ -184,6 +187,8 @@ export function computeCapacitySummaries(
       capacityHours: Math.round(capacityHours),
       estimatedHours: Math.round(estimated),
       spentHours: Math.round(spent),
+      productSpentHours: Math.round(productSpent),
+      productPct: spent > 0 ? parseFloat(((productSpent / spent) * 100).toFixed(1)) : 0,
       utilizationPct: capacityHours > 0 ? parseFloat(((spent / capacityHours) * 100).toFixed(1)) : 0,
       estimationPct: capacityHours > 0 ? parseFloat(((estimated / capacityHours) * 100).toFixed(1)) : 0,
       members: sq.members,
