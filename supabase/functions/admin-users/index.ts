@@ -50,10 +50,8 @@ Deno.serve(async (req) => {
       case 'reset_password': {
         const { email } = body
         if (!email) throw new Error('Email is required')
-        const { error } = await adminClient.auth.admin.generateLink({
-          type: 'recovery',
-          email,
-          options: { redirectTo: `${req.headers.get('origin') || supabaseUrl}` }
+        const { error } = await adminClient.auth.resetPasswordForEmail(email, {
+          redirectTo: `${req.headers.get('origin') || supabaseUrl}`
         })
         if (error) throw error
         return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
