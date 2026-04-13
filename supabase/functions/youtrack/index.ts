@@ -58,6 +58,18 @@ function getMinutes(issue: any, name: string): number {
   return cf.value.minutes || 0
 }
 
+function getDateField(issue: any, name: string): string | null {
+  const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
+  if (!cf || !cf.value) return null
+  // Date fields in YouTrack return timestamp in milliseconds
+  if (typeof cf.value === 'number') return new Date(cf.value).toISOString()
+  if (cf.value.presentation) {
+    const d = new Date(cf.value.presentation)
+    if (!isNaN(d.getTime())) return d.toISOString()
+  }
+  return null
+}
+
 function getIntField(issue: any, name: string): number {
   const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
   if (!cf || cf.value == null) return 0
@@ -262,6 +274,8 @@ Deno.serve(async (req) => {
       tags: (issue.tags || []).map((tag: any) => tag.name).filter(Boolean),
       correctionsCount: getIntField(issue, 'Quantidade Correções'),
       client: getField(issue, 'Cliente') || null,
+      sloDate: getDateField(issue, 'SLO') || null,
+      promisedDate: getDateField(issue, 'PROMETIDA') || null,
     }))
 
     return new Response(

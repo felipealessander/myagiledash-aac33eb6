@@ -10,6 +10,7 @@ import Individual from "./pages/Individual";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import Capacity from "./pages/Capacity";
+import Incidents from "./pages/Incidents";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/individual" element={<Individual />} />
+            <Route path="/incidents" element={<Incidents />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/capacity" element={<Capacity />} />
             <Route path="/profile" element={<Profile />} />

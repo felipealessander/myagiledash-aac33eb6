@@ -50,6 +50,17 @@ function getMinutes(issue: any, name: string): number {
   return cf.value.minutes || 0
 }
 
+function getDateField(issue: any, name: string): string | null {
+  const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
+  if (!cf || !cf.value) return null
+  if (typeof cf.value === 'number') return new Date(cf.value).toISOString()
+  if (cf.value.presentation) {
+    const d = new Date(cf.value.presentation)
+    if (!isNaN(d.getTime())) return d.toISOString()
+  }
+  return null
+}
+
 function getIntField(issue: any, name: string): number {
   const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
   if (!cf || cf.value == null) return 0
@@ -134,6 +145,9 @@ Deno.serve(async (req) => {
       resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
       tags: (issue.tags || []).map((tag: any) => tag.name).filter(Boolean),
       correctionsCount: getIntField(issue, 'Quantidade Correções'),
+      client: getField(issue, 'Cliente') || null,
+      sloDate: getDateField(issue, 'SLO') || null,
+      promisedDate: getDateField(issue, 'PROMETIDA') || null,
     }))
 
     console.log(`[auto-sync] ${tasks.length} issues fetched`)
@@ -231,6 +245,8 @@ Deno.serve(async (req) => {
           corrections_count: t.correctionsCount || 0,
           qa_returns: qaReturnsMap[t.taskCode] || 0,
           client: t.client || null,
+          slo_date: t.sloDate || null,
+          promised_date: t.promisedDate || null,
         }
       })
 
