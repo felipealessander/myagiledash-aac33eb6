@@ -274,6 +274,8 @@ Deno.serve(async (req) => {
       tags: (issue.tags || []).map((tag: any) => tag.name).filter(Boolean),
       correctionsCount: getIntField(issue, 'Quantidade Correções'),
       client: getField(issue, 'Cliente') || null,
+      sloDate: getDateField(issue, 'SLO') || null,
+      promisedDate: getDateField(issue, 'PROMETIDA') || null,
     }))
 
     return new Response(
