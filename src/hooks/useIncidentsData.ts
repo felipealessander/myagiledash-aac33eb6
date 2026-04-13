@@ -170,26 +170,28 @@ export function useIncidentsData() {
 
   const businessDays = useMemo(() => getNextBusinessDays(5), []);
 
+  // SLO: only count if there's NO valid promised_date (current year or later)
   const sloExpiring = useMemo(() =>
-    openIncidents.filter(t => t.slo_date && isWithinBusinessDays(t.slo_date, businessDays))
+    openIncidents.filter(t => t.slo_date && isSloStillPending(t) && isWithinBusinessDays(t.slo_date, businessDays))
       .sort((a, b) => new Date(a.slo_date!).getTime() - new Date(b.slo_date!).getTime()),
     [openIncidents, businessDays]
   );
 
   const sloOverdue = useMemo(() =>
-    openIncidents.filter(t => t.slo_date && isOverdue(t.slo_date))
+    openIncidents.filter(t => t.slo_date && isSloStillPending(t) && isOverdue(t.slo_date))
       .sort((a, b) => new Date(a.slo_date!).getTime() - new Date(b.slo_date!).getTime()),
     [openIncidents]
   );
 
+  // Promised: only show items with valid promised_date (current year or later)
   const promisedExpiring = useMemo(() =>
-    openIncidents.filter(t => t.promised_date && isWithinBusinessDays(t.promised_date, businessDays))
+    openIncidents.filter(t => hasValidPromisedDate(t) && isWithinBusinessDays(t.promised_date!, businessDays))
       .sort((a, b) => new Date(a.promised_date!).getTime() - new Date(b.promised_date!).getTime()),
     [openIncidents, businessDays]
   );
 
   const promisedOverdue = useMemo(() =>
-    openIncidents.filter(t => t.promised_date && isOverdue(t.promised_date))
+    openIncidents.filter(t => hasValidPromisedDate(t) && isOverdue(t.promised_date!))
       .sort((a, b) => new Date(a.promised_date!).getTime() - new Date(b.promised_date!).getTime()),
     [openIncidents]
   );
