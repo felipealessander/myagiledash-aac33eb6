@@ -23,8 +23,7 @@ export type PeriodFilter = "3m" | "6m" | "1y";
 
 function isIncident(task: IncidentTask): boolean {
   const cat = task.category?.toLowerCase() || "";
-  const tags = (task.tags || []).map(t => t.toLowerCase());
-  return cat === "incidente" || tags.includes("incidente") || tags.some(t => t.includes("deadletter"));
+  return cat === "incidente";
 }
 
 function isOpen(task: IncidentTask): boolean {
