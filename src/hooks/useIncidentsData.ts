@@ -115,7 +115,7 @@ export function useIncidentsData() {
       while (true) {
         const { data, error } = await supabase
           .from("report_tasks")
-          .select("task_code, title, category, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, client, slo_date:SLO, promised_date:PROMETIDA, spent_minutes, report_id")
+          .select("task_code, title, category, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, client, slo_date, promised_date, spent_minutes, report_id")
           .eq("report_id", r.id)
           .range(from, from + 999);
         if (error || !data) break;
