@@ -4,7 +4,7 @@ import { AlertTriangle, Clock, Shield, Loader2, LogOut, BarChart3, AlertCircle, 
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIncidentsData, PeriodFilter } from "@/hooks/useIncidentsData";
-import { KpiCard } from "@/components/dashboard/KpiCard";
+import { IncidentKpiCard } from "@/components/dashboard/IncidentKpiCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -172,12 +172,13 @@ const Incidents = () => {
       ) : (
         <main className="container mx-auto px-4 py-6 space-y-8">
           {/* KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <KpiCard title="Total de Incidentes" value={totalIncidents} subtitle="Todos os registros" icon={AlertTriangle} variant="default" delay={0} />
-            <KpiCard title="Incidentes Abertos" value={openIncidents.length} subtitle="Aguardando resolução" icon={AlertCircle} variant="destructive" delay={50} />
-            <KpiCard title="SLO Vencendo" value={sloExpiring.length} subtitle="Próximos 5 dias úteis" icon={Clock} variant="warning" delay={100} />
-            <KpiCard title="SLO Atrasados" value={sloOverdue.length} subtitle="Prazo já expirado" icon={AlertTriangle} variant="destructive" delay={150} />
-            <KpiCard title="Data Prometida Vencendo" value={promisedExpiring.length} subtitle="Próximos 5 dias úteis" icon={CalendarClock} variant="info" delay={200} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <IncidentKpiCard title="Total de Incidentes" value={totalIncidents} subtitle="Todos os registros" icon={AlertTriangle} variant="default" delay={0} />
+            <IncidentKpiCard title="Incidentes Abertos" value={openIncidents.length} subtitle="Aguardando resolução" icon={AlertCircle} variant="destructive" delay={50} incidents={openIncidents} />
+            <IncidentKpiCard title="SLO Vencendo" value={sloExpiring.length} subtitle="Próximos 5 dias úteis" icon={Clock} variant="warning" delay={100} incidents={sloExpiring} />
+            <IncidentKpiCard title="SLO Atrasados" value={sloOverdue.length} subtitle="Prazo já expirado" icon={AlertTriangle} variant="destructive" delay={150} incidents={sloOverdue} />
+            <IncidentKpiCard title="Prometida Vencendo" value={promisedExpiring.length} subtitle="Próximos 5 dias úteis" icon={CalendarClock} variant="info" delay={200} incidents={promisedExpiring} />
+            <IncidentKpiCard title="Prometida Atrasada" value={promisedOverdue.length} subtitle="Prazo já expirado" icon={CalendarClock} variant="destructive" delay={250} incidents={promisedOverdue} />
           </div>
 
           {/* Deadline tables */}
