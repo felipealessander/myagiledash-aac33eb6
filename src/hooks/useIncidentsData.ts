@@ -74,6 +74,26 @@ function isOverdue(dateStr: string): boolean {
   return d < today;
 }
 
+/**
+ * Returns true if the task has a promised_date set to the current year or later,
+ * meaning the SLO has already been addressed with a commitment date.
+ */
+function hasValidPromisedDate(task: IncidentTask): boolean {
+  if (!task.promised_date) return false;
+  const d = new Date(task.promised_date);
+  if (isNaN(d.getTime())) return false;
+  const currentYear = new Date().getFullYear();
+  return d.getFullYear() >= currentYear;
+}
+
+/**
+ * An SLO should only be counted as pending if there's no valid promised_date.
+ * If promised_date is set (current year or later), the SLO is considered addressed.
+ */
+function isSloStillPending(task: IncidentTask): boolean {
+  return !hasValidPromisedDate(task);
+}
+
 export interface IncidentsBySquad {
   squad: string;
   total: number;
