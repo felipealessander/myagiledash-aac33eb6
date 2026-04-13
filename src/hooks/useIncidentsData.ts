@@ -74,6 +74,26 @@ function isOverdue(dateStr: string): boolean {
   return d < today;
 }
 
+/**
+ * Returns true if the task has a promised_date set to the current year or later,
+ * meaning the SLO has already been addressed with a commitment date.
+ */
+function hasValidPromisedDate(task: IncidentTask): boolean {
+  if (!task.promised_date) return false;
+  const d = new Date(task.promised_date);
+  if (isNaN(d.getTime())) return false;
+  const currentYear = new Date().getFullYear();
+  return d.getFullYear() >= currentYear;
+}
+
+/**
+ * An SLO should only be counted as pending if there's no valid promised_date.
+ * If promised_date is set (current year or later), the SLO is considered addressed.
+ */
+function isSloStillPending(task: IncidentTask): boolean {
+  return !hasValidPromisedDate(task);
+}
+
 export interface IncidentsBySquad {
   squad: string;
   total: number;
@@ -150,26 +170,28 @@ export function useIncidentsData() {
 
   const businessDays = useMemo(() => getNextBusinessDays(5), []);
 
+  // SLO: only count if there's NO valid promised_date (current year or later)
   const sloExpiring = useMemo(() =>
-    openIncidents.filter(t => t.slo_date && isWithinBusinessDays(t.slo_date, businessDays))
+    openIncidents.filter(t => t.slo_date && isSloStillPending(t) && isWithinBusinessDays(t.slo_date, businessDays))
       .sort((a, b) => new Date(a.slo_date!).getTime() - new Date(b.slo_date!).getTime()),
     [openIncidents, businessDays]
   );
 
   const sloOverdue = useMemo(() =>
-    openIncidents.filter(t => t.slo_date && isOverdue(t.slo_date))
+    openIncidents.filter(t => t.slo_date && isSloStillPending(t) && isOverdue(t.slo_date))
       .sort((a, b) => new Date(a.slo_date!).getTime() - new Date(b.slo_date!).getTime()),
     [openIncidents]
   );
 
+  // Promised: only show items with valid promised_date (current year or later)
   const promisedExpiring = useMemo(() =>
-    openIncidents.filter(t => t.promised_date && isWithinBusinessDays(t.promised_date, businessDays))
+    openIncidents.filter(t => hasValidPromisedDate(t) && isWithinBusinessDays(t.promised_date!, businessDays))
       .sort((a, b) => new Date(a.promised_date!).getTime() - new Date(b.promised_date!).getTime()),
     [openIncidents, businessDays]
   );
 
   const promisedOverdue = useMemo(() =>
-    openIncidents.filter(t => t.promised_date && isOverdue(t.promised_date))
+    openIncidents.filter(t => hasValidPromisedDate(t) && isOverdue(t.promised_date!))
       .sort((a, b) => new Date(a.promised_date!).getTime() - new Date(b.promised_date!).getTime()),
     [openIncidents]
   );
@@ -187,8 +209,8 @@ export function useIncidentsData() {
         squad,
         total: tasks.length,
         open: openTasks.length,
-        sloExpiring: openTasks.filter(t => t.slo_date && (isWithinBusinessDays(t.slo_date, businessDays) || isOverdue(t.slo_date))),
-        promisedExpiring: openTasks.filter(t => t.promised_date && (isWithinBusinessDays(t.promised_date, businessDays) || isOverdue(t.promised_date))),
+        sloExpiring: openTasks.filter(t => t.slo_date && isSloStillPending(t) && (isWithinBusinessDays(t.slo_date, businessDays) || isOverdue(t.slo_date))),
+        promisedExpiring: openTasks.filter(t => hasValidPromisedDate(t) && (isWithinBusinessDays(t.promised_date!, businessDays) || isOverdue(t.promised_date!))),
       };
     }).sort((a, b) => b.open - a.open);
   }, [uniqueIncidents, businessDays]);
