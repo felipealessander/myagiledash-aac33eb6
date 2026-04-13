@@ -209,8 +209,8 @@ export function useIncidentsData() {
         squad,
         total: tasks.length,
         open: openTasks.length,
-        sloExpiring: openTasks.filter(t => t.slo_date && (isWithinBusinessDays(t.slo_date, businessDays) || isOverdue(t.slo_date))),
-        promisedExpiring: openTasks.filter(t => t.promised_date && (isWithinBusinessDays(t.promised_date, businessDays) || isOverdue(t.promised_date))),
+        sloExpiring: openTasks.filter(t => t.slo_date && isSloStillPending(t) && (isWithinBusinessDays(t.slo_date, businessDays) || isOverdue(t.slo_date))),
+        promisedExpiring: openTasks.filter(t => hasValidPromisedDate(t) && (isWithinBusinessDays(t.promised_date!, businessDays) || isOverdue(t.promised_date!))),
       };
     }).sort((a, b) => b.open - a.open);
   }, [uniqueIncidents, businessDays]);
