@@ -145,6 +145,9 @@ Deno.serve(async (req) => {
       resolvedAt: issue.resolved ? new Date(issue.resolved).toISOString() : null,
       tags: (issue.tags || []).map((tag: any) => tag.name).filter(Boolean),
       correctionsCount: getIntField(issue, 'Quantidade Correções'),
+      client: getField(issue, 'Cliente') || null,
+      sloDate: getDateField(issue, 'SLO') || null,
+      promisedDate: getDateField(issue, 'PROMETIDA') || null,
     }))
 
     console.log(`[auto-sync] ${tasks.length} issues fetched`)
