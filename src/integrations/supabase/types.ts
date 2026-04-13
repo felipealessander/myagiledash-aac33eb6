@@ -49,9 +49,11 @@ export type Database = {
           created_at_yt: string | null
           estimated_minutes: number | null
           id: string
+          promised_date: string | null
           qa_returns: number | null
           report_id: string
           resolved_at: string | null
+          slo_date: string | null
           spent_minutes: number | null
           squad: string | null
           started_at: string | null
@@ -70,9 +72,11 @@ export type Database = {
           created_at_yt?: string | null
           estimated_minutes?: number | null
           id?: string
+          promised_date?: string | null
           qa_returns?: number | null
           report_id: string
           resolved_at?: string | null
+          slo_date?: string | null
           spent_minutes?: number | null
           squad?: string | null
           started_at?: string | null
@@ -91,9 +95,11 @@ export type Database = {
           created_at_yt?: string | null
           estimated_minutes?: number | null
           id?: string
+          promised_date?: string | null
           qa_returns?: number | null
           report_id?: string
           resolved_at?: string | null
+          slo_date?: string | null
           spent_minutes?: number | null
           squad?: string | null
           started_at?: string | null
