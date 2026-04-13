@@ -102,7 +102,9 @@ const Incidents = () => {
 
                   return (
                     <TableRow key={t.task_code} className={cn(urgent && "bg-destructive/5")}>
-                      <TableCell className="text-xs font-mono font-medium">{t.task_code}</TableCell>
+                      <TableCell className="text-xs font-mono font-medium">
+                        <a href={`https://youtrack.attus.ai/issue/${t.task_code}`} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">{t.task_code}</a>
+                      </TableCell>
                       <TableCell className="text-xs max-w-[200px] truncate">{t.title || "—"}</TableCell>
                       <TableCell className="text-xs">{t.squad || "—"}</TableCell>
                       <TableCell className="text-xs">{t.assignee || "—"}</TableCell>
