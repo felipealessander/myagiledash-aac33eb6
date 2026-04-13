@@ -59,9 +59,12 @@ function getMinutes(issue: any, name: string): number {
 }
 
 function getDateField(issue: any, name: string): string | null {
-  const cf = issue.customFields?.find((f: any) => f.projectCustomField?.field?.name === name)
+  const target = name.toLowerCase().trim()
+  const cf = issue.customFields?.find((f: any) => {
+    const fieldName = f.projectCustomField?.field?.name?.toLowerCase?.().trim?.()
+    return fieldName === target
+  })
   if (!cf || !cf.value) return null
-  // Date fields in YouTrack return timestamp in milliseconds
   if (typeof cf.value === 'number') return new Date(cf.value).toISOString()
   if (cf.value.presentation) {
     const d = new Date(cf.value.presentation)
