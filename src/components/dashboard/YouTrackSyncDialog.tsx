@@ -187,6 +187,8 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
             corrections_count: t.correctionsCount || 0,
             qa_returns: qaReturnsMap[t.taskCode] || qaReturnsMap[t.id] || 0,
             client: t.client || null,
+            slo_date: t.sloDate || null,
+            promised_date: t.promisedDate || null,
           };
         });
 

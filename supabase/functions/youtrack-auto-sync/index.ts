@@ -245,6 +245,8 @@ Deno.serve(async (req) => {
           corrections_count: t.correctionsCount || 0,
           qa_returns: qaReturnsMap[t.taskCode] || 0,
           client: t.client || null,
+          slo_date: t.sloDate || null,
+          promised_date: t.promisedDate || null,
         }
       })
 
