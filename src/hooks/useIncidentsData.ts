@@ -19,7 +19,7 @@ interface IncidentTask {
   report_id: string;
 }
 
-export type PeriodFilter = "3m" | "6m" | "1y";
+export type PeriodFilter = "1m" | "3m" | "6m" | "1y";
 
 function isIncident(task: IncidentTask): boolean {
   const cat = task.category?.toLowerCase() || "";
@@ -112,7 +112,7 @@ export interface IncidentTrend {
 export function useIncidentsData() {
   const [allTasks, setAllTasks] = useState<IncidentTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<PeriodFilter>("3m");
+  const [period, setPeriod] = useState<PeriodFilter>("1m");
 
   const fetchAllIncidents = useCallback(async () => {
     setLoading(true);
@@ -216,7 +216,7 @@ export function useIncidentsData() {
 
   const trend = useMemo((): IncidentTrend[] => {
     const now = new Date();
-    const monthsBack = period === "3m" ? 3 : period === "6m" ? 6 : 12;
+    const monthsBack = period === "1m" ? 1 : period === "3m" ? 3 : period === "6m" ? 6 : 12;
     const cutoff = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
 
     const monthMap = new Map<string, { created: number; resolved: number }>();

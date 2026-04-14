@@ -56,6 +56,7 @@ const Incidents = () => {
   }
 
   const periodButtons: { value: PeriodFilter; label: string }[] = [
+    { value: "1m", label: "Mês Atual" },
     { value: "3m", label: "3 Meses" },
     { value: "6m", label: "6 Meses" },
     { value: "1y", label: "1 Ano" },
