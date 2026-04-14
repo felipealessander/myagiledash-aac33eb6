@@ -80,7 +80,7 @@ const Incidents = () => {
         {tasks.length === 0 ? (
           <p className="text-xs text-muted-foreground py-4 text-center">Nenhum incidente com prazo próximo</p>
         ) : (
-          <div className="max-h-80 overflow-auto">
+          <div className="max-h-[400px] overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
