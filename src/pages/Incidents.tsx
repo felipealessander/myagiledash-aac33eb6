@@ -80,16 +80,16 @@ const Incidents = () => {
         {tasks.length === 0 ? (
           <p className="text-xs text-muted-foreground py-4 text-center">Nenhum incidente com prazo próximo</p>
         ) : (
-          <div className="max-h-80 overflow-auto">
-            <Table>
+          <div className="max-h-[400px] overflow-auto">
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Código</TableHead>
+                  <TableHead className="text-xs w-[90px]">Código</TableHead>
                   <TableHead className="text-xs">Título</TableHead>
-                  <TableHead className="text-xs">Squad</TableHead>
-                  <TableHead className="text-xs">Responsável</TableHead>
-                  <TableHead className="text-xs">Prazo</TableHead>
-                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-xs w-[100px]">Squad</TableHead>
+                  <TableHead className="text-xs w-[100px]">Responsável</TableHead>
+                  <TableHead className="text-xs w-[60px]">Prazo</TableHead>
+                  <TableHead className="text-xs w-[80px]">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,22 +102,22 @@ const Incidents = () => {
 
                   return (
                     <TableRow key={t.task_code} className={cn(urgent && "bg-destructive/5")}>
-                      <TableCell className="text-xs font-mono font-medium">
+                      <TableCell className="text-xs font-mono font-medium truncate">
                         <a href={`https://youtrack.attus.ai/issue/${t.task_code}`} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">{t.task_code}</a>
                       </TableCell>
-                      <TableCell className="text-xs max-w-[200px] truncate">{t.title || "—"}</TableCell>
-                      <TableCell className="text-xs">{t.squad || "—"}</TableCell>
-                      <TableCell className="text-xs">{t.assignee || "—"}</TableCell>
+                      <TableCell className="text-xs truncate">{t.title || "—"}</TableCell>
+                      <TableCell className="text-xs truncate">{t.squad || "—"}</TableCell>
+                      <TableCell className="text-xs truncate">{t.assignee || "—"}</TableCell>
                       <TableCell>
                         <span className={cn(
-                          "text-xs font-semibold font-mono",
+                          "text-xs font-semibold font-mono whitespace-nowrap",
                           overdue ? "text-destructive" : nextDay ? "text-destructive" : days <= 2 ? "text-warning" : "text-foreground"
                         )}>
                           {overdue ? `${Math.abs(days)}d atrás` : days === 0 ? "Hoje" : `${days}d`}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={urgent ? "destructive" : "outline"} className="text-[10px]">
+                        <Badge variant={urgent ? "destructive" : "outline"} className="text-[10px] whitespace-nowrap">
                           {overdue ? "ATRASADO" : nextDay ? "URGENTE" : t.status}
                         </Badge>
                       </TableCell>
