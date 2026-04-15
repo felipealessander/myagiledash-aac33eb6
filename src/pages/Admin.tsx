@@ -342,6 +342,7 @@ export default function Admin() {
             )}
           </CardContent>
         </Card>
+        <TeamMembersManager />
       </div>
     </div>
   );
