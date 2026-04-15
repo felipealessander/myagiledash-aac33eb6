@@ -149,6 +149,7 @@ export function TeamMembersManager() {
       squad: formSquad || null,
       position: formPosition || null,
       salary: formSalary ? parseFloat(formSalary.replace(",", ".")) : null,
+      contract_type: formContractType,
     };
 
     try {
