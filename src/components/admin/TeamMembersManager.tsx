@@ -220,8 +220,9 @@ export function TeamMembersManager() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Username</TableHead>
                   <TableHead>Squad</TableHead>
+                  <TableHead>Contrato</TableHead>
                   <TableHead>Cargo</TableHead>
-                  <TableHead>Salário CLT</TableHead>
+                  <TableHead>Salário</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -237,6 +238,9 @@ export function TeamMembersManager() {
                       ) : (
                         <span className="text-muted-foreground text-xs">—</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">{m.contract_type ?? "CLT"}</Badge>
                     </TableCell>
                     <TableCell className="text-xs max-w-[200px] truncate">{m.position ?? "—"}</TableCell>
                     <TableCell className="text-xs">{formatCurrency(m.salary)}</TableCell>
