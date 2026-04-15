@@ -118,6 +118,36 @@ export type Database = {
           },
         ]
       }
+      salary_levels: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          position: string
+          salary_clt: number
+          salary_coop: number
+          sort_order: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          position: string
+          salary_clt?: number
+          salary_coop?: number
+          sort_order?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          position?: string
+          salary_clt?: number
+          salary_coop?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       sprint_reports: {
         Row: {
           created_at: string
@@ -149,6 +179,9 @@ export type Database = {
           email: string
           id: string
           name: string
+          position: string | null
+          salary: number | null
+          squad: string | null
           username: string
         }
         Insert: {
@@ -157,6 +190,9 @@ export type Database = {
           email: string
           id?: string
           name: string
+          position?: string | null
+          salary?: number | null
+          squad?: string | null
           username: string
         }
         Update: {
@@ -165,6 +201,9 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          position?: string | null
+          salary?: number | null
+          squad?: string | null
           username?: string
         }
         Relationships: []
