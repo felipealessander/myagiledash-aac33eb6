@@ -25,6 +25,7 @@ interface TeamMember {
   squad: string | null;
   position: string | null;
   salary: number | null;
+  contract_type: string;
 }
 
 interface SalaryLevel {
