@@ -77,6 +77,7 @@ export function TeamMembersManager() {
     setEditMember(null);
     setFormName(""); setFormUsername(""); setFormEmail("");
     setFormSquad(""); setFormPosition(""); setFormSalary("");
+    setFormContractType("CLT");
     setDialogOpen(true);
   };
 
@@ -85,6 +86,7 @@ export function TeamMembersManager() {
     setFormName(m.name); setFormUsername(m.username); setFormEmail(m.email);
     setFormSquad(m.squad ?? ""); setFormPosition(m.position ?? "");
     setFormSalary(m.salary != null ? String(m.salary) : "");
+    setFormContractType(m.contract_type ?? "CLT");
     setDialogOpen(true);
   };
 
