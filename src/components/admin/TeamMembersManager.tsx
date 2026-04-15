@@ -90,14 +90,17 @@ export function TeamMembersManager() {
     setDialogOpen(true);
   };
 
-  // Auto-detect position based on salary (CLT values)
-  const detectPosition = (salary: number): string | null => {
+  // Auto-detect position based on salary and contract type
+  const detectPosition = (salary: number, contractType: string): string | null => {
     if (!salary || salaryLevels.length === 0) return null;
-    // Find the level where salary fits (closest lower or equal CLT value)
-    const sorted = [...salaryLevels].sort((a, b) => a.salary_clt - b.salary_clt);
+    const isCoop = contractType === "Cooperado";
+    const sorted = [...salaryLevels].sort((a, b) =>
+      isCoop ? a.salary_coop - b.salary_coop : a.salary_clt - b.salary_clt
+    );
     let match: SalaryLevel | null = null;
     for (const level of sorted) {
-      if (salary >= level.salary_clt) {
+      const ref = isCoop ? level.salary_coop : level.salary_clt;
+      if (salary >= ref) {
         match = level;
       } else {
         break;
@@ -110,17 +113,29 @@ export function TeamMembersManager() {
     setFormSalary(val);
     const num = parseFloat(val.replace(",", "."));
     if (!isNaN(num) && num > 0) {
-      const detected = detectPosition(num);
+      const detected = detectPosition(num, formContractType);
       if (detected) setFormPosition(detected);
     }
   };
 
   const handlePositionChange = (val: string) => {
     setFormPosition(val);
-    // Auto-fill salary from level
     const level = salaryLevels.find(l => l.position === val);
     if (level) {
-      setFormSalary(String(level.salary_clt));
+      const isCoop = formContractType === "Cooperado";
+      setFormSalary(String(isCoop ? level.salary_coop : level.salary_clt));
+    }
+  };
+
+  const handleContractTypeChange = (val: string) => {
+    setFormContractType(val);
+    // Re-fill salary based on current position and new contract type
+    if (formPosition) {
+      const level = salaryLevels.find(l => l.position === formPosition);
+      if (level) {
+        const isCoop = val === "Cooperado";
+        setFormSalary(String(isCoop ? level.salary_coop : level.salary_clt));
+      }
     }
   };
 
