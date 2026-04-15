@@ -175,6 +175,7 @@ export type Database = {
       team_members: {
         Row: {
           active: boolean
+          contract_type: string
           created_at: string
           email: string
           id: string
@@ -186,6 +187,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          contract_type?: string
           created_at?: string
           email: string
           id?: string
@@ -197,6 +199,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          contract_type?: string
           created_at?: string
           email?: string
           id?: string
