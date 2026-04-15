@@ -290,17 +290,31 @@ export function TeamMembersManager() {
               <label className="text-sm font-medium">E-mail</label>
               <Input value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="email@exemplo.com" type="email" />
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Squad</label>
-              <Select value={formSquad} onValueChange={setFormSquad}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a squad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sem squad</SelectItem>
-                  {SQUADS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Squad</label>
+                <Select value={formSquad} onValueChange={setFormSquad}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a squad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem squad</SelectItem>
+                    {SQUADS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Tipo de Contratação</label>
+                <Select value={formContractType} onValueChange={handleContractTypeChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CLT">CLT</SelectItem>
+                    <SelectItem value="Cooperado">Cooperado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Cargo</label>
@@ -315,7 +329,7 @@ export function TeamMembersManager() {
                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{cat}</div>
                       {levels.map(l => (
                         <SelectItem key={l.id} value={l.position}>
-                          {l.position} — {formatCurrency(l.salary_clt)}
+                          {l.position}
                         </SelectItem>
                       ))}
                     </div>
@@ -324,7 +338,7 @@ export function TeamMembersManager() {
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Salário CLT (R$)</label>
+              <label className="text-sm font-medium">Salário (R$)</label>
               <Input
                 value={formSalary}
                 onChange={(e) => handleSalaryChange(e.target.value)}
@@ -333,7 +347,7 @@ export function TeamMembersManager() {
                 step="0.01"
               />
               <p className="text-xs text-muted-foreground">
-                Ao editar o salário, o cargo será ajustado automaticamente com base na tabela salarial.
+                Ao selecionar um cargo, o salário é preenchido automaticamente ({formContractType}). Ao editar o salário manualmente, o cargo será ajustado.
               </p>
             </div>
           </div>
