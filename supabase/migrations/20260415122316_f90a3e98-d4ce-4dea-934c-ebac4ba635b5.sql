@@ -1,0 +1,1 @@
+ALTER TABLE public.team_members ADD COLUMN contract_type text NOT NULL DEFAULT 'CLT';

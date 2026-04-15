@@ -25,6 +25,7 @@ interface TeamMember {
   squad: string | null;
   position: string | null;
   salary: number | null;
+  contract_type: string;
 }
 
 interface SalaryLevel {
@@ -57,6 +58,7 @@ export function TeamMembersManager() {
   const [formSquad, setFormSquad] = useState<string>("");
   const [formPosition, setFormPosition] = useState<string>("");
   const [formSalary, setFormSalary] = useState<string>("");
+  const [formContractType, setFormContractType] = useState<string>("CLT");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -75,6 +77,7 @@ export function TeamMembersManager() {
     setEditMember(null);
     setFormName(""); setFormUsername(""); setFormEmail("");
     setFormSquad(""); setFormPosition(""); setFormSalary("");
+    setFormContractType("CLT");
     setDialogOpen(true);
   };
 
@@ -83,17 +86,21 @@ export function TeamMembersManager() {
     setFormName(m.name); setFormUsername(m.username); setFormEmail(m.email);
     setFormSquad(m.squad ?? ""); setFormPosition(m.position ?? "");
     setFormSalary(m.salary != null ? String(m.salary) : "");
+    setFormContractType(m.contract_type ?? "CLT");
     setDialogOpen(true);
   };
 
-  // Auto-detect position based on salary (CLT values)
-  const detectPosition = (salary: number): string | null => {
+  // Auto-detect position based on salary and contract type
+  const detectPosition = (salary: number, contractType: string): string | null => {
     if (!salary || salaryLevels.length === 0) return null;
-    // Find the level where salary fits (closest lower or equal CLT value)
-    const sorted = [...salaryLevels].sort((a, b) => a.salary_clt - b.salary_clt);
+    const isCoop = contractType === "Cooperado";
+    const sorted = [...salaryLevels].sort((a, b) =>
+      isCoop ? a.salary_coop - b.salary_coop : a.salary_clt - b.salary_clt
+    );
     let match: SalaryLevel | null = null;
     for (const level of sorted) {
-      if (salary >= level.salary_clt) {
+      const ref = isCoop ? level.salary_coop : level.salary_clt;
+      if (salary >= ref) {
         match = level;
       } else {
         break;
@@ -106,17 +113,29 @@ export function TeamMembersManager() {
     setFormSalary(val);
     const num = parseFloat(val.replace(",", "."));
     if (!isNaN(num) && num > 0) {
-      const detected = detectPosition(num);
+      const detected = detectPosition(num, formContractType);
       if (detected) setFormPosition(detected);
     }
   };
 
   const handlePositionChange = (val: string) => {
     setFormPosition(val);
-    // Auto-fill salary from level
     const level = salaryLevels.find(l => l.position === val);
     if (level) {
-      setFormSalary(String(level.salary_clt));
+      const isCoop = formContractType === "Cooperado";
+      setFormSalary(String(isCoop ? level.salary_coop : level.salary_clt));
+    }
+  };
+
+  const handleContractTypeChange = (val: string) => {
+    setFormContractType(val);
+    // Re-fill salary based on current position and new contract type
+    if (formPosition) {
+      const level = salaryLevels.find(l => l.position === formPosition);
+      if (level) {
+        const isCoop = val === "Cooperado";
+        setFormSalary(String(isCoop ? level.salary_coop : level.salary_clt));
+      }
     }
   };
 
@@ -130,6 +149,7 @@ export function TeamMembersManager() {
       squad: formSquad || null,
       position: formPosition || null,
       salary: formSalary ? parseFloat(formSalary.replace(",", ".")) : null,
+      contract_type: formContractType,
     };
 
     try {
@@ -200,8 +220,9 @@ export function TeamMembersManager() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Username</TableHead>
                   <TableHead>Squad</TableHead>
+                  <TableHead>Contrato</TableHead>
                   <TableHead>Cargo</TableHead>
-                  <TableHead>Salário CLT</TableHead>
+                  <TableHead>Salário</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -217,6 +238,9 @@ export function TeamMembersManager() {
                       ) : (
                         <span className="text-muted-foreground text-xs">—</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">{m.contract_type ?? "CLT"}</Badge>
                     </TableCell>
                     <TableCell className="text-xs max-w-[200px] truncate">{m.position ?? "—"}</TableCell>
                     <TableCell className="text-xs">{formatCurrency(m.salary)}</TableCell>
@@ -266,17 +290,31 @@ export function TeamMembersManager() {
               <label className="text-sm font-medium">E-mail</label>
               <Input value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="email@exemplo.com" type="email" />
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Squad</label>
-              <Select value={formSquad} onValueChange={setFormSquad}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a squad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sem squad</SelectItem>
-                  {SQUADS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Squad</label>
+                <Select value={formSquad} onValueChange={setFormSquad}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a squad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem squad</SelectItem>
+                    {SQUADS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Tipo de Contratação</label>
+                <Select value={formContractType} onValueChange={handleContractTypeChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CLT">CLT</SelectItem>
+                    <SelectItem value="Cooperado">Cooperado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Cargo</label>
@@ -291,7 +329,7 @@ export function TeamMembersManager() {
                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{cat}</div>
                       {levels.map(l => (
                         <SelectItem key={l.id} value={l.position}>
-                          {l.position} — {formatCurrency(l.salary_clt)}
+                          {l.position}
                         </SelectItem>
                       ))}
                     </div>
@@ -300,7 +338,7 @@ export function TeamMembersManager() {
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Salário CLT (R$)</label>
+              <label className="text-sm font-medium">Salário (R$)</label>
               <Input
                 value={formSalary}
                 onChange={(e) => handleSalaryChange(e.target.value)}
@@ -309,7 +347,7 @@ export function TeamMembersManager() {
                 step="0.01"
               />
               <p className="text-xs text-muted-foreground">
-                Ao editar o salário, o cargo será ajustado automaticamente com base na tabela salarial.
+                Ao selecionar um cargo, o salário é preenchido automaticamente ({formContractType}). Ao editar o salário manualmente, o cargo será ajustado.
               </p>
             </div>
           </div>
