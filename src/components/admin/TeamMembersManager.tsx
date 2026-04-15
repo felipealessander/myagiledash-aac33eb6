@@ -58,6 +58,7 @@ export function TeamMembersManager() {
   const [formSquad, setFormSquad] = useState<string>("");
   const [formPosition, setFormPosition] = useState<string>("");
   const [formSalary, setFormSalary] = useState<string>("");
+  const [formContractType, setFormContractType] = useState<string>("CLT");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
