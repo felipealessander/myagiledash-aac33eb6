@@ -42,6 +42,7 @@ import {
   Shield,
   Users,
 } from "lucide-react";
+import { TeamMembersManager } from "@/components/admin/TeamMembersManager";
 
 interface UserProfile {
   id: string;
@@ -341,6 +342,7 @@ export default function Admin() {
             )}
           </CardContent>
         </Card>
+        <TeamMembersManager />
       </div>
     </div>
   );
