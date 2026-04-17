@@ -627,6 +627,7 @@ export function useDashboardData() {
     selectedMonth,
     setSelectedMonth,
     dashboardData: filteredDashboardData,
+    unfilteredDashboardData: dashboardData,
     allTeams: dashboardData.teams,
     loading,
     refetchMonths: fetchMonths,
