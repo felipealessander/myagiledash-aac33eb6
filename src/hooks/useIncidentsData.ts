@@ -115,6 +115,7 @@ export function useIncidentsData() {
   const [allTasks, setAllTasks] = useState<IncidentTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodFilter>("1m");
+  const [treatHomologAsDone, setTreatHomologAsDone] = useState(false);
 
   const fetchAllIncidents = useCallback(async () => {
     setLoading(true);
@@ -167,7 +168,10 @@ export function useIncidentsData() {
     return Array.from(map.values());
   }, [incidents]);
 
-  const openIncidents = useMemo(() => uniqueIncidents.filter(isOpen), [uniqueIncidents]);
+  const openIncidents = useMemo(
+    () => uniqueIncidents.filter(t => isOpen(t, treatHomologAsDone)),
+    [uniqueIncidents, treatHomologAsDone]
+  );
 
   const businessDays = useMemo(() => getNextBusinessDays(5), []);
 
