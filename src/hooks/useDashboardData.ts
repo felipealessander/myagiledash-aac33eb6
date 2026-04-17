@@ -630,8 +630,8 @@ export function useDashboardData() {
     allTeams: dashboardData.teams,
     loading,
     refetchMonths: fetchMonths,
-    selectedSquad,
-    setSelectedSquad,
+    selectedSquads,
+    setSelectedSquads,
     monthlyTrend,
     isYearView,
   };
