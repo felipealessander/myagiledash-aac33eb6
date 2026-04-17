@@ -1,6 +1,10 @@
 import { useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogOut, Gauge, RotateCcw } from "lucide-react";
+import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogOut, Gauge, RotateCcw, GitCompare } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AgileMetricsComparisonChart } from "@/components/dashboard/AgileMetricsComparisonChart";
+import { ReworkComparisonChart } from "@/components/dashboard/ReworkComparisonChart";
+import { CategoriesBySquadChart } from "@/components/dashboard/CategoriesBySquadChart";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { TeamCard } from "@/components/dashboard/TeamCard";
 import { CategoryChart } from "@/components/dashboard/CategoryChart";
@@ -31,7 +35,11 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { approved, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad, monthlyTrend, isYearView } = useDashboardData();
+  const { months, selectedMonth, setSelectedMonth, dashboardData, unfilteredDashboardData, allTeams, loading, refetchMonths, selectedSquads, setSelectedSquads, monthlyTrend, isYearView } = useDashboardData();
+  const isComparing = selectedSquads.length >= 2;
+  const toggleSquad = (name: string) => {
+    setSelectedSquads(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -88,30 +96,33 @@ const Index = () => {
               <LogOut className="h-3.5 w-3.5" />
               Sair
             </Button>
-            <div className="hidden lg:flex items-center gap-2">
-              {allTeams.map((t, i) => (
+            <div className="hidden lg:flex items-center gap-1.5 flex-wrap max-w-[640px] justify-end">
+              {allTeams.map((t) => {
+                const checked = selectedSquads.includes(t.name);
+                const dimmed = selectedSquads.length > 0 && !checked;
+                return (
+                  <label
+                    key={t.name}
+                    className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-medium transition-all cursor-pointer border ${
+                      checked
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : dimmed
+                          ? "bg-muted/50 text-muted-foreground border-transparent hover:border-border opacity-60"
+                          : "bg-secondary text-secondary-foreground border-transparent hover:border-border"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleSquad(t.name)}
+                      className="h-3 w-3 border-current data-[state=checked]:bg-primary-foreground data-[state=checked]:text-primary"
+                    />
+                    {t.name}
+                  </label>
+                );
+              })}
+              {selectedSquads.length > 0 && (
                 <button
-                  key={t.name}
-                  onClick={() => setSelectedSquad(selectedSquad === t.name ? null : t.name)}
-                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition-all cursor-pointer border ${
-                    selectedSquad === t.name
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : selectedSquad === null
-                        ? "bg-secondary text-secondary-foreground border-transparent hover:border-border"
-                        : "bg-muted/50 text-muted-foreground border-transparent hover:border-border opacity-60"
-                  }`}
-                >
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: t.color.startsWith("var(") ? undefined : t.color }}
-                    {...(t.color.startsWith("var(") ? { className: `h-1.5 w-1.5 rounded-full bg-muted-foreground` } : {})}
-                  />
-                  {t.name}
-                </button>
-              ))}
-              {selectedSquad && (
-                <button
-                  onClick={() => setSelectedSquad(null)}
+                  onClick={() => setSelectedSquads([])}
                   className="text-[10px] text-muted-foreground hover:text-foreground underline ml-1"
                 >
                   Limpar
@@ -148,7 +159,7 @@ const Index = () => {
               <div>
                 <h3 className="text-xs font-medium mb-3 flex items-center gap-2 text-muted-foreground">
                   <Users className="h-3.5 w-3.5" />
-                  Visão por Time
+                  {isComparing ? `Comparativo entre ${teams.length} times selecionados` : "Visão por Time"}
                 </h3>
                 <div className={`grid grid-cols-1 sm:grid-cols-2 ${teams.length <= 4 ? 'lg:grid-cols-4' : teams.length <= 6 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
                   {teams.map((team, i) => (
@@ -156,6 +167,38 @@ const Index = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Comparativo entre Times (só quando 2+ selecionados) */}
+              {isComparing && (
+                <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                  <h3 className="text-xs font-semibold flex items-center gap-2 text-primary uppercase tracking-wider">
+                    <GitCompare className="h-3.5 w-3.5" />
+                    Comparativo entre Times
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <AgileMetricsComparisonChart
+                      data={teams.map(t => {
+                        const lt = leadTimeBySquad.find(l => l.squad === t.name);
+                        const ct = cycleTimeBySquad.find(l => l.squad === t.name);
+                        const wp = wipBySquad.find(w => w.squad === t.name);
+                        // throughput: avg per week of resolved tasks belonging to this squad's count over weeks
+                        const throughput = lt && lt.count > 0 && throughputByWeek.length > 0
+                          ? Math.round((lt.count / throughputByWeek.length) * 10) / 10
+                          : 0;
+                        return {
+                          squad: t.name,
+                          leadAvg: lt?.avg || 0,
+                          cycleAvg: ct?.avg || 0,
+                          throughput,
+                          wip: wp?.wip || 0,
+                        };
+                      })}
+                    />
+                    <ReworkComparisonChart data={reworkBySquad || []} />
+                  </div>
+                  <CategoriesBySquadChart teams={teams} />
+                </div>
+              )}
 
               {/* Gráficos de Produto */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -187,14 +230,14 @@ const Index = () => {
             </h2>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KpiCard title="Incidentes Criados" value={incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={0} />
-                <KpiCard title="Tarefas com Retrabalho" value={reworkCount} subtitle={`${reworkRate}% do total`} icon={RotateCcw} variant="destructive" delay={50} />
-                <KpiCard title="Total de Correções" value={reworkTotalCorrections} subtitle="Soma de correções aplicadas" icon={RotateCcw} variant="warning" delay={100} />
-                <KpiCard title="Correções / Tarefa" value={reworkCount > 0 ? (reworkTotalCorrections / reworkCount).toFixed(1) : "0"} subtitle="Média por tarefa retrabalhada" icon={RotateCcw} variant="info" delay={150} />
+                <KpiCard title="Incidentes Criados" value={unfilteredDashboardData.incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={0} />
+                <KpiCard title="Tarefas com Retrabalho" value={unfilteredDashboardData.reworkCount} subtitle={`${unfilteredDashboardData.reworkRate}% do total`} icon={RotateCcw} variant="destructive" delay={50} />
+                <KpiCard title="Total de Correções" value={unfilteredDashboardData.reworkTotalCorrections} subtitle="Soma de correções aplicadas" icon={RotateCcw} variant="warning" delay={100} />
+                <KpiCard title="Correções / Tarefa" value={unfilteredDashboardData.reworkCount > 0 ? (unfilteredDashboardData.reworkTotalCorrections / unfilteredDashboardData.reworkCount).toFixed(1) : "0"} subtitle="Média por tarefa retrabalhada" icon={RotateCcw} variant="info" delay={150} />
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <ReworkChart data={reworkBySquad || []} />
-                <IncidentsByClientChart data={incidentsByClient || []} />
+                <ReworkChart data={unfilteredDashboardData.reworkBySquad || []} />
+                <IncidentsByClientChart data={unfilteredDashboardData.incidentsByClient || []} />
               </div>
             </div>
           </section>
@@ -282,10 +325,10 @@ const Index = () => {
               Faturamento
             </h2>
             <div className="space-y-4">
-              <BillingKpiCards billingData={billingData} billingTotalSpent={billingTotalSpent} />
+              <BillingKpiCards billingData={unfilteredDashboardData.billingData} billingTotalSpent={unfilteredDashboardData.billingTotalSpent} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <BillingOverviewChart billingData={billingData} billingTotalSpent={billingTotalSpent} />
-                <BillingComparisonChart billingData={billingData} />
+                <BillingOverviewChart billingData={unfilteredDashboardData.billingData} billingTotalSpent={unfilteredDashboardData.billingTotalSpent} />
+                <BillingComparisonChart billingData={unfilteredDashboardData.billingData} />
               </div>
             </div>
           </section>
