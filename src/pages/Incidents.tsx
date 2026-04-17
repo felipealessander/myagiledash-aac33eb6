@@ -150,6 +150,16 @@ const Incidents = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-card mr-2">
+              <Switch
+                id="homolog-as-done"
+                checked={treatHomologAsDone}
+                onCheckedChange={setTreatHomologAsDone}
+              />
+              <Label htmlFor="homolog-as-done" className="text-xs cursor-pointer whitespace-nowrap">
+                Homologação = Concluído
+              </Label>
+            </div>
             {periodButtons.map(p => (
               <Button
                 key={p.value}
