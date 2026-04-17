@@ -281,5 +281,7 @@ export function useIncidentsData() {
     isDueNextBusinessDay: (dateStr: string) => isDueNextBusinessDay(dateStr, businessDays),
     isOverdue,
     refetch: fetchAllIncidents,
+    treatHomologAsDone,
+    setTreatHomologAsDone,
   };
 }
