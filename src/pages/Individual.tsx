@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Loader2, LogOut, CheckCircle, Clock, RotateCcw, User, Users, X } from "lucide-react";
+import { Loader2, LogOut, CheckCircle, Clock, RotateCcw, User, Users, X, Search } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Individual = () => {
   const { user, loading: authLoading, signOut } = useAuth();
