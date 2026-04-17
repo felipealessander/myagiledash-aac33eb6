@@ -26,9 +26,11 @@ function isIncident(task: IncidentTask): boolean {
   return cat === "incidente";
 }
 
-function isOpen(task: IncidentTask): boolean {
+function isOpen(task: IncidentTask, treatHomologAsDone = false): boolean {
   const s = (task.status || "").toLowerCase().trim();
-  return !s.includes("conclu") && !s.includes("done") && !s.includes("arquivado");
+  if (s.includes("conclu") || s.includes("done") || s.includes("arquivado")) return false;
+  if (treatHomologAsDone && s.includes("homolog")) return false;
+  return true;
 }
 
 function getNextBusinessDays(count: number): Date[] {
