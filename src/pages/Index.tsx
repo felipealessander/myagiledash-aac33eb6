@@ -96,30 +96,33 @@ const Index = () => {
               <LogOut className="h-3.5 w-3.5" />
               Sair
             </Button>
-            <div className="hidden lg:flex items-center gap-2">
-              {allTeams.map((t, i) => (
+            <div className="hidden lg:flex items-center gap-1.5 flex-wrap max-w-[640px] justify-end">
+              {allTeams.map((t) => {
+                const checked = selectedSquads.includes(t.name);
+                const dimmed = selectedSquads.length > 0 && !checked;
+                return (
+                  <label
+                    key={t.name}
+                    className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-medium transition-all cursor-pointer border ${
+                      checked
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : dimmed
+                          ? "bg-muted/50 text-muted-foreground border-transparent hover:border-border opacity-60"
+                          : "bg-secondary text-secondary-foreground border-transparent hover:border-border"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleSquad(t.name)}
+                      className="h-3 w-3 border-current data-[state=checked]:bg-primary-foreground data-[state=checked]:text-primary"
+                    />
+                    {t.name}
+                  </label>
+                );
+              })}
+              {selectedSquads.length > 0 && (
                 <button
-                  key={t.name}
-                  onClick={() => setSelectedSquad(selectedSquad === t.name ? null : t.name)}
-                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition-all cursor-pointer border ${
-                    selectedSquad === t.name
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : selectedSquad === null
-                        ? "bg-secondary text-secondary-foreground border-transparent hover:border-border"
-                        : "bg-muted/50 text-muted-foreground border-transparent hover:border-border opacity-60"
-                  }`}
-                >
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: t.color.startsWith("var(") ? undefined : t.color }}
-                    {...(t.color.startsWith("var(") ? { className: `h-1.5 w-1.5 rounded-full bg-muted-foreground` } : {})}
-                  />
-                  {t.name}
-                </button>
-              ))}
-              {selectedSquad && (
-                <button
-                  onClick={() => setSelectedSquad(null)}
+                  onClick={() => setSelectedSquads([])}
                   className="text-[10px] text-muted-foreground hover:text-foreground underline ml-1"
                 >
                   Limpar
