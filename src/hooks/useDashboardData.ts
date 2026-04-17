@@ -591,20 +591,20 @@ export function useDashboardData() {
     return buildDashboardData(dbTasks, selectedMonth);
   }, [dbTasks, selectedMonth]);
 
-  const [selectedSquad, setSelectedSquad] = useState<string | null>(null);
+  const [selectedSquads, setSelectedSquads] = useState<string[]>([]);
 
   const filteredDashboardData: DashboardData = useMemo(() => {
-    if (!selectedSquad) return dashboardData;
+    if (selectedSquads.length === 0) return dashboardData;
     if (!dbTasks || dbTasks.length === 0) {
       const filtered = {
         ...dashboardData,
-        teams: dashboardData.teams.filter(t => t.name === selectedSquad),
+        teams: dashboardData.teams.filter(t => selectedSquads.includes(t.name)),
       };
       return filtered;
     }
-    const filtered = dbTasks.filter(t => (t.squad || "Sem Squad") === selectedSquad);
+    const filtered = dbTasks.filter(t => selectedSquads.includes(t.squad || "Sem Squad"));
     return buildDashboardData(filtered, selectedMonth);
-  }, [dashboardData, selectedSquad, selectedMonth, dbTasks]);
+  }, [dashboardData, selectedSquads, selectedMonth, dbTasks]);
 
   const isYearView = selectedMonth.startsWith("year-");
   const yearMonthsForTrend = useMemo(() => {
