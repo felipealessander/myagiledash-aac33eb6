@@ -159,7 +159,7 @@ const Index = () => {
               <div>
                 <h3 className="text-xs font-medium mb-3 flex items-center gap-2 text-muted-foreground">
                   <Users className="h-3.5 w-3.5" />
-                  Visão por Time
+                  {isComparing ? `Comparativo entre ${teams.length} times selecionados` : "Visão por Time"}
                 </h3>
                 <div className={`grid grid-cols-1 sm:grid-cols-2 ${teams.length <= 4 ? 'lg:grid-cols-4' : teams.length <= 6 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
                   {teams.map((team, i) => (
@@ -167,6 +167,38 @@ const Index = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Comparativo entre Times (só quando 2+ selecionados) */}
+              {isComparing && (
+                <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                  <h3 className="text-xs font-semibold flex items-center gap-2 text-primary uppercase tracking-wider">
+                    <GitCompare className="h-3.5 w-3.5" />
+                    Comparativo entre Times
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <AgileMetricsComparisonChart
+                      data={teams.map(t => {
+                        const lt = leadTimeBySquad.find(l => l.squad === t.name);
+                        const ct = cycleTimeBySquad.find(l => l.squad === t.name);
+                        const wp = wipBySquad.find(w => w.squad === t.name);
+                        // throughput: avg per week of resolved tasks belonging to this squad's count over weeks
+                        const throughput = lt && lt.count > 0 && throughputByWeek.length > 0
+                          ? Math.round((lt.count / throughputByWeek.length) * 10) / 10
+                          : 0;
+                        return {
+                          squad: t.name,
+                          leadAvg: lt?.avg || 0,
+                          cycleAvg: ct?.avg || 0,
+                          throughput,
+                          wip: wp?.wip || 0,
+                        };
+                      })}
+                    />
+                    <ReworkComparisonChart data={reworkBySquad || []} />
+                  </div>
+                  <CategoriesBySquadChart teams={teams} />
+                </div>
+              )}
 
               {/* Gráficos de Produto */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -198,14 +230,14 @@ const Index = () => {
             </h2>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KpiCard title="Incidentes Criados" value={incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={0} />
-                <KpiCard title="Tarefas com Retrabalho" value={reworkCount} subtitle={`${reworkRate}% do total`} icon={RotateCcw} variant="destructive" delay={50} />
-                <KpiCard title="Total de Correções" value={reworkTotalCorrections} subtitle="Soma de correções aplicadas" icon={RotateCcw} variant="warning" delay={100} />
-                <KpiCard title="Correções / Tarefa" value={reworkCount > 0 ? (reworkTotalCorrections / reworkCount).toFixed(1) : "0"} subtitle="Média por tarefa retrabalhada" icon={RotateCcw} variant="info" delay={150} />
+                <KpiCard title="Incidentes Criados" value={unfilteredDashboardData.incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={0} />
+                <KpiCard title="Tarefas com Retrabalho" value={unfilteredDashboardData.reworkCount} subtitle={`${unfilteredDashboardData.reworkRate}% do total`} icon={RotateCcw} variant="destructive" delay={50} />
+                <KpiCard title="Total de Correções" value={unfilteredDashboardData.reworkTotalCorrections} subtitle="Soma de correções aplicadas" icon={RotateCcw} variant="warning" delay={100} />
+                <KpiCard title="Correções / Tarefa" value={unfilteredDashboardData.reworkCount > 0 ? (unfilteredDashboardData.reworkTotalCorrections / unfilteredDashboardData.reworkCount).toFixed(1) : "0"} subtitle="Média por tarefa retrabalhada" icon={RotateCcw} variant="info" delay={150} />
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <ReworkChart data={reworkBySquad || []} />
-                <IncidentsByClientChart data={incidentsByClient || []} />
+                <ReworkChart data={unfilteredDashboardData.reworkBySquad || []} />
+                <IncidentsByClientChart data={unfilteredDashboardData.incidentsByClient || []} />
               </div>
             </div>
           </section>
