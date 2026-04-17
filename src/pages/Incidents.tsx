@@ -33,6 +33,7 @@ const Incidents = () => {
     loading, openIncidents, sloExpiring, sloOverdue, promisedExpiring, promisedOverdue,
     bySquad, trend, period, setPeriod, totalIncidents,
     isDueNextBusinessDay, isOverdue,
+    treatHomologAsDone, setTreatHomologAsDone,
   } = useIncidentsData();
 
   useEffect(() => {
