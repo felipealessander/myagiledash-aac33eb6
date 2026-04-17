@@ -36,7 +36,7 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
     const fetchMembers = async () => {
       const { data } = await supabase
         .from("team_members")
-        .select("name, username")
+        .select("name, username, squad")
         .eq("active", true)
         .order("name");
       if (data) setTeamMembers(data);
