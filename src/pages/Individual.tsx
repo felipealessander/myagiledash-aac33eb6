@@ -21,6 +21,8 @@ const Individual = () => {
   const { canViewIndividual, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const [selectedDevs, setSelectedDevs] = useState<string[]>([]);
+  const [selectedSquad, setSelectedSquad] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (!authLoading && !roleLoading) {
@@ -30,12 +32,30 @@ const Individual = () => {
   }, [authLoading, roleLoading, user, canViewIndividual, navigate]);
 
   const { months, selectedMonth, setSelectedMonth } = useDashboardData();
-  const { devMetrics, allDevNames, loading } = useIndividualData(selectedMonth, months);
+  const { devMetrics, allDevNames, allSquads, devSquadMap, loading } = useIndividualData(selectedMonth, months);
+
+  const visibleDevNames = useMemo(() => {
+    let list = allDevNames;
+    if (selectedSquad !== "all") {
+      list = list.filter(d => d.squad === selectedSquad);
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(d => d.display.toLowerCase().includes(q));
+    }
+    return list;
+  }, [allDevNames, selectedSquad, searchTerm]);
 
   const filteredMetrics = useMemo(() => {
-    if (selectedDevs.length === 0) return devMetrics;
-    return devMetrics.filter(d => selectedDevs.includes(d.name));
-  }, [devMetrics, selectedDevs]);
+    let list = devMetrics;
+    if (selectedSquad !== "all") {
+      list = list.filter(d => devSquadMap.get(d.name) === selectedSquad);
+    }
+    if (selectedDevs.length > 0) {
+      list = list.filter(d => selectedDevs.includes(d.name));
+    }
+    return list;
+  }, [devMetrics, selectedDevs, selectedSquad, devSquadMap]);
 
   const toggleDev = (key: string) => {
     setSelectedDevs(prev =>
