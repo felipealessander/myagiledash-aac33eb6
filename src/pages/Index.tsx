@@ -325,10 +325,10 @@ const Index = () => {
               Faturamento
             </h2>
             <div className="space-y-4">
-              <BillingKpiCards billingData={billingData} billingTotalSpent={billingTotalSpent} />
+              <BillingKpiCards billingData={unfilteredDashboardData.billingData} billingTotalSpent={unfilteredDashboardData.billingTotalSpent} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <BillingOverviewChart billingData={billingData} billingTotalSpent={billingTotalSpent} />
-                <BillingComparisonChart billingData={billingData} />
+                <BillingOverviewChart billingData={unfilteredDashboardData.billingData} billingTotalSpent={unfilteredDashboardData.billingTotalSpent} />
+                <BillingComparisonChart billingData={unfilteredDashboardData.billingData} />
               </div>
             </div>
           </section>
