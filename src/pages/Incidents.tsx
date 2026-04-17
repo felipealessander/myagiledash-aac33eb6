@@ -8,6 +8,8 @@ import { IncidentKpiCard } from "@/components/dashboard/IncidentKpiCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,7 @@ const Incidents = () => {
     loading, openIncidents, sloExpiring, sloOverdue, promisedExpiring, promisedOverdue,
     bySquad, trend, period, setPeriod, totalIncidents,
     isDueNextBusinessDay, isOverdue,
+    treatHomologAsDone, setTreatHomologAsDone,
   } = useIncidentsData();
 
   useEffect(() => {
@@ -147,6 +150,16 @@ const Incidents = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-card mr-2">
+              <Switch
+                id="homolog-as-done"
+                checked={treatHomologAsDone}
+                onCheckedChange={setTreatHomologAsDone}
+              />
+              <Label htmlFor="homolog-as-done" className="text-xs cursor-pointer whitespace-nowrap">
+                Homologação = Concluído
+              </Label>
+            </div>
             {periodButtons.map(p => (
               <Button
                 key={p.value}

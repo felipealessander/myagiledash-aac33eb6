@@ -26,9 +26,11 @@ function isIncident(task: IncidentTask): boolean {
   return cat === "incidente";
 }
 
-function isOpen(task: IncidentTask): boolean {
+function isOpen(task: IncidentTask, treatHomologAsDone = false): boolean {
   const s = (task.status || "").toLowerCase().trim();
-  return !s.includes("conclu") && !s.includes("done") && !s.includes("arquivado");
+  if (s.includes("conclu") || s.includes("done") || s.includes("arquivado")) return false;
+  if (treatHomologAsDone && s.includes("homolog")) return false;
+  return true;
 }
 
 function getNextBusinessDays(count: number): Date[] {
@@ -113,6 +115,7 @@ export function useIncidentsData() {
   const [allTasks, setAllTasks] = useState<IncidentTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodFilter>("1m");
+  const [treatHomologAsDone, setTreatHomologAsDone] = useState(false);
 
   const fetchAllIncidents = useCallback(async () => {
     setLoading(true);
@@ -165,7 +168,10 @@ export function useIncidentsData() {
     return Array.from(map.values());
   }, [incidents]);
 
-  const openIncidents = useMemo(() => uniqueIncidents.filter(isOpen), [uniqueIncidents]);
+  const openIncidents = useMemo(
+    () => uniqueIncidents.filter(t => isOpen(t, treatHomologAsDone)),
+    [uniqueIncidents, treatHomologAsDone]
+  );
 
   const businessDays = useMemo(() => getNextBusinessDays(5), []);
 
@@ -203,7 +209,7 @@ export function useIncidentsData() {
       squadMap.get(sq)!.push(t);
     }
     return Array.from(squadMap.entries()).map(([squad, tasks]) => {
-      const openTasks = tasks.filter(isOpen);
+      const openTasks = tasks.filter(t => isOpen(t, treatHomologAsDone));
       return {
         squad,
         total: tasks.length,
@@ -212,7 +218,7 @@ export function useIncidentsData() {
         promisedExpiring: openTasks.filter(t => hasValidPromisedDate(t) && (isWithinBusinessDays(t.promised_date!, businessDays) || isOverdue(t.promised_date!))),
       };
     }).sort((a, b) => b.open - a.open);
-  }, [uniqueIncidents, businessDays]);
+  }, [uniqueIncidents, businessDays, treatHomologAsDone]);
 
   const trend = useMemo((): IncidentTrend[] => {
     const now = new Date();
@@ -275,5 +281,7 @@ export function useIncidentsData() {
     isDueNextBusinessDay: (dateStr: string) => isDueNextBusinessDay(dateStr, businessDays),
     isOverdue,
     refetch: fetchAllIncidents,
+    treatHomologAsDone,
+    setTreatHomologAsDone,
   };
 }
