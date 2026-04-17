@@ -5,6 +5,7 @@ import type { MonthOption } from "@/hooks/useDashboardData";
 interface TeamMember {
   name: string;
   username: string;
+  squad: string | null;
 }
 
 interface TaskCard {
