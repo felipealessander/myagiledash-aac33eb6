@@ -100,17 +100,37 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
     return s;
   }, [teamMembers]);
 
+  const devSquadMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const m of teamMembers) {
+      map.set(m.username, m.squad);
+      map.set(m.name, m.squad);
+    }
+    return map;
+  }, [teamMembers]);
+
+  const allSquads = useMemo(() => {
+    const s = new Set<string>();
+    for (const m of teamMembers) {
+      if (m.squad) s.add(m.squad);
+    }
+    return Array.from(s).sort();
+  }, [teamMembers]);
+
   const allDevNames = useMemo(() => {
-    const names = new Map<string, string>();
+    const names = new Map<string, { display: string; squad: string | null }>();
     for (const t of tasks) {
       if (t.assignee && memberSet.has(t.assignee)) {
-        names.set(t.assignee, memberMap.get(t.assignee) || t.assignee);
+        names.set(t.assignee, {
+          display: memberMap.get(t.assignee) || t.assignee,
+          squad: devSquadMap.get(t.assignee) ?? null,
+        });
       }
     }
     return Array.from(names.entries())
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([key, display]) => ({ key, display }));
-  }, [tasks, memberSet, memberMap]);
+      .sort((a, b) => a[1].display.localeCompare(b[1].display))
+      .map(([key, info]) => ({ key, display: info.display, squad: info.squad }));
+  }, [tasks, memberSet, memberMap, devSquadMap]);
 
   const devMetrics: DevMetric[] = useMemo(() => {
     const byDev = new Map<string, any[]>();
