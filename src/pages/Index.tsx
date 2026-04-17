@@ -35,7 +35,11 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { approved, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  const { months, selectedMonth, setSelectedMonth, dashboardData, allTeams, loading, refetchMonths, selectedSquad, setSelectedSquad, monthlyTrend, isYearView } = useDashboardData();
+  const { months, selectedMonth, setSelectedMonth, dashboardData, unfilteredDashboardData, allTeams, loading, refetchMonths, selectedSquads, setSelectedSquads, monthlyTrend, isYearView } = useDashboardData();
+  const isComparing = selectedSquads.length >= 2;
+  const toggleSquad = (name: string) => {
+    setSelectedSquads(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
