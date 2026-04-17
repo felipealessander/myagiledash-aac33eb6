@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Loader2, LogOut, CheckCircle, Clock, RotateCcw, User, Users, X } from "lucide-react";
+import { Loader2, LogOut, CheckCircle, Clock, RotateCcw, User, Users, X, Search } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -13,12 +13,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Individual = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { canViewIndividual, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const [selectedDevs, setSelectedDevs] = useState<string[]>([]);
+  const [selectedSquad, setSelectedSquad] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (!authLoading && !roleLoading) {
@@ -28,12 +32,30 @@ const Individual = () => {
   }, [authLoading, roleLoading, user, canViewIndividual, navigate]);
 
   const { months, selectedMonth, setSelectedMonth } = useDashboardData();
-  const { devMetrics, allDevNames, loading } = useIndividualData(selectedMonth, months);
+  const { devMetrics, allDevNames, allSquads, devSquadMap, loading } = useIndividualData(selectedMonth, months);
+
+  const visibleDevNames = useMemo(() => {
+    let list = allDevNames;
+    if (selectedSquad !== "all") {
+      list = list.filter(d => d.squad === selectedSquad);
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(d => d.display.toLowerCase().includes(q));
+    }
+    return list;
+  }, [allDevNames, selectedSquad, searchTerm]);
 
   const filteredMetrics = useMemo(() => {
-    if (selectedDevs.length === 0) return devMetrics;
-    return devMetrics.filter(d => selectedDevs.includes(d.name));
-  }, [devMetrics, selectedDevs]);
+    let list = devMetrics;
+    if (selectedSquad !== "all") {
+      list = list.filter(d => devSquadMap.get(d.name) === selectedSquad);
+    }
+    if (selectedDevs.length > 0) {
+      list = list.filter(d => selectedDevs.includes(d.name));
+    }
+    return list;
+  }, [devMetrics, selectedDevs, selectedSquad, devSquadMap]);
 
   const toggleDev = (key: string) => {
     setSelectedDevs(prev =>
@@ -68,16 +90,27 @@ const Individual = () => {
           </div>
           <div className="flex items-center gap-3">
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
+            <Select value={selectedSquad} onValueChange={(v) => { setSelectedSquad(v); setSelectedDevs([]); }}>
+              <SelectTrigger className="h-9 w-40 text-xs">
+                <SelectValue placeholder="Todos os times" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os times</SelectItem>
+                {allSquads.map(s => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1.5 text-xs">
                   <Users className="h-3.5 w-3.5" />
                   {selectedDevs.length === 0
-                    ? "Todos os devs"
+                    ? selectedSquad === "all" ? "Todos os devs" : `Time: ${selectedSquad}`
                     : `${selectedDevs.length} selecionado${selectedDevs.length > 1 ? "s" : ""}`}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-64 p-0" align="end">
+              <PopoverContent className="w-72 p-0" align="end">
                 <div className="p-3 border-b border-border flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">Selecionar devs</span>
                   {selectedDevs.length > 0 && (
@@ -91,8 +124,20 @@ const Individual = () => {
                     </Button>
                   )}
                 </div>
+                <div className="p-2 border-b border-border">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      autoFocus
+                      placeholder="Buscar dev..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-8 pl-7 text-xs"
+                    />
+                  </div>
+                </div>
                 <div className="max-h-60 overflow-y-auto p-2 space-y-1">
-                  {allDevNames.map(({ key, display }) => (
+                  {visibleDevNames.map(({ key, display, squad }) => (
                     <label
                       key={key}
                       className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-sm"
@@ -101,10 +146,13 @@ const Individual = () => {
                         checked={selectedDevs.includes(key)}
                         onCheckedChange={() => toggleDev(key)}
                       />
-                      <span className="truncate">{display}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate">{display}</div>
+                        {squad && <div className="text-[10px] text-muted-foreground truncate">{squad}</div>}
+                      </div>
                     </label>
                   ))}
-                  {allDevNames.length === 0 && (
+                  {visibleDevNames.length === 0 && (
                     <p className="text-xs text-muted-foreground text-center py-3">Nenhum dev encontrado</p>
                   )}
                 </div>
