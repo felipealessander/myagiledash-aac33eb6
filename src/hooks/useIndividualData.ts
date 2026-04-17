@@ -185,5 +185,5 @@ export function useIndividualData(selectedMonth: string, months: MonthOption[]) 
       .sort((a, b) => b.spentHours - a.spentHours);
   }, [tasks, memberSet, memberMap]);
 
-  return { devMetrics, allDevNames, loading };
+  return { devMetrics, allDevNames, allSquads, devSquadMap, loading };
 }
