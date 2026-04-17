@@ -209,7 +209,7 @@ export function useIncidentsData() {
       squadMap.get(sq)!.push(t);
     }
     return Array.from(squadMap.entries()).map(([squad, tasks]) => {
-      const openTasks = tasks.filter(isOpen);
+      const openTasks = tasks.filter(t => isOpen(t, treatHomologAsDone));
       return {
         squad,
         total: tasks.length,
@@ -218,7 +218,7 @@ export function useIncidentsData() {
         promisedExpiring: openTasks.filter(t => hasValidPromisedDate(t) && (isWithinBusinessDays(t.promised_date!, businessDays) || isOverdue(t.promised_date!))),
       };
     }).sort((a, b) => b.open - a.open);
-  }, [uniqueIncidents, businessDays]);
+  }, [uniqueIncidents, businessDays, treatHomologAsDone]);
 
   const trend = useMemo((): IncidentTrend[] => {
     const now = new Date();
