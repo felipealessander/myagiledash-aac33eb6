@@ -181,6 +181,14 @@ const Index = () => {
       ) : (
         <main className="container mx-auto px-4 py-6 space-y-8">
 
+          {/* ═══════ INSIGHTS DE IA ═══════ */}
+          <AIInsightsWidget
+            scope="global"
+            monthLabel={currentMonthLabel}
+            metrics={globalMetrics}
+            previousMetrics={previousGlobalMetrics}
+          />
+
           {/* ═══════ PRODUTO ═══════ */}
           <section>
             <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
@@ -203,9 +211,36 @@ const Index = () => {
                   {isComparing ? `Comparativo entre ${teams.length} times selecionados` : "Visão por Time"}
                 </h3>
                 <div className={`grid grid-cols-1 sm:grid-cols-2 ${teams.length <= 4 ? 'lg:grid-cols-4' : teams.length <= 6 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
-                  {teams.map((team, i) => (
-                    <TeamCard key={team.name} team={team} teamIndex={i} delay={200 + i * 50} />
-                  ))}
+                  {teams.map((team, i) => {
+                    const lt = leadTimeBySquad.find(l => l.squad === team.name);
+                    const ct = cycleTimeBySquad.find(l => l.squad === team.name);
+                    const wp = wipBySquad.find(w => w.squad === team.name);
+                    const rw = (reworkBySquad || []).find((r: any) => r.squad === team.name);
+                    const tput = lt && lt.count > 0 && throughputByWeek.length > 0
+                      ? Math.round((lt.count / throughputByWeek.length) * 10) / 10
+                      : 0;
+                    return (
+                      <TeamCard
+                        key={team.name}
+                        team={team}
+                        teamIndex={i}
+                        delay={200 + i * 50}
+                        monthLabel={currentMonthLabel}
+                        agileMetrics={{
+                          leadTimeAvg: lt?.avg ?? 0,
+                          cycleTimeAvg: ct?.avg ?? 0,
+                          throughput: tput,
+                          wip: wp?.wip ?? 0,
+                        }}
+                        reworkMetrics={{
+                          reworkCount: rw?.count ?? 0,
+                          reworkRate: rw?.rate ?? 0,
+                          corrections: rw?.corrections ?? 0,
+                        }}
+                        previousMetrics={previousGlobalMetrics}
+                      />
+                    );
+                  })}
                 </div>
               </div>
 
