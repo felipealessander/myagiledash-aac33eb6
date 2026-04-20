@@ -23,6 +23,7 @@ import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClient
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { MonthlyTrendCharts } from "@/components/dashboard/MonthlyTrendCharts";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
+import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
