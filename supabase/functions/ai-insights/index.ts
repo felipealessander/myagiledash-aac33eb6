@@ -1,4 +1,4 @@
-// AI Insights edge function - uses user's OpenAI API key to analyze metrics
+// AI Insights edge function - uses Lovable AI Gateway (Gemini) to analyze metrics
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -43,10 +43,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "OPENAI_API_KEY não configurada" }),
+        JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -103,52 +103,39 @@ ${body.previousMetrics ? `### Métricas do mês anterior\n\`\`\`json\n${JSON.str
 Gere a análise agora.`;
 
     const response = await fetch(
-      "https://api.openai.com/v1/chat/completions",
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          temperature: 0.4,
         }),
       }
     );
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("OpenAI error:", response.status, errText);
-
-      // Try to detect the specific OpenAI error code (429 means rate-limit OR quota exhausted)
-      let openaiCode = "";
-      try {
-        const parsed = JSON.parse(errText);
-        openaiCode = parsed?.error?.code || parsed?.error?.type || "";
-      } catch { /* ignore */ }
+      console.error("Lovable AI error:", response.status, errText);
 
       let errorMsg = "Falha ao gerar insights";
       let status = response.status;
 
-      if (response.status === 401) {
-        errorMsg = "Token OpenAI inválido ou expirado. Verifique a OPENAI_API_KEY nas configurações.";
-      } else if (response.status === 403 && openaiCode === "model_not_found") {
-        errorMsg = "Seu projeto OpenAI não tem acesso ao modelo solicitado. Habilite o modelo em https://platform.openai.com/settings/organization/limits ou use uma chave de outro projeto.";
-      } else if (response.status === 429 && openaiCode === "insufficient_quota") {
-        errorMsg = "Sua conta OpenAI está sem créditos. Adicione saldo em https://platform.openai.com/settings/organization/billing para gerar insights.";
-        status = 402; // surface as payment required to make it clearer in the UI
-      } else if (response.status === 429) {
-        errorMsg = "Muitas requisições à OpenAI em pouco tempo. Aguarde alguns segundos e tente novamente.";
+      if (response.status === 429) {
+        errorMsg = "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.";
       } else if (response.status === 402) {
-        errorMsg = "Créditos da OpenAI insuficientes. Adicione saldo no painel da OpenAI.";
+        errorMsg = "Créditos do Lovable AI esgotados. Adicione créditos no workspace (Settings → Workspace → Usage).";
+      } else if (response.status === 401 || response.status === 403) {
+        errorMsg = "Falha de autenticação no Lovable AI Gateway.";
       }
 
-      return new Response(JSON.stringify({ error: errorMsg, openaiCode }), {
+      return new Response(JSON.stringify({ error: errorMsg }), {
         status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
