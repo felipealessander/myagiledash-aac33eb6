@@ -1,7 +1,8 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Sparkles, Loader2, RefreshCw, AlertCircle, Lock } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { getSafeErrorMessage } from "@/lib/safeError";
@@ -31,6 +32,7 @@ export function AIInsightsWidget({
   const [loading, setLoading] = useState(false);
   const [insight, setInsight] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [isExpanded, setIsExpanded] = useState(true);
 
   // Se usuário não tem permissão, não renderiza nada
   if (!canViewAIInsights) {
