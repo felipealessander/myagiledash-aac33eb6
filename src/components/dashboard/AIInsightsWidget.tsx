@@ -129,7 +129,7 @@ export function AIInsightsWidget({
           <div>
             <h3 className="text-sm font-semibold">{title}</h3>
             <p className="text-[10px] text-muted-foreground">
-              Análise automatizada via OpenAI · {monthLabel}
+              Análise automatizada via Lovable AI · {monthLabel}
             </p>
           </div>
         </div>
