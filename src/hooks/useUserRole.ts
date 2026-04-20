@@ -37,6 +37,7 @@ export function useUserRole() {
   const isAdmin = role === "admin";
   const canViewIndividual = role === "admin" || role === "gestor" || role === "coordenador";
   const canViewCapacity = role === "admin" || role === "gestor";
+  const canViewAIInsights = role === "admin" || role === "gestor";
 
-  return { role, approved, loading: loading || authLoading, isAdmin, canViewIndividual, canViewCapacity };
+  return { role, approved, loading: loading || authLoading, isAdmin, canViewIndividual, canViewCapacity, canViewAIInsights };
 }
