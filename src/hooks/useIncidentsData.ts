@@ -76,20 +76,18 @@ function isOverdue(dateStr: string): boolean {
 }
 
 /**
- * Returns true if the task has a promised_date set to the current year or later,
- * meaning the SLO has already been addressed with a commitment date.
+ * Returns true if the task has any valid promised_date registered.
+ * Once a commitment date exists, the SLO is considered addressed and
+ * the item should not appear in "Vencendo SLO" nor "SLO Vencido".
  */
 function hasValidPromisedDate(task: IncidentTask): boolean {
   if (!task.promised_date) return false;
   const d = new Date(task.promised_date);
-  if (isNaN(d.getTime())) return false;
-  const currentYear = new Date().getFullYear();
-  return d.getFullYear() >= currentYear;
+  return !isNaN(d.getTime());
 }
 
 /**
- * An SLO should only be counted as pending if there's no valid promised_date.
- * If promised_date is set (current year or later), the SLO is considered addressed.
+ * An SLO should only be counted as pending if there's no promised_date registered.
  */
 function isSloStillPending(task: IncidentTask): boolean {
   return !hasValidPromisedDate(task);
