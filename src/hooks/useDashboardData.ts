@@ -498,7 +498,7 @@ export function useDashboardData() {
           while (true) {
             const { data, error } = await supabase
               .from("report_tasks")
-              .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+              .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, interrupted_minutes, client")
               .eq("report_id", rid)
               .range(from, from + pageSize - 1);
             if (error) {
@@ -529,7 +529,7 @@ export function useDashboardData() {
     setLoading(true);
     supabase
       .from("report_tasks")
-      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, interrupted_minutes, client")
       .eq("report_id", monthOption.id)
       .then(({ data, error }) => {
         setLoading(false);
@@ -553,7 +553,7 @@ export function useDashboardData() {
         while (true) {
           const { data, error } = await supabase
             .from("report_tasks")
-            .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+            .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, interrupted_minutes, client")
             .eq("report_id", rid)
             .range(from, from + pageSize - 1);
           if (error) break;
