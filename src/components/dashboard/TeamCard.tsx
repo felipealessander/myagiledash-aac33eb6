@@ -2,11 +2,16 @@ import { cn } from "@/lib/utils";
 import { TeamData, getTeamTotalHours, getTeamTotalTasks, getTeamVelocity, getTeamColor } from "@/data/dashboardData";
 import { Users, Clock, Zap } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
 
 interface TeamCardProps {
   team: TeamData;
   teamIndex?: number;
   delay?: number;
+  monthLabel?: string;
+  agileMetrics?: { leadTimeAvg: number; cycleTimeAvg: number; throughput: number; wip: number };
+  reworkMetrics?: { reworkCount: number; reworkRate: number; corrections: number };
+  previousMetrics?: Record<string, unknown> | null;
 }
 
 // Known teams keep their CSS classes; dynamic teams use inline styles
@@ -33,7 +38,7 @@ const KNOWN_TEAMS: Record<string, { border: string; badge: string; dot: string }
   },
 };
 
-export function TeamCard({ team, teamIndex = 0, delay = 0 }: TeamCardProps) {
+export function TeamCard({ team, teamIndex = 0, delay = 0, monthLabel, agileMetrics, reworkMetrics, previousMetrics }: TeamCardProps) {
   const totalHours = getTeamTotalHours(team);
   const totalTasks = getTeamTotalTasks(team);
   const velocity = getTeamVelocity(team);
@@ -130,6 +135,28 @@ export function TeamCard({ team, teamIndex = 0, delay = 0 }: TeamCardProps) {
             </div>
           ))}
       </div>
+
+      {monthLabel && (
+        <AIInsightsWidget
+          scope="team"
+          teamName={team.name}
+          monthLabel={monthLabel}
+          metrics={{
+            squad: team.name,
+            totalHours: Number(totalHours.toFixed(1)),
+            totalTasks,
+            estimationAccuracy: `${velocity}%`,
+            members: team.members,
+            categories: team.categories
+              .filter(c => c.spentHours > 0)
+              .map(c => ({ name: c.name, spentHours: Number(c.spentHours.toFixed(1)), estimatedHours: Number(c.estimatedHours.toFixed(1)), tasks: c.taskCount })),
+            ...(agileMetrics ?? {}),
+            ...(reworkMetrics ?? {}),
+          }}
+          previousMetrics={previousMetrics ?? null}
+          compact
+        />
+      )}
     </div>
   );
 }
