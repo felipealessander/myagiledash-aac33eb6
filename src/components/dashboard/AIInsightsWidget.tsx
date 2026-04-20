@@ -27,9 +27,15 @@ export function AIInsightsWidget({
   compact = false,
   className,
 }: AIInsightsWidgetProps) {
+  const { canViewAIInsights } = useUserRole();
   const [loading, setLoading] = useState(false);
   const [insight, setInsight] = useState<string>("");
   const [error, setError] = useState<string>("");
+
+  // Se usuário não tem permissão, não renderiza nada
+  if (!canViewAIInsights) {
+    return null;
+  }
 
   const generate = async () => {
     setLoading(true);
