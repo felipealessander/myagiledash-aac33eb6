@@ -93,7 +93,7 @@ const Index = () => {
     throughputPerWeek: Number(avgThroughput.toFixed(2)),
     wipTotal: totalWip,
     teams: teams.map(t => ({ squad: t.name, hours: Number(t.categories.reduce((s, c) => s + c.spentHours, 0).toFixed(1)), tasks: t.categories.reduce((s, c) => s + c.taskCount, 0) })),
-    categoryTotals: categoryTotals.map(c => ({ name: c.name, hours: Number(c.spentHours.toFixed(1)), tasks: c.taskCount })),
+    categoryTotals: categoryTotals.map(c => ({ name: c.name, hours: Number(c.hours.toFixed(1)), tasks: c.count })),
   };
 
   const previousGlobalMetrics = previousTrendPoint ? {
