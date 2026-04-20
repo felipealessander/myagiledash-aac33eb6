@@ -68,6 +68,46 @@ const Index = () => {
 
   const overrun = totalEstimated > 0 ? (((totalSpent - totalEstimated) / totalEstimated) * 100).toFixed(0) : "0";
 
+  // Build label + previous-month metrics for AI insights
+  const currentMonthLabel = months.find(m => m.value === selectedMonth)?.label ?? selectedMonth;
+  const currentTrendIdx = monthlyTrend.findIndex(p => p.label === currentMonthLabel);
+  const previousTrendPoint = currentTrendIdx > 0 ? monthlyTrend[currentTrendIdx - 1] : null;
+
+  const avgLead = leadTimeBySquad.length > 0 ? leadTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, leadTimeBySquad.reduce((s, l) => s + l.count, 0)) : 0;
+  const avgCycle = cycleTimeBySquad.length > 0 ? cycleTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, cycleTimeBySquad.reduce((s, l) => s + l.count, 0)) : 0;
+  const avgThroughput = throughputByWeek.length > 0 ? throughputByWeek.reduce((s, w) => s + w.count, 0) / throughputByWeek.length : 0;
+  const totalWip = wipBySquad.reduce((s, w) => s + w.wip, 0);
+
+  const globalMetrics = {
+    monthLabel: currentMonthLabel,
+    totalHoursSpent: Number(totalSpent.toFixed(1)),
+    totalHoursEstimated: Number(totalEstimated.toFixed(1)),
+    estimationOverrunPct: Number(overrun),
+    totalTasks,
+    incidentsCreated: unfilteredDashboardData.incidentsCreatedInMonth,
+    reworkCount: unfilteredDashboardData.reworkCount,
+    reworkRatePct: unfilteredDashboardData.reworkRate,
+    reworkTotalCorrections: unfilteredDashboardData.reworkTotalCorrections,
+    leadTimeAvgDays: Number(avgLead.toFixed(2)),
+    cycleTimeAvgDays: Number(avgCycle.toFixed(2)),
+    throughputPerWeek: Number(avgThroughput.toFixed(2)),
+    wipTotal: totalWip,
+    teams: teams.map(t => ({ squad: t.name, hours: Number(t.categories.reduce((s, c) => s + c.spentHours, 0).toFixed(1)), tasks: t.categories.reduce((s, c) => s + c.taskCount, 0) })),
+    categoryTotals: categoryTotals.map(c => ({ name: c.name, hours: Number(c.spentHours.toFixed(1)), tasks: c.taskCount })),
+  };
+
+  const previousGlobalMetrics = previousTrendPoint ? {
+    monthLabel: previousTrendPoint.label,
+    totalHoursSpent: Number(previousTrendPoint.totalSpentHours.toFixed(1)),
+    totalHoursEstimated: Number(previousTrendPoint.totalEstimatedHours.toFixed(1)),
+    totalTasks: previousTrendPoint.totalTasks,
+    leadTimeAvgDays: previousTrendPoint.leadTimeAvg,
+    cycleTimeAvgDays: previousTrendPoint.cycleTimeAvg,
+    throughputPerWeek: previousTrendPoint.throughput,
+    reworkRatePct: previousTrendPoint.reworkRate,
+    incidents: previousTrendPoint.incidentes,
+  } : null;
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
