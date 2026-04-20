@@ -111,7 +111,7 @@ Gere a análise agora.`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "gpt-3.5-turbo",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
@@ -137,6 +137,8 @@ Gere a análise agora.`;
 
       if (response.status === 401) {
         errorMsg = "Token OpenAI inválido ou expirado. Verifique a OPENAI_API_KEY nas configurações.";
+      } else if (response.status === 403 && openaiCode === "model_not_found") {
+        errorMsg = "Seu projeto OpenAI não tem acesso ao modelo solicitado. Habilite o modelo em https://platform.openai.com/settings/organization/limits ou use uma chave de outro projeto.";
       } else if (response.status === 429 && openaiCode === "insufficient_quota") {
         errorMsg = "Sua conta OpenAI está sem créditos. Adicione saldo em https://platform.openai.com/settings/organization/billing para gerar insights.";
         status = 402; // surface as payment required to make it clearer in the UI
