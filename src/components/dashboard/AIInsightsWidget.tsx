@@ -220,14 +220,41 @@ export function AIInsightsWidget({
       )}
 
       {hasContent && (
-        <div className="prose prose-invert prose-sm max-w-none
-          prose-headings:text-foreground prose-headings:font-semibold
-          prose-h2:text-xs prose-h2:uppercase prose-h2:tracking-wider prose-h2:text-muted-foreground prose-h2:mt-4 prose-h2:mb-2
-          prose-p:text-foreground/90 prose-p:my-1.5 prose-p:text-xs
-          prose-ul:my-2 prose-li:my-0.5 prose-li:text-foreground/90 prose-li:text-xs
-          prose-strong:text-foreground prose-strong:font-semibold">
-          <ReactMarkdown>{insight}</ReactMarkdown>
-        </div>
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <div className="space-y-3">
+            <CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+              <div className="prose prose-invert prose-sm max-w-none
+                prose-headings:text-foreground prose-headings:font-semibold
+                prose-h2:text-xs prose-h2:uppercase prose-h2:tracking-wider prose-h2:text-muted-foreground prose-h2:mt-4 prose-h2:mb-2
+                prose-p:text-foreground/90 prose-p:my-1.5 prose-p:text-xs
+                prose-ul:my-2 prose-li:my-0.5 prose-li:text-foreground/90 prose-li:text-xs
+                prose-strong:text-foreground prose-strong:font-semibold">
+                <ReactMarkdown>{insight}</ReactMarkdown>
+              </div>
+            </CollapsibleContent>
+            <div className="flex items-center justify-between">
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-primary"
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="h-3.5 w-3.5" />
+                      Recolher
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                      Expandir
+                    </>
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+          </div>
+        </Collapsible>
       )}
     </div>
   );
