@@ -135,6 +135,28 @@ export function TeamCard({ team, teamIndex = 0, delay = 0, monthLabel, agileMetr
             </div>
           ))}
       </div>
+
+      {monthLabel && (
+        <AIInsightsWidget
+          scope="team"
+          teamName={team.name}
+          monthLabel={monthLabel}
+          metrics={{
+            squad: team.name,
+            totalHours: Number(totalHours.toFixed(1)),
+            totalTasks,
+            estimationAccuracy: `${velocity}%`,
+            members: team.members,
+            categories: team.categories
+              .filter(c => c.spentHours > 0)
+              .map(c => ({ name: c.name, spentHours: Number(c.spentHours.toFixed(1)), estimatedHours: Number(c.estimatedHours.toFixed(1)), tasks: c.taskCount })),
+            ...(agileMetrics ?? {}),
+            ...(reworkMetrics ?? {}),
+          }}
+          previousMetrics={previousMetrics ?? null}
+          compact
+        />
+      )}
     </div>
   );
 }
