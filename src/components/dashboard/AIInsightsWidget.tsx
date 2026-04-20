@@ -98,26 +98,51 @@ export function AIInsightsWidget({
           </div>
         )}
         {hasContent && (
-          <div className="space-y-2">
-            <div className="prose prose-invert prose-xs max-w-none text-[11px] leading-relaxed
-              prose-headings:text-foreground prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-1
-              prose-h2:text-[11px] prose-h2:uppercase prose-h2:tracking-wider prose-h2:text-muted-foreground
-              prose-p:my-1 prose-p:text-foreground/90
-              prose-ul:my-1 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-foreground/90
-              prose-strong:text-foreground prose-strong:font-semibold">
-              <ReactMarkdown>{insight}</ReactMarkdown>
+          <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+            <div className="space-y-2">
+              <CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                <div className="prose prose-invert prose-xs max-w-none text-[11px] leading-relaxed
+                  prose-headings:text-foreground prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-1
+                  prose-h2:text-[11px] prose-h2:uppercase prose-h2:tracking-wider prose-h2:text-muted-foreground
+                  prose-p:my-1 prose-p:text-foreground/90
+                  prose-ul:my-1 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-foreground/90
+                  prose-strong:text-foreground prose-strong:font-semibold">
+                  <ReactMarkdown>{insight}</ReactMarkdown>
+                </div>
+              </CollapsibleContent>
+              <div className="flex items-center justify-between">
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 gap-1 text-[10px] text-muted-foreground hover:text-primary"
+                  >
+                    {isExpanded ? (
+                      <>
+                        <ChevronUp className="h-3 w-3" />
+                        Recolher
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3 w-3" />
+                        Expandir
+                      </>
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={generate}
+                  disabled={loading}
+                  className="h-6 gap-1 text-[10px] text-muted-foreground hover:text-primary"
+                >
+                  <RefreshCw className="h-2.5 w-2.5" />
+                  Regerar
+                </Button>
+              </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={generate}
-              disabled={loading}
-              className="h-6 gap-1 text-[10px] text-muted-foreground hover:text-primary"
-            >
-              <RefreshCw className="h-2.5 w-2.5" />
-              Regerar
-            </Button>
-          </div>
+          </Collapsible>
         )}
       </div>
     );
