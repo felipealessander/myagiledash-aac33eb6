@@ -2,11 +2,16 @@ import { cn } from "@/lib/utils";
 import { TeamData, getTeamTotalHours, getTeamTotalTasks, getTeamVelocity, getTeamColor } from "@/data/dashboardData";
 import { Users, Clock, Zap } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
 
 interface TeamCardProps {
   team: TeamData;
   teamIndex?: number;
   delay?: number;
+  monthLabel?: string;
+  agileMetrics?: { leadTimeAvg: number; cycleTimeAvg: number; throughput: number; wip: number };
+  reworkMetrics?: { reworkCount: number; reworkRate: number; corrections: number };
+  previousMetrics?: Record<string, unknown> | null;
 }
 
 // Known teams keep their CSS classes; dynamic teams use inline styles
