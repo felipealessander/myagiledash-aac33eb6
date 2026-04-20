@@ -124,12 +124,30 @@ Gere a análise agora.`;
     if (!response.ok) {
       const errText = await response.text();
       console.error("OpenAI error:", response.status, errText);
+
+      // Try to detect the specific OpenAI error code (429 means rate-limit OR quota exhausted)
+      let openaiCode = "";
+      try {
+        const parsed = JSON.parse(errText);
+        openaiCode = parsed?.error?.code || parsed?.error?.type || "";
+      } catch { /* ignore */ }
+
       let errorMsg = "Falha ao gerar insights";
-      if (response.status === 401) errorMsg = "Token OpenAI inválido ou expirado";
-      if (response.status === 429) errorMsg = "Limite de requisições da OpenAI atingido";
-      if (response.status === 402) errorMsg = "Créditos da OpenAI insuficientes";
-      return new Response(JSON.stringify({ error: errorMsg }), {
-        status: response.status,
+      let status = response.status;
+
+      if (response.status === 401) {
+        errorMsg = "Token OpenAI inválido ou expirado. Verifique a OPENAI_API_KEY nas configurações.";
+      } else if (response.status === 429 && openaiCode === "insufficient_quota") {
+        errorMsg = "Sua conta OpenAI está sem créditos. Adicione saldo em https://platform.openai.com/settings/organization/billing para gerar insights.";
+        status = 402; // surface as payment required to make it clearer in the UI
+      } else if (response.status === 429) {
+        errorMsg = "Muitas requisições à OpenAI em pouco tempo. Aguarde alguns segundos e tente novamente.";
+      } else if (response.status === 402) {
+        errorMsg = "Créditos da OpenAI insuficientes. Adicione saldo no painel da OpenAI.";
+      }
+
+      return new Response(JSON.stringify({ error: errorMsg, openaiCode }), {
+        status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
