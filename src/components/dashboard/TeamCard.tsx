@@ -38,7 +38,7 @@ const KNOWN_TEAMS: Record<string, { border: string; badge: string; dot: string }
   },
 };
 
-export function TeamCard({ team, teamIndex = 0, delay = 0 }: TeamCardProps) {
+export function TeamCard({ team, teamIndex = 0, delay = 0, monthLabel, agileMetrics, reworkMetrics, previousMetrics }: TeamCardProps) {
   const totalHours = getTeamTotalHours(team);
   const totalTasks = getTeamTotalTasks(team);
   const velocity = getTeamVelocity(team);
