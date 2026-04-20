@@ -107,6 +107,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       const activityBatchSize = 20;
       const startedAtMap: Record<string, string> = {};
       const qaReturnsMap: Record<string, number> = {};
+      const interruptedMinutesMap: Record<string, number> = {};
       const issueIdsWithYtId = tasks.filter((t: any) => t.id);
       const totalActBatches = Math.ceil(issueIdsWithYtId.length / activityBatchSize);
 
@@ -129,6 +130,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
             const data = await actRes.json();
             if (data.startedAt) Object.assign(startedAtMap, data.startedAt);
             if (data.qaReturns) Object.assign(qaReturnsMap, data.qaReturns);
+            if (data.interruptedMinutes) Object.assign(interruptedMinutesMap, data.interruptedMinutes);
           }
         } catch {
           // Non-fatal: continue without cycle time for this batch
@@ -186,6 +188,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
             tags: t.tags || [],
             corrections_count: t.correctionsCount || 0,
             qa_returns: qaReturnsMap[t.taskCode] || qaReturnsMap[t.id] || 0,
+            interrupted_minutes: interruptedMinutesMap[t.taskCode] || interruptedMinutesMap[t.id] || 0,
             client: t.client || null,
             slo_date: t.sloDate || null,
             promised_date: t.promisedDate || null,

@@ -171,6 +171,12 @@ Deno.serve(async (req) => {
 
       const startedAtMap: Record<string, string> = {}
       const qaReturnsMap: Record<string, number> = {}
+      const interruptedMinutesMap: Record<string, number> = {}
+
+      const isInterruptedState = (value: string) => {
+        const lower = (value || '').toLowerCase().trim()
+        return lower.includes('interrompido')
+      }
 
       try {
         const START_STATES = [
@@ -200,8 +206,33 @@ Deno.serve(async (req) => {
             const activities = await fetchJson(actUrl, YOUTRACK_TOKEN, 10000) as any[]
             if (!Array.isArray(activities) || activities.length === 0) continue
 
+            // Keep only State-field activities to track interruption windows
+            const stateActs = activities.filter((a: any) => (a?.field?.name || '').toLowerCase().trim() === 'state')
             const ordered = [...activities].sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
+            const orderedStates = [...stateActs].sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
             let qaReturnCount = 0
+            let interruptedTotalMs = 0
+            let interruptedEnteredAt: number | null = null
+
+            for (const act of orderedStates) {
+              const addedValues = Array.isArray(act.added) ? act.added : (act.added ? [act.added] : [])
+              const removedValues = Array.isArray(act.removed) ? act.removed : (act.removed ? [act.removed] : [])
+              const enteredInterrupted = addedValues.some((a: any) => isInterruptedState(a?.name || a?.presentation || a?.text || ''))
+              const leftInterrupted = removedValues.some((r: any) => isInterruptedState(r?.name || r?.presentation || r?.text || ''))
+
+              if (leftInterrupted && interruptedEnteredAt !== null) {
+                interruptedTotalMs += Math.max(0, Number(act.timestamp) - interruptedEnteredAt)
+                interruptedEnteredAt = null
+              }
+              if (enteredInterrupted) {
+                interruptedEnteredAt = Number(act.timestamp)
+              }
+            }
+            // If still in Interrompido (never left), count up to now
+            if (interruptedEnteredAt !== null) {
+              interruptedTotalMs += Math.max(0, Date.now() - interruptedEnteredAt)
+            }
+            interruptedMinutesMap[issueId] = Math.round(interruptedTotalMs / 60000)
 
             for (const act of ordered) {
               if (!act.added) continue
@@ -244,7 +275,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ startedAt: startedAtMap, qaReturns: qaReturnsMap }),
+        JSON.stringify({ startedAt: startedAtMap, qaReturns: qaReturnsMap, interruptedMinutes: interruptedMinutesMap }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

@@ -174,10 +174,12 @@ Deno.serve(async (req) => {
       console.error('[auto-sync] Work items fetch failed (non-fatal):', e)
     }
 
-    // Step 3: Fetch activities for cycle time + rework
+    // Step 3: Fetch activities for cycle time + rework + interrupted time
     const startedAtMap: Record<string, string> = {}
     const qaReturnsMap: Record<string, number> = {}
+    const interruptedMinutesMap: Record<string, number> = {}
     const activityBatchSize = 20
+    const isInterruptedState = (v: string) => (v || '').toLowerCase().trim().includes('interrompido')
 
     for (let i = 0; i < tasks.length; i += activityBatchSize) {
       const batch = tasks.slice(i, i + activityBatchSize)
@@ -189,7 +191,28 @@ Deno.serve(async (req) => {
           if (!Array.isArray(activities) || activities.length === 0) continue
 
           const ordered = [...activities].sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
+          const stateActs = ordered.filter((a: any) => (a?.field?.name || '').toLowerCase().trim() === 'state')
           let qaReturnCount = 0
+          let interruptedTotalMs = 0
+          let interruptedEnteredAt: number | null = null
+
+          for (const act of stateActs) {
+            const addedValues = Array.isArray(act.added) ? act.added : (act.added ? [act.added] : [])
+            const removedValues = Array.isArray(act.removed) ? act.removed : (act.removed ? [act.removed] : [])
+            const enteredInterrupted = addedValues.some((a: any) => isInterruptedState(a?.name || a?.presentation || a?.text || ''))
+            const leftInterrupted = removedValues.some((r: any) => isInterruptedState(r?.name || r?.presentation || r?.text || ''))
+            if (leftInterrupted && interruptedEnteredAt !== null) {
+              interruptedTotalMs += Math.max(0, Number(act.timestamp) - interruptedEnteredAt)
+              interruptedEnteredAt = null
+            }
+            if (enteredInterrupted) {
+              interruptedEnteredAt = Number(act.timestamp)
+            }
+          }
+          if (interruptedEnteredAt !== null) {
+            interruptedTotalMs += Math.max(0, Date.now() - interruptedEnteredAt)
+          }
+          interruptedMinutesMap[t.taskCode] = Math.round(interruptedTotalMs / 60000)
 
           for (const act of ordered) {
             if (!act.added) continue
@@ -248,6 +271,7 @@ Deno.serve(async (req) => {
           tags: t.tags || [],
           corrections_count: t.correctionsCount || 0,
           qa_returns: qaReturnsMap[t.taskCode] || 0,
+          interrupted_minutes: interruptedMinutesMap[t.taskCode] || 0,
           client: t.client || null,
           slo_date: t.sloDate || null,
           promised_date: t.promisedDate || null,
