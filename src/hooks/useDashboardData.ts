@@ -28,6 +28,7 @@ interface DBTask {
   tags: string[] | null;
   corrections_count: number | null;
   qa_returns: number | null;
+  interrupted_minutes: number | null;
   client: string | null;
 }
 
@@ -183,14 +184,16 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     return resolved === selectedMonth;
   };
 
-  // Agile metrics - Lead Time: created_at_yt -> resolved_at (only tasks resolved within the period)
+  // Agile metrics - Lead Time: created_at_yt -> resolved_at, descontando tempo em "Interrompido"
   // Exclude "Qualidade" squad from agile metrics as their workflow differs significantly
   const isQualidadeSquad = (t: DBTask) => (t.squad || '').toLowerCase().trim() === 'qualidade';
+  const interruptedDays = (t: DBTask) => Math.max(0, (t.interrupted_minutes || 0) / (60 * 24));
   const resolvedTasks = tasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && !isQualidadeSquad(t) && isResolvedInPeriod(t.resolved_at!));
   const leadTimes = resolvedTasks.map(t => {
     const created = new Date(t.created_at_yt!).getTime();
     const resolved = new Date(t.resolved_at!).getTime();
-    return Math.max(0, (resolved - created) / (1000 * 60 * 60 * 24));
+    const raw = (resolved - created) / (1000 * 60 * 60 * 24);
+    return Math.max(0, raw - interruptedDays(t));
   });
 
   // Lead time by squad
@@ -204,7 +207,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     const times = squadResolved.map(t => {
       const c = new Date(t.created_at_yt!).getTime();
       const r = new Date(t.resolved_at!).getTime();
-      return Math.max(0, (r - c) / (1000 * 60 * 60 * 24));
+      return Math.max(0, (r - c) / (1000 * 60 * 60 * 24) - interruptedDays(t));
     }).sort((a, b) => a - b);
     const avg = times.reduce((s, v) => s + v, 0) / times.length;
     const median = times[Math.floor(times.length / 2)];
@@ -212,7 +215,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     leadTimeBySquad.push({ squad: squadName, avg: Math.round(avg * 10) / 10, median: Math.round(median * 10) / 10, p85: Math.round(p85 * 10) / 10, count: squadResolved.length });
   }
 
-  // Cycle Time by squad (started_at -> resolved_at, only resolved within period)
+  // Cycle Time by squad (started_at -> resolved_at, descontando tempo em "Interrompido")
   const cycleTimeTasks = tasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && !isQualidadeSquad(t) && isResolvedInPeriod(t.resolved_at!));
   const cycleTimeBySquad: { squad: string; avg: number; median: number; p85: number; count: number }[] = [];
   for (const squadName of squadNames) {
@@ -224,7 +227,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     const times = squadCycle.map(t => {
       const started = new Date(t.started_at!).getTime();
       const resolved = new Date(t.resolved_at!).getTime();
-      return Math.max(0, (resolved - started) / (1000 * 60 * 60 * 24));
+      return Math.max(0, (resolved - started) / (1000 * 60 * 60 * 24) - interruptedDays(t));
     }).sort((a, b) => a - b);
     const avg = times.reduce((s, v) => s + v, 0) / times.length;
     const median = times[Math.floor(times.length / 2)];
@@ -386,12 +389,13 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       const isResolvedInThisMonth = (ra: string) => ra.slice(0, 7) === m.value;
       // Exclude Qualidade squad from agile metrics in trend
       const isQualidade = (t: DBTask) => (t.squad || '').toLowerCase().trim() === 'qualidade';
+      const interruptedDaysT = (t: DBTask) => Math.max(0, (t.interrupted_minutes || 0) / (60 * 24));
       const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
-      const leadTimes = resolved.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.created_at_yt!).getTime()) / 86400000));
+      const leadTimes = resolved.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.created_at_yt!).getTime()) / 86400000 - interruptedDaysT(t)));
       const leadTimeAvg = leadTimes.length > 0 ? Math.round((leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length) * 10) / 10 : 0;
 
       const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
-      const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000));
+      const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000 - interruptedDaysT(t)));
       const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
 
       // Throughput: count tasks with done status (aligned with CFD definition)
@@ -494,7 +498,7 @@ export function useDashboardData() {
           while (true) {
             const { data, error } = await supabase
               .from("report_tasks")
-              .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+              .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, interrupted_minutes, client")
               .eq("report_id", rid)
               .range(from, from + pageSize - 1);
             if (error) {
@@ -525,7 +529,7 @@ export function useDashboardData() {
     setLoading(true);
     supabase
       .from("report_tasks")
-      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+      .select("task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, interrupted_minutes, client")
       .eq("report_id", monthOption.id)
       .then(({ data, error }) => {
         setLoading(false);
@@ -549,7 +553,7 @@ export function useDashboardData() {
         while (true) {
           const { data, error } = await supabase
             .from("report_tasks")
-            .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, client")
+            .select("report_id, task_code, title, category, billing_status, estimated_minutes, spent_minutes, squad, assignee, status, created_at_yt, resolved_at, started_at, tags, corrections_count, qa_returns, interrupted_minutes, client")
             .eq("report_id", rid)
             .range(from, from + pageSize - 1);
           if (error) break;
