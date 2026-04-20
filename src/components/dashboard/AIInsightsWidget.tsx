@@ -1,10 +1,11 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Sparkles, Loader2, RefreshCw, AlertCircle } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw, AlertCircle, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { getSafeErrorMessage } from "@/lib/safeError";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface AIInsightsWidgetProps {
   scope: "global" | "team";
