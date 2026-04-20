@@ -49,6 +49,7 @@ export type Database = {
           created_at_yt: string | null
           estimated_minutes: number | null
           id: string
+          interrupted_minutes: number
           promised_date: string | null
           qa_returns: number | null
           report_id: string
@@ -72,6 +73,7 @@ export type Database = {
           created_at_yt?: string | null
           estimated_minutes?: number | null
           id?: string
+          interrupted_minutes?: number
           promised_date?: string | null
           qa_returns?: number | null
           report_id: string
@@ -95,6 +97,7 @@ export type Database = {
           created_at_yt?: string | null
           estimated_minutes?: number | null
           id?: string
+          interrupted_minutes?: number
           promised_date?: string | null
           qa_returns?: number | null
           report_id?: string

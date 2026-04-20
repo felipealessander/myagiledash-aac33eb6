@@ -1,0 +1,1 @@
+ALTER TABLE public.report_tasks ADD COLUMN IF NOT EXISTS interrupted_minutes integer NOT NULL DEFAULT 0;
