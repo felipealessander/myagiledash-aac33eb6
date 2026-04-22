@@ -99,7 +99,7 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
                       formatter={(v: number, name: string) => [`${v.toLocaleString()}h`, name === "contracted" ? "Previsão" : "Realizado"]}
                       labelFormatter={(label, payload) => payload?.[0]?.payload?.fullName ?? label}
                     />
-                    <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px", color: "hsl(0 0% 98%)" }} formatter={v => <span style={{ color: "hsl(0 0% 98%)" }}>{v === "contracted" ? "Contratado" : "Realizado"}</span>} />
+                    <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px", color: "hsl(0 0% 98%)" }} formatter={v => <span style={{ color: "hsl(0 0% 98%)" }}>{v === "contracted" ? "Previsão (Contratado)" : "Realizado"}</span>} />
                     <Bar dataKey="contracted" fill="hsl(217 91% 70%)" opacity={0.85} />
                     <Bar dataKey="spent">
                       {data.map((d, i) => (
