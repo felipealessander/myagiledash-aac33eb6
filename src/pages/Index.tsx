@@ -24,6 +24,7 @@ import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { MonthlyTrendCharts } from "@/components/dashboard/MonthlyTrendCharts";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
+import { ClientHoursWidget } from "@/components/dashboard/ClientHoursWidget";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
