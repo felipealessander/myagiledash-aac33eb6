@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { computeClientUsage, type TaskLite } from "@/lib/clientUsage";
 
 export interface Client {
   id: string;
@@ -85,60 +86,27 @@ export function useClientsData(month: string | null) {
         if (data.length < PAGE) break;
       }
 
-      const monthTasks = allTasks.filter((t: any) => (t.status || "").toLowerCase() !== STATUS_ARQUIVADO);
+      const { usage: usageRows, unmapped } = computeClientUsage(
+        month,
+        clients,
+        allTasks as TaskLite[],
+        hours
+      );
 
-      // Build alias -> client_id map (active clients only for usage, but track all aliases for matching)
-      const activeClients = clients.filter(c => c.active);
-      const aliasMap = new Map<string, Client>();
-      for (const c of activeClients) {
-        for (const a of c.aliases || []) {
-          aliasMap.set(a.trim().toUpperCase(), c);
-        }
-        aliasMap.set(c.name.trim().toUpperCase(), c);
-      }
-
-      // Aggregate spent per active client + collect unmapped
-      const perClient = new Map<string, { spent: number; tasks: number }>();
-      const unmapped = new Map<string, { spent: number; tasks: number }>();
-      for (const t of monthTasks) {
-        const key = String(t.client || "").trim().toUpperCase();
-        if (!key) continue;
-        const c = aliasMap.get(key);
-        const spentH = (t.spent_minutes || 0) / 60;
-        if (c) {
-          const cur = perClient.get(c.id) || { spent: 0, tasks: 0 };
-          cur.spent += spentH;
-          cur.tasks += 1;
-          perClient.set(c.id, cur);
-        } else {
-          const cur = unmapped.get(key) || { spent: 0, tasks: 0 };
-          cur.spent += spentH;
-          cur.tasks += 1;
-          unmapped.set(key, cur);
-        }
-      }
-
-      const hoursForMonth = hours.filter(h => h.month === month);
-      const usageList: ClientUsage[] = activeClients.map(c => {
-        const h = hoursForMonth.find(x => x.client_id === c.id);
-        const contracted = h?.contracted_hours || 0;
-        const u = perClient.get(c.id) || { spent: 0, tasks: 0 };
+      const usageList: ClientUsage[] = usageRows.map(r => {
+        const client = clients.find(c => c.id === r.clientId)!;
         return {
-          client: c,
-          contractedHours: contracted,
-          spentHours: Math.round(u.spent * 10) / 10,
-          taskCount: u.tasks,
-          utilizationPct: contracted > 0 ? Math.round((u.spent / contracted) * 1000) / 10 : 0,
+          client,
+          contractedHours: r.contractedHours,
+          spentHours: r.spentHours,
+          taskCount: r.taskCount,
+          utilizationPct: r.utilizationPct,
         };
       });
 
       if (cancelled) return;
       setUsage(usageList);
-      setUnmappedClients(
-        Array.from(unmapped.entries())
-          .map(([alias, v]) => ({ alias, spentHours: Math.round(v.spent * 10) / 10, taskCount: v.tasks }))
-          .sort((a, b) => b.spentHours - a.spentHours)
-      );
+      setUnmappedClients(unmapped);
     };
     compute();
     return () => { cancelled = true; };
