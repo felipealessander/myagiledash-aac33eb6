@@ -1,4 +1,4 @@
-import { BarChart3, Users, Shield, User, Gauge, AlertTriangle } from "lucide-react";
+import { BarChart3, Users, Shield, User, Gauge, AlertTriangle, Briefcase } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -18,12 +18,13 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { isAdmin, canViewIndividual, canViewCapacity } = useUserRole();
+  const { isAdmin, canViewIndividual, canViewCapacity, canManageClients } = useUserRole();
 
   const items = [
     { title: "Dashboard", url: "/", icon: BarChart3, show: true },
     { title: "Incidentes", url: "/incidents", icon: AlertTriangle, show: true },
     { title: "Capacidade", url: "/capacity", icon: Gauge, show: canViewCapacity },
+    { title: "Clientes", url: "/clients", icon: Briefcase, show: canManageClients },
     { title: "Desempenho Individual", url: "/individual", icon: Users, show: canViewIndividual },
     { title: "Administração", url: "/admin", icon: Shield, show: isAdmin },
     { title: "Meu Perfil", url: "/profile", icon: User, show: true },
