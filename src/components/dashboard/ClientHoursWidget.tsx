@@ -17,7 +17,7 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
       .filter(u => u.contractedHours > 0 || u.spentHours > 0)
       .sort((a, b) => b.contractedHours - a.contractedHours)
       .map(u => ({
-        name: `${u.client.name}${u.client.classification === "Sob Demanda" ? "" : ` (${u.client.classification.slice(0, 4)})`}`,
+        name: u.client.name,
         fullName: u.client.name,
         classification: u.client.classification,
         contracted: Math.round(u.contractedHours),
