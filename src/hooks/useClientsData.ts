@@ -58,25 +58,34 @@ export function useClientsData(month: string | null) {
         setUnmappedClients([]);
         return;
       }
-      // Determine month range
+      // Determine month range (UTC to match ISO timestamps from DB)
       const [yyyy, mm] = month.split("-").map(Number);
-      const monthStart = new Date(yyyy, mm - 1, 1);
-      const monthEnd = new Date(yyyy, mm, 1);
+      const monthStartISO = new Date(Date.UTC(yyyy, mm - 1, 1)).toISOString();
+      const monthEndISO = new Date(Date.UTC(yyyy, mm, 1)).toISOString();
 
-      // Fetch tasks resolved or worked in this month with non-null client
-      // Use spent_minutes attribution: tasks resolved within month
-      const { data: tasks } = await supabase
-        .from("report_tasks")
-        .select("client, spent_minutes, status, resolved_at, created_at_yt")
-        .not("client", "is", null)
-        .limit(50000);
+      // Fetch tasks attributed to this month (resolved_at within month, OR created_at_yt within month when not resolved)
+      // Server-side filter + pagination to bypass the default 1000-row cap.
+      const fetchPage = async (from: number, to: number) =>
+        supabase
+          .from("report_tasks")
+          .select("client, spent_minutes, status, resolved_at, created_at_yt")
+          .not("client", "is", null)
+          .or(
+            `and(resolved_at.gte.${monthStartISO},resolved_at.lt.${monthEndISO}),` +
+            `and(resolved_at.is.null,created_at_yt.gte.${monthStartISO},created_at_yt.lt.${monthEndISO})`
+          )
+          .range(from, to);
 
-      const monthTasks = (tasks || []).filter((t: any) => {
-        if ((t.status || "").toLowerCase() === STATUS_ARQUIVADO) return false;
-        const ref = t.resolved_at ? new Date(t.resolved_at) : t.created_at_yt ? new Date(t.created_at_yt) : null;
-        if (!ref) return false;
-        return ref >= monthStart && ref < monthEnd;
-      });
+      const PAGE = 1000;
+      const allTasks: any[] = [];
+      for (let page = 0; page < 50; page++) {
+        const { data, error } = await fetchPage(page * PAGE, page * PAGE + PAGE - 1);
+        if (error || !data) break;
+        allTasks.push(...data);
+        if (data.length < PAGE) break;
+      }
+
+      const monthTasks = allTasks.filter((t: any) => (t.status || "").toLowerCase() !== STATUS_ARQUIVADO);
 
       // Build alias -> client_id map (active clients only for usage, but track all aliases for matching)
       const activeClients = clients.filter(c => c.active);
