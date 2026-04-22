@@ -49,27 +49,27 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Horas Contratadas (mês)</p>
+              <p className="text-xs text-muted-foreground">Previsão do Mês (Contratado)</p>
               <p className="text-2xl font-bold">{totals.contracted.toLocaleString()}h</p>
               <p className="text-[10px] text-muted-foreground mt-1">{data.length} clientes ativos</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Horas Realizadas</p>
+              <p className="text-xs text-muted-foreground">Realizado no Período</p>
               <p className="text-2xl font-bold text-primary">{totals.spent.toLocaleString()}h</p>
               <p className="text-[10px] text-muted-foreground mt-1">
-                {totals.contracted > 0 ? `${((totals.spent / totals.contracted) * 100).toFixed(0)}% utilização global` : "—"}
+                {totals.contracted > 0 ? `${((totals.spent / totals.contracted) * 100).toFixed(0)}% da previsão` : "—"}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Saldo</p>
+              <p className="text-xs text-muted-foreground">Saldo (Realizado − Previsto)</p>
               <p className={`text-2xl font-bold ${totals.spent > totals.contracted ? "text-destructive" : "text-success"}`}>
                 {totals.spent - totals.contracted >= 0 ? "+" : ""}{(totals.spent - totals.contracted).toLocaleString()}h
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">Realizado − Contratado</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{totals.spent > totals.contracted ? "Acima do previsto" : "Dentro do previsto"}</p>
             </CardContent>
           </Card>
         </div>
