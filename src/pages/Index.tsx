@@ -319,7 +319,8 @@ const Index = () => {
             </div>
           </section>
 
-          {/* ═══════ MÉTRICAS ÁGEIS ═══════ */}
+          {/* ═══════ HORAS POR CLIENTE (Sob Demanda) ═══════ */}
+          <ClientHoursWidget selectedMonth={selectedMonth} />
           {selectedMonth !== "static" && (leadTimeBySquad?.length > 0 || cycleTimeBySquad?.length > 0 || throughputByWeek?.length > 0 || wipBySquad?.length > 0) && (
             <section>
               <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
