@@ -77,7 +77,7 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
         {/* Comparative chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Realizado vs Contratado por Cliente</CardTitle>
+            <CardTitle className="text-sm">Previsão (Contratado) vs Realizado por Cliente</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
