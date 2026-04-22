@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, AlertTriangle, Save } from "lucide-react";
-import { safeError } from "@/lib/safeError";
+import { getSafeErrorMessage as safeError } from "@/lib/safeError";
 
 const CLASSIFICATIONS = ["Sob Demanda", "Sustentação", "Inovação", "Implantação"];
 
