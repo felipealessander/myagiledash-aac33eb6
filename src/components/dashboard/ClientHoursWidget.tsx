@@ -92,10 +92,14 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
                     <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} unit="h" />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--foreground))" }} width={180} />
                     <RechartsTooltip
-                      contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "11px", color: "hsl(var(--foreground))" }}
-                      formatter={(v: number, name: string) => [`${v}h`, name === "contracted" ? "Contratado" : "Realizado"]}
+                      cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }}
+                      contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--popover-foreground))", padding: "8px 12px", boxShadow: "0 4px 12px hsl(var(--background) / 0.4)" }}
+                      labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: "4px" }}
+                      itemStyle={{ color: "hsl(var(--popover-foreground))", padding: "2px 0" }}
+                      formatter={(v: number, name: string) => [`${v.toLocaleString()}h`, name === "contracted" ? "Contratado" : "Realizado"]}
+                      labelFormatter={(label, payload) => payload?.[0]?.payload?.fullName ?? label}
                     />
-                    <Legend wrapperStyle={{ fontSize: "11px" }} formatter={v => v === "contracted" ? "Contratado" : "Realizado"} />
+                    <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} formatter={v => <span className="text-foreground">{v === "contracted" ? "Contratado" : "Realizado"}</span>} />
                     <Bar dataKey="contracted" fill="hsl(var(--muted-foreground))" opacity={0.5} />
                     <Bar dataKey="spent">
                       {data.map((d, i) => (
