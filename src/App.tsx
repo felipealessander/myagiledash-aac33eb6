@@ -11,6 +11,7 @@ import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import Capacity from "./pages/Capacity";
 import Incidents from "./pages/Incidents";
+import Clients from "./pages/Clients";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/individual" element={<Individual />} />
             <Route path="/incidents" element={<Incidents />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/clients" element={<Clients />} />
             <Route path="/capacity" element={<Capacity />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/auth" element={<Auth />} />
