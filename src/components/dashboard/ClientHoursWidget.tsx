@@ -42,7 +42,7 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
     <section>
       <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
         <Briefcase className="h-4 w-4" />
-        Horas por Cliente (Sob Demanda)
+        Horas por Cliente — Previsão vs Realizado (Sob Demanda)
       </h2>
       <div className="space-y-4">
         {/* Summary */}
