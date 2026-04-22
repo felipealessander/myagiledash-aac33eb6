@@ -124,8 +124,7 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
                 <thead className="border-b border-border">
                   <tr className="text-left text-muted-foreground">
                     <th className="py-2 px-2">Cliente</th>
-                    <th className="py-2 px-2">Classificação</th>
-                    <th className="py-2 px-2 text-right">Contratado</th>
+                    <th className="py-2 px-2 text-right">Previsão</th>
                     <th className="py-2 px-2 text-right">Realizado</th>
                     <th className="py-2 px-2 text-right">Δ</th>
                     <th className="py-2 px-2 text-right">Utilização</th>
@@ -136,7 +135,6 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
                   {data.map((d, i) => (
                     <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-2 font-medium">{d.fullName}</td>
-                      <td className="py-2 px-2"><Badge variant="secondary" className="text-[10px]">{d.classification}</Badge></td>
                       <td className="py-2 px-2 text-right font-mono">{d.contracted}h</td>
                       <td className="py-2 px-2 text-right font-mono">{d.spent}h</td>
                       <td className={`py-2 px-2 text-right font-mono ${d.delta > 0 ? "text-destructive" : d.delta < 0 ? "text-warning" : ""}`}>
