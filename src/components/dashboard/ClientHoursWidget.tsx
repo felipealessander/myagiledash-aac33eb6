@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Briefcase, AlertTriangle } from "lucide-react";
 import { useClientsData } from "@/hooks/useClientsData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, Cell } from "recharts";
@@ -17,7 +16,7 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
       .filter(u => u.contractedHours > 0 || u.spentHours > 0)
       .sort((a, b) => b.contractedHours - a.contractedHours)
       .map(u => ({
-        name: `${u.client.name}${u.client.classification === "Sob Demanda" ? "" : ` (${u.client.classification.slice(0, 4)})`}`,
+        name: u.client.name,
         fullName: u.client.name,
         classification: u.client.classification,
         contracted: Math.round(u.contractedHours),
@@ -42,34 +41,34 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
     <section>
       <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
         <Briefcase className="h-4 w-4" />
-        Horas por Cliente (Sob Demanda)
+        Horas por Cliente — Previsão vs Realizado (Sob Demanda)
       </h2>
       <div className="space-y-4">
         {/* Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Horas Contratadas (mês)</p>
+              <p className="text-xs text-muted-foreground">Previsão do Mês (Contratado)</p>
               <p className="text-2xl font-bold">{totals.contracted.toLocaleString()}h</p>
               <p className="text-[10px] text-muted-foreground mt-1">{data.length} clientes ativos</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Horas Realizadas</p>
+              <p className="text-xs text-muted-foreground">Realizado no Período</p>
               <p className="text-2xl font-bold text-primary">{totals.spent.toLocaleString()}h</p>
               <p className="text-[10px] text-muted-foreground mt-1">
-                {totals.contracted > 0 ? `${((totals.spent / totals.contracted) * 100).toFixed(0)}% utilização global` : "—"}
+                {totals.contracted > 0 ? `${((totals.spent / totals.contracted) * 100).toFixed(0)}% da previsão` : "—"}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">Saldo</p>
+              <p className="text-xs text-muted-foreground">Saldo (Realizado − Previsto)</p>
               <p className={`text-2xl font-bold ${totals.spent > totals.contracted ? "text-destructive" : "text-success"}`}>
                 {totals.spent - totals.contracted >= 0 ? "+" : ""}{(totals.spent - totals.contracted).toLocaleString()}h
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">Realizado − Contratado</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{totals.spent > totals.contracted ? "Acima do previsto" : "Dentro do previsto"}</p>
             </CardContent>
           </Card>
         </div>
@@ -77,7 +76,7 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
         {/* Comparative chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Realizado vs Contratado por Cliente</CardTitle>
+            <CardTitle className="text-sm">Previsão (Contratado) vs Realizado por Cliente</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -96,10 +95,10 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
                       contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--popover-foreground))", padding: "8px 12px", boxShadow: "0 4px 12px hsl(var(--background) / 0.4)" }}
                       labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: "4px" }}
                       itemStyle={{ color: "hsl(var(--popover-foreground))", padding: "2px 0" }}
-                      formatter={(v: number, name: string) => [`${v.toLocaleString()}h`, name === "contracted" ? "Contratado" : "Realizado"]}
+                      formatter={(v: number, name: string) => [`${v.toLocaleString()}h`, name === "contracted" ? "Previsão" : "Realizado"]}
                       labelFormatter={(label, payload) => payload?.[0]?.payload?.fullName ?? label}
                     />
-                    <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px", color: "hsl(0 0% 98%)" }} formatter={v => <span style={{ color: "hsl(0 0% 98%)" }}>{v === "contracted" ? "Contratado" : "Realizado"}</span>} />
+                    <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px", color: "hsl(0 0% 98%)" }} formatter={v => <span style={{ color: "hsl(0 0% 98%)" }}>{v === "contracted" ? "Previsão (Contratado)" : "Realizado"}</span>} />
                     <Bar dataKey="contracted" fill="hsl(217 91% 70%)" opacity={0.85} />
                     <Bar dataKey="spent">
                       {data.map((d, i) => (
@@ -124,8 +123,7 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
                 <thead className="border-b border-border">
                   <tr className="text-left text-muted-foreground">
                     <th className="py-2 px-2">Cliente</th>
-                    <th className="py-2 px-2">Classificação</th>
-                    <th className="py-2 px-2 text-right">Contratado</th>
+                    <th className="py-2 px-2 text-right">Previsão</th>
                     <th className="py-2 px-2 text-right">Realizado</th>
                     <th className="py-2 px-2 text-right">Δ</th>
                     <th className="py-2 px-2 text-right">Utilização</th>
@@ -136,7 +134,6 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
                   {data.map((d, i) => (
                     <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-2 font-medium">{d.fullName}</td>
-                      <td className="py-2 px-2"><Badge variant="secondary" className="text-[10px]">{d.classification}</Badge></td>
                       <td className="py-2 px-2 text-right font-mono">{d.contracted}h</td>
                       <td className="py-2 px-2 text-right font-mono">{d.spent}h</td>
                       <td className={`py-2 px-2 text-right font-mono ${d.delta > 0 ? "text-destructive" : d.delta < 0 ? "text-warning" : ""}`}>
