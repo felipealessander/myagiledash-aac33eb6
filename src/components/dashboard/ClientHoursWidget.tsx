@@ -55,7 +55,7 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
       </h2>
       <div className="space-y-4">
         {/* Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">Previsão do Mês (Contratado)</p>
@@ -79,6 +79,19 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
                 {totals.spent - totals.contracted >= 0 ? "+" : ""}{(totals.spent - totals.contracted).toLocaleString()}h
               </p>
               <p className="text-[10px] text-muted-foreground mt-1">{totals.spent > totals.contracted ? "Acima do previsto" : "Dentro do previsto"}</p>
+            </CardContent>
+          </Card>
+          <Card className={totals.unplanned > 0 ? "border-warning/50" : ""}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Trabalhado Não Previsto</p>
+              <p className={`text-2xl font-bold ${totals.unplanned > 0 ? "text-warning" : ""}`}>
+                {totals.unplanned.toLocaleString()}h
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1" title={unplannedList.map(c => `${c.fullName} (${c.spent}h)`).join(", ")}>
+                {totals.unplannedClients > 0
+                  ? `${totals.unplannedClients} cliente(s) sem contrato: ${unplannedList.slice(0, 2).map(c => c.fullName).join(", ")}${unplannedList.length > 2 ? "…" : ""}`
+                  : "Nenhum cliente fora do contrato"}
+              </p>
             </CardContent>
           </Card>
         </div>
