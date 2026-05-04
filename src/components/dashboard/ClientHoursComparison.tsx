@@ -134,7 +134,7 @@ export function ClientHoursComparison({ months }: Props) {
             <span
               key={m}
               className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 border"
-              style={{ borderColor: SERIES_COLORS[i], color: SERIES_COLORS[i] }}
+              style={{ borderColor: SERIES_COLORS[i][1], color: SERIES_COLORS[i][1] }}
             >
               {monthLabel(m)}
               <button onClick={() => toggleMonth(m)} className="hover:opacity-70">
