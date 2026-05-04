@@ -14,7 +14,12 @@ interface Props {
   months: MonthOption[];
 }
 
-const SERIES_COLORS = ["hsl(217 91% 60%)", "hsl(160 84% 45%)", "hsl(38 92% 55%)"];
+// Per-month color pairs: [planned (lighter), realized (saturated)]
+const SERIES_COLORS: Array<[string, string]> = [
+  ["hsl(217 70% 78%)", "hsl(217 91% 55%)"],
+  ["hsl(160 60% 70%)", "hsl(160 84% 40%)"],
+  ["hsl(38 80% 75%)", "hsl(38 92% 50%)"],
+];
 const MAX_MONTHS = 3;
 
 async function fetchTasksForMonth(month: string): Promise<TaskLite[]> {
@@ -109,8 +114,10 @@ export function ClientHoursComparison({ months }: Props) {
       for (const m of selected) {
         const v = perMonth[m].get(name);
         const spent = Math.round(v?.spent || 0);
+        const planned = Math.round(v?.contracted || 0);
         row[`spent_${m}`] = spent;
-        total += spent;
+        row[`planned_${m}`] = planned;
+        total += spent + planned;
       }
       row.__total = total;
       return row;
@@ -129,7 +136,7 @@ export function ClientHoursComparison({ months }: Props) {
             <span
               key={m}
               className="inline-flex items-center gap-1 text-xs rounded-full px-2 py-1 border"
-              style={{ borderColor: SERIES_COLORS[i], color: SERIES_COLORS[i] }}
+              style={{ borderColor: SERIES_COLORS[i][1], color: SERIES_COLORS[i][1] }}
             >
               {monthLabel(m)}
               <button onClick={() => toggleMonth(m)} className="hover:opacity-70">
@@ -176,7 +183,7 @@ export function ClientHoursComparison({ months }: Props) {
         ) : chartData.length === 0 ? (
           <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">Sem dados nos meses selecionados.</div>
         ) : (
-          <div style={{ height: Math.max(320, chartData.length * 36) }}>
+          <div style={{ height: Math.max(360, chartData.length * (28 + selected.length * 18)) }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -187,16 +194,24 @@ export function ClientHoursComparison({ months }: Props) {
                   contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--popover-foreground))" }}
                   labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
                   formatter={(v: number, name: string) => {
-                    const m = name.replace("spent_", "");
-                    return [`${v.toLocaleString()}h`, monthLabel(m)];
+                    const isPlanned = name.startsWith("planned_");
+                    const m = name.replace(/^(planned_|spent_)/, "");
+                    return [`${v.toLocaleString()}h`, `${monthLabel(m)} — ${isPlanned ? "Previsão" : "Realizado"}`];
                   }}
                 />
                 <Legend
                   wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-                  formatter={(v: string) => <span style={{ color: "hsl(var(--foreground))" }}>{monthLabel(v.replace("spent_", ""))}</span>}
+                  formatter={(v: string) => {
+                    const isPlanned = v.startsWith("planned_");
+                    const m = v.replace(/^(planned_|spent_)/, "");
+                    return <span style={{ color: "hsl(var(--foreground))" }}>{monthLabel(m)} — {isPlanned ? "Previsão" : "Realizado"}</span>;
+                  }}
                 />
                 {selected.map((m, i) => (
-                  <Bar key={m} dataKey={`spent_${m}`} fill={SERIES_COLORS[i]} />
+                  <>
+                    <Bar key={`p-${m}`} dataKey={`planned_${m}`} fill={SERIES_COLORS[i][0]} opacity={0.85} />
+                    <Bar key={`s-${m}`} dataKey={`spent_${m}`} fill={SERIES_COLORS[i][1]} />
+                  </>
                 ))}
               </BarChart>
             </ResponsiveContainer>
