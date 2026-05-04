@@ -6,7 +6,6 @@ import { useClientHoursTrend } from "@/hooks/useClientHoursTrend";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, Legend, Cell, LineChart, Line, ReferenceLine,
-  Sparklines, // not from recharts; we'll inline a tiny SVG sparkline
 } from "recharts";
 import { ClientHoursComparison } from "./ClientHoursComparison";
 import type { MonthOption } from "@/hooks/useDashboardData";
