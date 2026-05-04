@@ -3,12 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, AlertTriangle } from "lucide-react";
 import { useClientsData } from "@/hooks/useClientsData";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, Cell } from "recharts";
+import { ClientHoursComparison } from "./ClientHoursComparison";
+import type { MonthOption } from "@/hooks/useDashboardData";
 
 interface Props {
   selectedMonth: string;
+  months: MonthOption[];
 }
 
-export function ClientHoursWidget({ selectedMonth }: Props) {
+export function ClientHoursWidget({ selectedMonth, months }: Props) {
   const { usage, loading, unmappedClients } = useClientsData(selectedMonth);
 
   const data = useMemo(() => {
@@ -119,6 +122,9 @@ export function ClientHoursWidget({ selectedMonth }: Props) {
             )}
           </CardContent>
         </Card>
+
+        {/* Multi-month comparison */}
+        <ClientHoursComparison months={months} />
 
         {/* Detailed table */}
         <Card>
