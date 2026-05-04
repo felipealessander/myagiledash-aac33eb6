@@ -33,8 +33,15 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
     return data.reduce((acc, d) => ({
       contracted: acc.contracted + d.contracted,
       spent: acc.spent + d.spent,
-    }), { contracted: 0, spent: 0 });
+      unplanned: acc.unplanned + (d.contracted === 0 ? d.spent : 0),
+      unplannedClients: acc.unplannedClients + (d.contracted === 0 && d.spent > 0 ? 1 : 0),
+    }), { contracted: 0, spent: 0, unplanned: 0, unplannedClients: 0 });
   }, [data]);
+
+  const unplannedList = useMemo(
+    () => data.filter(d => d.contracted === 0 && d.spent > 0).sort((a, b) => b.spent - a.spent),
+    [data]
+  );
 
   if (selectedMonth === "static" || !selectedMonth) {
     return null;
