@@ -89,7 +89,7 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
               </p>
               <p className="text-[10px] text-muted-foreground mt-1" title={unplannedList.map(c => `${c.fullName} (${c.spent}h)`).join(", ")}>
                 {totals.unplannedClients > 0
-                  ? `${totals.unplannedClients} cliente(s) sem contrato: ${unplannedList.slice(0, 2).map(c => c.fullName).join(", ")}${unplannedList.length > 2 ? "…" : ""}`
+                  ? `${totals.unplannedClients} cliente(s) com horas não previstas para o mês corrente`
                   : "Nenhum cliente fora do contrato"}
               </p>
             </CardContent>
