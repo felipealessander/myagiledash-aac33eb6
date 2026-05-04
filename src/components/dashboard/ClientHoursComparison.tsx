@@ -14,7 +14,12 @@ interface Props {
   months: MonthOption[];
 }
 
-const SERIES_COLORS = ["hsl(217 91% 60%)", "hsl(160 84% 45%)", "hsl(38 92% 55%)"];
+// Per-month color pairs: [planned (lighter), realized (saturated)]
+const SERIES_COLORS: Array<[string, string]> = [
+  ["hsl(217 70% 78%)", "hsl(217 91% 55%)"],
+  ["hsl(160 60% 70%)", "hsl(160 84% 40%)"],
+  ["hsl(38 80% 75%)", "hsl(38 92% 50%)"],
+];
 const MAX_MONTHS = 3;
 
 async function fetchTasksForMonth(month: string): Promise<TaskLite[]> {
