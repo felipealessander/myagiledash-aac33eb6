@@ -194,16 +194,24 @@ export function ClientHoursComparison({ months }: Props) {
                   contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--popover-foreground))" }}
                   labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
                   formatter={(v: number, name: string) => {
-                    const m = name.replace("spent_", "");
-                    return [`${v.toLocaleString()}h`, monthLabel(m)];
+                    const isPlanned = name.startsWith("planned_");
+                    const m = name.replace(/^(planned_|spent_)/, "");
+                    return [`${v.toLocaleString()}h`, `${monthLabel(m)} — ${isPlanned ? "Previsão" : "Realizado"}`];
                   }}
                 />
                 <Legend
                   wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-                  formatter={(v: string) => <span style={{ color: "hsl(var(--foreground))" }}>{monthLabel(v.replace("spent_", ""))}</span>}
+                  formatter={(v: string) => {
+                    const isPlanned = v.startsWith("planned_");
+                    const m = v.replace(/^(planned_|spent_)/, "");
+                    return <span style={{ color: "hsl(var(--foreground))" }}>{monthLabel(m)} — {isPlanned ? "Previsão" : "Realizado"}</span>;
+                  }}
                 />
                 {selected.map((m, i) => (
-                  <Bar key={m} dataKey={`spent_${m}`} fill={SERIES_COLORS[i]} />
+                  <>
+                    <Bar key={`p-${m}`} dataKey={`planned_${m}`} fill={SERIES_COLORS[i][0]} opacity={0.85} />
+                    <Bar key={`s-${m}`} dataKey={`spent_${m}`} fill={SERIES_COLORS[i][1]} />
+                  </>
                 ))}
               </BarChart>
             </ResponsiveContainer>
