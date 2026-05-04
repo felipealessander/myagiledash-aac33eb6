@@ -123,6 +123,9 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
           </CardContent>
         </Card>
 
+        {/* Multi-month comparison */}
+        <ClientHoursComparison months={months} />
+
         {/* Detailed table */}
         <Card>
           <CardHeader>
