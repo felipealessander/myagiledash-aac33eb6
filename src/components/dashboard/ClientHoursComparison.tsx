@@ -183,7 +183,7 @@ export function ClientHoursComparison({ months }: Props) {
         ) : chartData.length === 0 ? (
           <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">Sem dados nos meses selecionados.</div>
         ) : (
-          <div style={{ height: Math.max(320, chartData.length * 36) }}>
+          <div style={{ height: Math.max(360, chartData.length * (28 + selected.length * 18)) }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
