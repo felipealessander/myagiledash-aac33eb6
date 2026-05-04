@@ -320,7 +320,7 @@ const Index = () => {
           </section>
 
           {/* ═══════ HORAS POR CLIENTE (Sob Demanda) ═══════ */}
-          <ClientHoursWidget selectedMonth={selectedMonth} />
+          <ClientHoursWidget selectedMonth={selectedMonth} months={months} />
 
           {/* ═══════ MÉTRICAS ÁGEIS ═══════ */}
           {selectedMonth !== "static" && (leadTimeBySquad?.length > 0 || cycleTimeBySquad?.length > 0 || throughputByWeek?.length > 0 || wipBySquad?.length > 0) && (
