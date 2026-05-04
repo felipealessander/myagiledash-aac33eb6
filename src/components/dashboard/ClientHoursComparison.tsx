@@ -114,8 +114,10 @@ export function ClientHoursComparison({ months }: Props) {
       for (const m of selected) {
         const v = perMonth[m].get(name);
         const spent = Math.round(v?.spent || 0);
+        const planned = Math.round(v?.contracted || 0);
         row[`spent_${m}`] = spent;
-        total += spent;
+        row[`planned_${m}`] = planned;
+        total += spent + planned;
       }
       row.__total = total;
       return row;
