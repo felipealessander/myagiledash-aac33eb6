@@ -88,6 +88,29 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require authenticated caller (verify_jwt is false on this function;
+    // we validate the JWT here so unauthenticated users cannot abuse it).
+    const authHeader = req.headers.get('Authorization') || ''
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    })
+    const { data: userData, error: userError } = await authClient.auth.getUser(token)
+    if (userError || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const url = new URL(req.url)
     const requestBody = req.method === 'POST'
       ? await req.json().catch(() => ({})) as { mode?: string; issueIds?: string[] | string }
@@ -113,7 +136,15 @@ Deno.serve(async (req) => {
     }
 
     const base = YOUTRACK_URL.replace(/\/+$/, '')
-    const project = url.searchParams.get('project') || 'ATT'
+    const rawProject = url.searchParams.get('project') || 'ATT'
+    // Validate project key (alphanumeric, hyphen, underscore only) to prevent enumeration / injection
+    if (!/^[A-Za-z0-9_-]{1,32}$/.test(rawProject)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid project parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const project = rawProject
     const dateFrom = url.searchParams.get('dateFrom')
     const dateTo = url.searchParams.get('dateTo')
     const issueIds = url.searchParams.get('issueIds')
