@@ -50,6 +50,16 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
     return `${base}?${qs}`;
   };
 
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error("Sessão expirada. Faça login novamente.");
+    return {
+      Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    };
+  };
+
   const handleSync = async () => {
     if (!month || !year) {
       toast({ title: "Selecione mês e ano", variant: "destructive" });
@@ -61,6 +71,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
     setPhaseLabel("Buscando tarefas no YouTrack...");
 
     try {
+      const authHeaders = await getAuthHeaders();
       const monthNum = parseInt(month);
       const yearNum = parseInt(year);
       const dateFrom = `${year}-${month}-01`;
@@ -69,7 +80,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
 
       // Step 1: Fetch issues (using "work date" filter to capture all issues with time in period)
       const issuesUrl = buildUrl({ project, dateFrom, dateTo });
-      const issuesRes = await fetch(issuesUrl);
+      const issuesRes = await fetch(issuesUrl, { headers: authHeaders });
       if (!issuesRes.ok) {
         const err = await issuesRes.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(err.error || `HTTP ${issuesRes.status}`);
