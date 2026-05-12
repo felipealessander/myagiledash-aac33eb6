@@ -102,7 +102,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
       let spentByIssue: Record<string, number> = {};
       try {
         const wiUrl = buildUrl({ project, dateFrom, dateTo, mode: "workitems" });
-        const wiRes = await fetch(wiUrl);
+        const wiRes = await fetch(wiUrl, { headers: authHeaders });
         if (wiRes.ok) {
           const wiData = await wiRes.json();
           spentByIssue = wiData.spentByIssue || {};
@@ -133,7 +133,7 @@ export function YouTrackSyncDialog({ onImported }: YouTrackSyncDialogProps) {
           const actUrl = buildUrl({ mode: "activities" });
           const actRes = await fetch(actUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { ...authHeaders, "Content-Type": "application/json" },
             body: JSON.stringify({ issueIds: batchIds }),
           });
 
