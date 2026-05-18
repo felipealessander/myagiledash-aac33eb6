@@ -299,7 +299,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      team_members_directory: {
+        Row: {
+          active: boolean | null
+          id: string | null
+          name: string | null
+          squad: string | null
+          username: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          id?: string | null
+          name?: string | null
+          squad?: string | null
+          username?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          id?: string | null
+          name?: string | null
+          squad?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {
@@ -314,6 +337,16 @@ export type Database = {
         Returns: boolean
       }
       is_approved: { Args: { _user_id: string }; Returns: boolean }
+      list_team_directory: {
+        Args: never
+        Returns: {
+          active: boolean
+          id: string
+          name: string
+          squad: string
+          username: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "gestor" | "coordenador" | "dev"
