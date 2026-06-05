@@ -80,6 +80,32 @@ export default function Auth() {
           </Button>
         </form>
 
+        {isLogin && (
+          <p className="text-center text-xs text-muted-foreground">
+            <button
+              onClick={async () => {
+                if (!email) {
+                  toast({ title: "Informe o e-mail", description: "Digite seu e-mail acima primeiro.", variant: "destructive" });
+                  return;
+                }
+                setLoading(true);
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                  redirectTo: `${window.location.origin}/reset-password`,
+                });
+                if (error) {
+                  toast({ title: "Erro", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: "E-mail enviado", description: "Verifique sua caixa de entrada para redefinir a senha." });
+                }
+                setLoading(false);
+              }}
+              className="text-primary hover:underline"
+            >
+              Esqueci minha senha
+            </button>
+          </p>
+        )}
+
         <p className="text-center text-xs text-muted-foreground">
           {isLogin ? "Não tem conta?" : "Já tem conta?"}{" "}
           <button onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline">
