@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SQUAD_CAPACITY, computeCapacitySummaries, getWorkingDaysInMonth, type SquadCapacitySummary } from "@/data/squadCapacity";
+import { SQUAD_CAPACITY, getSquadCapacityForMonth, computeCapacitySummaries, getWorkingDaysInMonth, type SquadCapacitySummary } from "@/data/squadCapacity";
 
 interface SquadHours { squad: string; estimated: number; spent: number; productSpent: number }
 export interface CapacityMonthOption {
@@ -153,13 +153,17 @@ export function useCapacityData() {
   );
 
   const summaries = useMemo<SquadCapacitySummary[]>(
-    () => computeCapacitySummaries(SQUAD_CAPACITY, hoursBySquad, workingDays),
-    [hoursBySquad, workingDays]
+    () => computeCapacitySummaries(getSquadCapacityForMonth(selectedMonth), hoursBySquad, workingDays),
+    [hoursBySquad, workingDays, selectedMonth]
   );
 
   const avg3mSummaries = useMemo<SquadCapacitySummary[]>(
-    () => computeCapacitySummaries(SQUAD_CAPACITY, avg3mBySquad, avg3mWorkingDays),
-    [avg3mBySquad, avg3mWorkingDays]
+    () => {
+      // Para o comparativo dos 3 meses anteriores, usa a composição vigente no mês mais recente desse período
+      const prev = selectedMonth ? getPrev3Months(selectedMonth)[0] : selectedMonth;
+      return computeCapacitySummaries(getSquadCapacityForMonth(prev), avg3mBySquad, avg3mWorkingDays);
+    },
+    [avg3mBySquad, avg3mWorkingDays, selectedMonth]
   );
 
   const totals = useMemo(() => {
