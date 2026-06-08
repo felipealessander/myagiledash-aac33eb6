@@ -71,8 +71,8 @@ export function P85BySquadTrendChart({ data, metric, selectedSquads = [], title,
             {!hasFilter && (
               <Line
                 type="monotone"
-                dataKey="_medianGlobal"
-                name="Mediana Geral"
+                dataKey="_p85Global"
+                name="P85 Geral"
                 stroke="hsl(var(--primary))"
                 strokeWidth={2.5}
                 dot={{ r: 4 }}
