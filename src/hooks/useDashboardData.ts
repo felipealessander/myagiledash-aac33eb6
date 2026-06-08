@@ -324,6 +324,13 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
 
 export type DashboardData = ReturnType<typeof buildDashboardData>;
 
+export interface SquadAgilePoint {
+  squad: string;
+  median: number;
+  p85: number;
+  count: number;
+}
+
 export interface MonthlyTrendPoint {
   month: string;
   label: string;
@@ -340,6 +347,12 @@ export interface MonthlyTrendPoint {
   reworkRate: number;
   leadTimeAvg: number;
   cycleTimeAvg: number;
+  leadTimeMedianGlobal: number;
+  cycleTimeMedianGlobal: number;
+  leadTimeP85Global: number;
+  cycleTimeP85Global: number;
+  leadTimeBySquad: SquadAgilePoint[];
+  cycleTimeBySquad: SquadAgilePoint[];
   throughput: number;
   // CFD cumulative fields
   cfdBacklog: number;
