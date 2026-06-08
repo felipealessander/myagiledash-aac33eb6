@@ -30,7 +30,6 @@ export function P85BySquadTrendChart({ data, metric, selectedSquads = [], title,
   const chartData = data.map(p => {
     const row: Record<string, any> = {
       shortLabel: p.label.slice(0, 3),
-      _medianGlobal: p[globalMedianKey],
       _p85Global: p[globalP85Key],
     };
     if (hasFilter) {
