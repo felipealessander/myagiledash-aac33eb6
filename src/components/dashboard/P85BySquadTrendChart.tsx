@@ -4,6 +4,7 @@ import type { MonthlyTrendPoint } from "@/hooks/useDashboardData";
 interface Props {
   data: MonthlyTrendPoint[];
   metric: "lead" | "cycle";
+  selectedSquads?: string[];
   title?: string;
   description?: string;
 }
@@ -19,19 +20,12 @@ const SQUAD_COLORS = [
   "hsl(50, 90%, 50%)",
 ];
 
-export function P85BySquadTrendChart({ data, metric, title, description }: Props) {
+export function P85BySquadTrendChart({ data, metric, selectedSquads = [], title, description }: Props) {
   const key = metric === "lead" ? "leadTimeBySquad" : "cycleTimeBySquad";
   const globalMedianKey = metric === "lead" ? "leadTimeMedianGlobal" : "cycleTimeMedianGlobal";
   const globalP85Key = metric === "lead" ? "leadTimeP85Global" : "cycleTimeP85Global";
 
-  // Collect all squads across months (exclude tiny samples)
-  const squadSet = new Set<string>();
-  for (const p of data) {
-    for (const s of p[key]) {
-      if (s.count > 0) squadSet.add(s.squad);
-    }
-  }
-  const squads = Array.from(squadSet).sort();
+  const hasFilter = selectedSquads.length > 0;
 
   // Pivot
   const chartData = data.map(p => {
@@ -40,16 +34,23 @@ export function P85BySquadTrendChart({ data, metric, title, description }: Props
       _medianGlobal: p[globalMedianKey],
       _p85Global: p[globalP85Key],
     };
-    const bySquad = new Map(p[key].map(s => [s.squad, s]));
-    for (const sq of squads) {
-      const entry = bySquad.get(sq);
-      row[sq] = entry && entry.count > 0 ? entry.p85 : null;
+    if (hasFilter) {
+      const bySquad = new Map(p[key].map(s => [s.squad, s]));
+      for (const sq of selectedSquads) {
+        const entry = bySquad.get(sq);
+        row[`${sq}__median`] = entry && entry.count > 0 ? entry.median : null;
+        row[`${sq}__p85`] = entry && entry.count > 0 ? entry.p85 : null;
+      }
     }
     return row;
   });
 
-  const heading = title || `P85 ${metric === "lead" ? "Lead Time" : "Cycle Time"} por Squad`;
-  const sub = description || "Acompanhamento mensal do P85 por squad com a mediana global como referência";
+  const heading = title || (hasFilter
+    ? `Mediana & P85 ${metric === "lead" ? "Lead Time" : "Cycle Time"} por Squad`
+    : `Mediana ${metric === "lead" ? "Lead Time" : "Cycle Time"} (Geral)`);
+  const sub = description || (hasFilter
+    ? "Acompanhamento mensal por squad selecionada (mediana sólida, P85 tracejada)"
+    : "Mediana mensal considerando todas as squads juntas");
 
   return (
     <div className="gradient-card rounded-lg border border-border p-5">
@@ -66,36 +67,43 @@ export function P85BySquadTrendChart({ data, metric, title, description }: Props
               formatter={(v: number, name: string) => v == null ? ["—", name] : [`${v}d`, name]}
             />
             <Legend wrapperStyle={{ fontSize: "11px" }} />
-            {squads.map((sq, i) => (
+
+            {!hasFilter && (
               <Line
-                key={sq}
                 type="monotone"
-                dataKey={sq}
-                name={sq}
+                dataKey="_medianGlobal"
+                name="Mediana Geral"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2.5}
+                dot={{ r: 4 }}
+              />
+            )}
+
+            {hasFilter && selectedSquads.map((sq, i) => (
+              <Line
+                key={`${sq}-median`}
+                type="monotone"
+                dataKey={`${sq}__median`}
+                name={`${sq} – Mediana`}
                 stroke={SQUAD_COLORS[i % SQUAD_COLORS.length]}
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 connectNulls
               />
             ))}
-            <Line
-              type="monotone"
-              dataKey="_medianGlobal"
-              name="Mediana Global"
-              stroke="hsl(var(--muted-foreground))"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              dot={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="_p85Global"
-              name="P85 Global"
-              stroke="hsl(var(--foreground))"
-              strokeWidth={2}
-              strokeDasharray="2 4"
-              dot={false}
-            />
+            {hasFilter && selectedSquads.map((sq, i) => (
+              <Line
+                key={`${sq}-p85`}
+                type="monotone"
+                dataKey={`${sq}__p85`}
+                name={`${sq} – P85`}
+                stroke={SQUAD_COLORS[i % SQUAD_COLORS.length]}
+                strokeWidth={1.5}
+                strokeDasharray="5 5"
+                dot={false}
+                connectNulls
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
