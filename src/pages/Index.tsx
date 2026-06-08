@@ -393,8 +393,8 @@ const Index = () => {
                 )}
                 {monthlyTrend.length > 1 && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <P85BySquadTrendChart data={monthlyTrend} metric="lead" />
-                    <P85BySquadTrendChart data={monthlyTrend} metric="cycle" />
+                    <P85BySquadTrendChart data={monthlyTrend} metric="lead" selectedSquads={selectedSquads} />
+                    <P85BySquadTrendChart data={monthlyTrend} metric="cycle" selectedSquads={selectedSquads} />
                   </div>
                 )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
