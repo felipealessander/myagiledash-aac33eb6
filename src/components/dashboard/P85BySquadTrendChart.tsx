@@ -47,10 +47,10 @@ export function P85BySquadTrendChart({ data, metric, selectedSquads = [], title,
 
   const heading = title || (hasFilter
     ? `Mediana & P85 ${metric === "lead" ? "Lead Time" : "Cycle Time"} por Squad`
-    : `Mediana ${metric === "lead" ? "Lead Time" : "Cycle Time"} (Geral)`);
+    : `P85 ${metric === "lead" ? "Lead Time" : "Cycle Time"} (Geral)`);
   const sub = description || (hasFilter
     ? "Acompanhamento mensal por squad selecionada (mediana sólida, P85 tracejada)"
-    : "Mediana mensal considerando todas as squads juntas");
+    : "P85 mensal considerando todas as squads juntas");
 
   return (
     <div className="gradient-card rounded-lg border border-border p-5">
