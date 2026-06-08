@@ -22,7 +22,6 @@ const SQUAD_COLORS = [
 
 export function P85BySquadTrendChart({ data, metric, selectedSquads = [], title, description }: Props) {
   const key = metric === "lead" ? "leadTimeBySquad" : "cycleTimeBySquad";
-  const globalMedianKey = metric === "lead" ? "leadTimeMedianGlobal" : "cycleTimeMedianGlobal";
   const globalP85Key = metric === "lead" ? "leadTimeP85Global" : "cycleTimeP85Global";
 
   const hasFilter = selectedSquads.length > 0;
