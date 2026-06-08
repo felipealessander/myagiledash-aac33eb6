@@ -411,6 +411,36 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000 - interruptedDaysT(t)));
       const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
 
+      // Stats helpers
+      const pct = (arr: number[], p: number) => {
+        if (arr.length === 0) return 0;
+        const sorted = [...arr].sort((a, b) => a - b);
+        const idx = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
+        return Math.round(sorted[idx] * 10) / 10;
+      };
+      const leadTimeMedianGlobal = pct(leadTimes, 0.5);
+      const leadTimeP85Global = pct(leadTimes, 0.85);
+      const cycleTimeMedianGlobal = pct(cycleTimes, 0.5);
+      const cycleTimeP85Global = pct(cycleTimes, 0.85);
+
+      // Per-squad lead/cycle stats
+      const groupBySquad = (items: { squad: string | null; v: number }[]) => {
+        const m = new Map<string, number[]>();
+        for (const it of items) {
+          const sq = it.squad || "Sem Squad";
+          if (!m.has(sq)) m.set(sq, []);
+          m.get(sq)!.push(it.v);
+        }
+        return Array.from(m.entries()).map(([squad, vs]) => ({
+          squad,
+          median: pct(vs, 0.5),
+          p85: pct(vs, 0.85),
+          count: vs.length,
+        }));
+      };
+      const leadTimeBySquad = groupBySquad(resolved.map((t, i) => ({ squad: t.squad, v: leadTimes[i] })));
+      const cycleTimeBySquad = groupBySquad(cycled.map((t, i) => ({ squad: t.squad, v: cycleTimes[i] })));
+
       // Throughput: count tasks with done status (aligned with CFD definition)
       const throughput = mTasks.filter(t => isDoneStatus(t.status)).length;
 
@@ -437,6 +467,12 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
         reworkRate,
         leadTimeAvg,
         cycleTimeAvg,
+        leadTimeMedianGlobal,
+        cycleTimeMedianGlobal,
+        leadTimeP85Global,
+        cycleTimeP85Global,
+        leadTimeBySquad,
+        cycleTimeBySquad,
         throughput,
         cfdBacklog, cfdDev, cfdQA, cfdDone,
       };
