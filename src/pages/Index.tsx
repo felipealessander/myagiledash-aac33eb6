@@ -22,6 +22,7 @@ import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { MonthlyTrendCharts } from "@/components/dashboard/MonthlyTrendCharts";
+import { P85BySquadTrendChart } from "@/components/dashboard/P85BySquadTrendChart";
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
 import { ClientHoursWidget } from "@/components/dashboard/ClientHoursWidget";
@@ -388,6 +389,12 @@ const Index = () => {
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
+                  </div>
+                )}
+                {monthlyTrend.length > 1 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <P85BySquadTrendChart data={monthlyTrend} metric="lead" />
+                    <P85BySquadTrendChart data={monthlyTrend} metric="cycle" />
                   </div>
                 )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
