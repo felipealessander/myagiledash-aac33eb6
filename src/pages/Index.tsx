@@ -389,6 +389,11 @@ const Index = () => {
                       </ResponsiveContainer>
                     </div>
                   </div>
+                {monthlyTrend.length > 1 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <P85BySquadTrendChart data={monthlyTrend} metric="lead" />
+                    <P85BySquadTrendChart data={monthlyTrend} metric="cycle" />
+                  </div>
                 )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <ThroughputChart data={throughputByWeek || []} />
