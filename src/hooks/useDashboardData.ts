@@ -32,6 +32,15 @@ interface DBTask {
   client: string | null;
 }
 
+// DeadLetter identification: by tag OR by YouTrack Type (category).
+// Matches variants like "deadletter", "dead letter", "dead-letter".
+const DEADLETTER_RE = /dead[\s-]?letter/i;
+function isDeadLetter(t: { tags?: string[] | null; category?: string | null }): boolean {
+  if ((t.tags || []).some(tag => DEADLETTER_RE.test(tag))) return true;
+  if (t.category && DEADLETTER_RE.test(t.category)) return true;
+  return false;
+}
+
 // Fallback hardcoded members for static data only
 const SQUAD_MEMBERS_STATIC: Record<string, string[]> = {
   "NaN": ["Felipe Souza", "Ana Clara", "Lucas Martins", "Juliana Costa", "Pedro Henrique", "Mariana Lima"],
