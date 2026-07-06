@@ -121,11 +121,12 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     };
   });
 
-  // Category totals
+  // Category totals - agrupa pelo Type original do YouTrack para bater com o
+  // relatório nativo (não reclassifica DeadLetter aqui; DeadLetter é usado
+  // apenas em análises isoladas de esforço).
   const catMap = new Map<string, { hours: number; count: number }>();
   for (const t of tasks) {
-    const hasDeadLetter = isDeadLetter(t);
-    const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
+    const cat = t.category || "Tarefa";
     const entry = catMap.get(cat) || { hours: 0, count: 0 };
     entry.hours += (t.spent_minutes || 0) / 60;
     entry.count += 1;
