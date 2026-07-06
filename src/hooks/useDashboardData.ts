@@ -84,7 +84,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     const categoryMap = new Map<string, { spentHours: number; estimatedHours: number; taskCount: number }>();
 
     for (const t of tTasks) {
-      // If task has DeadLetter tag, override category to "DeadLetter"
+      // DeadLetter override applies when identified by tag OR by YouTrack Type
       const hasDeadLetter = isDeadLetter(t);
       const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
       const entry = categoryMap.get(cat) || { spentHours: 0, estimatedHours: 0, taskCount: 0 };
