@@ -32,6 +32,15 @@ interface DBTask {
   client: string | null;
 }
 
+// DeadLetter identification: by tag OR by YouTrack Type (category).
+// Matches variants like "deadletter", "dead letter", "dead-letter".
+const DEADLETTER_RE = /dead[\s-]?letter/i;
+function isDeadLetter(t: { tags?: string[] | null; category?: string | null }): boolean {
+  if ((t.tags || []).some(tag => DEADLETTER_RE.test(tag))) return true;
+  if (t.category && DEADLETTER_RE.test(t.category)) return true;
+  return false;
+}
+
 // Fallback hardcoded members for static data only
 const SQUAD_MEMBERS_STATIC: Record<string, string[]> = {
   "NaN": ["Felipe Souza", "Ana Clara", "Lucas Martins", "Juliana Costa", "Pedro Henrique", "Mariana Lima"],
@@ -75,8 +84,8 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     const categoryMap = new Map<string, { spentHours: number; estimatedHours: number; taskCount: number }>();
 
     for (const t of tTasks) {
-      // If task has DeadLetter tag, override category to "DeadLetter"
-      const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter'));
+      // DeadLetter override applies when identified by tag OR by YouTrack Type
+      const hasDeadLetter = isDeadLetter(t);
       const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
       const entry = categoryMap.get(cat) || { spentHours: 0, estimatedHours: 0, taskCount: 0 };
       entry.spentHours += (t.spent_minutes || 0) / 60;
@@ -115,7 +124,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   // Category totals
   const catMap = new Map<string, { hours: number; count: number }>();
   for (const t of tasks) {
-    const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter'));
+    const hasDeadLetter = isDeadLetter(t);
     const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
     const entry = catMap.get(cat) || { hours: 0, count: 0 };
     entry.hours += (t.spent_minutes || 0) / 60;
@@ -275,7 +284,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
 
   // Incidents created in the selected month (by created_at_yt)
   const incidentsCreatedInMonth = tasks.filter(t => {
-    const cat = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter')) ? "DeadLetter" : (t.category || "Tarefa");
+    const cat = isDeadLetter(t) ? "DeadLetter" : (t.category || "Tarefa");
     if (cat !== "Incidente") return false;
     if (!t.created_at_yt || !selectedMonth) return false;
     const created = t.created_at_yt.slice(0, 7); // "YYYY-MM"
@@ -289,7 +298,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   const incidentsByClient: { client: string; count: number }[] = [];
   const clientIncidentMap = new Map<string, number>();
   for (const t of tasks) {
-    const hasDeadLetter = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter'));
+    const hasDeadLetter = isDeadLetter(t);
     const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
     if (cat !== "Incidente") continue;
     const clientName = t.client || "Sem Cliente";
@@ -384,7 +393,7 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
 
       let incidentes = 0, melhorias = 0, deadLetters = 0, tarefas = 0, bugs = 0, epicos = 0, outros = 0;
       for (const t of mTasks) {
-        const hasDL = (t.tags || []).some(tag => tag.toLowerCase().includes('deadletter'));
+        const hasDL = isDeadLetter(t);
         const cat = hasDL ? "DeadLetter" : (t.category || "Tarefa");
         if (cat === "Incidente") incidentes++;
         else if (cat === "Melhoria") melhorias++;
