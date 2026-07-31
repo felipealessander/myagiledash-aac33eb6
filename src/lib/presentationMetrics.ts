@@ -192,8 +192,8 @@ export interface MttrResult {
 export function upperFence(values: number[]): number {
   if (values.length < 4) return Infinity;
   const sorted = [...values].sort((a, b) => a - b);
-  const q1 = percentile(sorted, 25);
-  const q3 = percentile(sorted, 75);
+  const q1 = percentile(sorted, 0.25);
+  const q3 = percentile(sorted, 0.75);
   return round1(q3 + 1.5 * (q3 - q1));
 }
 
