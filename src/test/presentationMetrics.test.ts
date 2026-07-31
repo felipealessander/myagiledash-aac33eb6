@@ -75,6 +75,38 @@ describe("computeMttr", () => {
     expect(r.overall.avg).toBe(0);
   });
 
+  it("builds one scatter point per resolved incident with squad and hours", () => {
+    const r = computeMttr([
+      t({ task_code: "I-1", title: "Falha login", client: "PGE SP", category: "Incidente", spent_minutes: 120, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-03T00:00:00Z" }),
+      t({ task_code: "I-2", category: "Incidente", spent_minutes: 60, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: null }),
+      t({ task_code: "T-1", category: "Tarefa", spent_minutes: 60, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-02T00:00:00Z" }),
+    ]);
+    expect(r.scatter).toHaveLength(1);
+    expect(r.scatter[0]).toMatchObject({ code: "I-1", squad: "Golden Gate", client: "PGE SP", days: 2, hours: 2 });
+  });
+
+  it("excludes DeadLetter incidents from the scatter", () => {
+    const r = computeMttr([
+      t({ task_code: "I-1", category: "Incidente", created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-02T00:00:00Z" }),
+      t({ task_code: "DL-1", category: "Incidente", tags: ["DeadLetter"], created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-02T00:00:00Z" }),
+    ]);
+    expect(r.scatter.map(p => p.code)).toEqual(["I-1"]);
+  });
+
+  it("flags outliers using the Tukey upper fence on days and hours", () => {
+    const normal = Array.from({ length: 8 }, (_, i) =>
+      t({ task_code: `N-${i}`, category: "Incidente", spent_minutes: 60, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-02T00:00:00Z" }),
+    );
+    const slow = t({ task_code: "SLOW", category: "Incidente", spent_minutes: 60, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-06-30T00:00:00Z" });
+    const heavy = t({ task_code: "HEAVY", category: "Incidente", spent_minutes: 6000, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-02T00:00:00Z" });
+    const r = computeMttr([...normal, slow, heavy]);
+    const flagged = r.scatter.filter(p => p.outlier).map(p => p.code);
+    expect(flagged.sort()).toEqual(["HEAVY", "SLOW"]);
+    expect(r.scatter.find(p => p.code === "SLOW")!.outlierReason).toBe("Tempo decorrido acima do esperado");
+    expect(r.scatter.find(p => p.code === "HEAVY")!.outlierReason).toBe("Esforço apontado acima do esperado");
+    expect(r.scatter.find(p => p.code === "N-0")!.outlier).toBe(false);
+  });
+
   it("counts DeadLetter incidents apart from the regular MTTR", () => {
     const r = computeMttr([
       t({ category: "Incidente", created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-01T10:00:00Z" }),

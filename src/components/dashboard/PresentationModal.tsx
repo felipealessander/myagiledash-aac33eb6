@@ -3,9 +3,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Legend, Cell, LabelList,
+  Legend, Cell, LabelList, ScatterChart, Scatter, ZAxis, ReferenceLine,
 } from "recharts";
-import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation, Info, Hourglass } from "lucide-react";
+import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation, Info, Hourglass, ScatterChart as ScatterIcon } from "lucide-react";
 import { buildPresentationMetrics, type PresentationTask } from "@/lib/presentationMetrics";
 
 interface Props {
@@ -114,6 +114,29 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
   const loggingTone = timeLogging.overallPct >= 90 ? "good" : timeLogging.overallPct >= 75 ? "warn" : "bad";
   const loggingColor = (pct: number) =>
     pct >= 90 ? "hsl(160, 84%, 39%)" : pct >= 75 ? "hsl(38, 92%, 50%)" : "hsl(0, 72%, 51%)";
+
+  const SQUAD_COLORS = [
+    "hsl(var(--primary))", "hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)",
+    "hsl(260, 70%, 60%)", "hsl(190, 80%, 45%)", "hsl(320, 65%, 55%)", "hsl(20, 80%, 55%)",
+  ];
+  const squadColor = (i: number) => SQUAD_COLORS[i % SQUAD_COLORS.length];
+
+  const scatterBySquad = useMemo(() => {
+    const map = new Map<string, typeof mttr.scatter>();
+    for (const p of mttr.scatter) {
+      if (!map.has(p.squad)) map.set(p.squad, []);
+      map.get(p.squad)!.push(p);
+    }
+    return Array.from(map.entries())
+      .map(([squad, points]) => ({ squad, points }))
+      .sort((a, b) => b.points.length - a.points.length);
+  }, [mttr.scatter]);
+
+  const outliers = useMemo(
+    () => mttr.scatter.filter(p => p.outlier).sort((a, b) => b.days - a.days),
+    [mttr.scatter],
+  );
+
 
   const slides = [
     {
@@ -284,6 +307,119 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
         </SlideShell>
       ),
     },
+    {
+      key: "dispersao",
+      node: (
+        <SlideShell
+          icon={ScatterIcon}
+          title="Dispersão: MTTR × Horas Apontadas"
+          subtitle="Um ponto por incidente concluído no período — quanto mais à direita/acima, mais atípico"
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard label="Incidentes plotados" value={`${mttr.scatter.length}`} hint="Concluídos no período (sem DLQ)" />
+            <StatCard label="Outliers" value={`${outliers.length}`} hint="Fora da cerca de Tukey (Q3 + 1,5×IQR)" tone={outliers.length > 0 ? "warn" : "good"} />
+            <StatCard label="Cerca de tempo" value={`${mttr.outlierThresholds.days}d`} hint="Limite de MTTR considerado normal" />
+            <StatCard label="Cerca de esforço" value={`${mttr.outlierThresholds.hours}h`} hint="Limite de horas apontadas normal" />
+          </div>
+          {mttr.scatter.length === 0 ? (
+            <EmptyState text="Nenhum incidente concluído no período selecionado." />
+          ) : (
+            <>
+              <div className="rounded-lg border border-border bg-card p-4">
+                <ResponsiveContainer width="100%" height={320}>
+                  <ScatterChart margin={{ top: 10, right: 24, left: 4, bottom: 16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+                    <XAxis
+                      type="number" dataKey="days" name="MTTR" unit="d" tick={axisTick}
+                      label={{ value: "MTTR (dias)", position: "insideBottom", offset: -8, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <YAxis
+                      type="number" dataKey="hours" name="Esforço" unit="h" tick={axisTick}
+                      label={{ value: "Horas apontadas", angle: -90, position: "insideLeft", fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <ZAxis range={[50, 50]} />
+                    {Number.isFinite(mttr.outlierThresholds.days) && mttr.outlierThresholds.days > 0 && (
+                      <ReferenceLine x={mttr.outlierThresholds.days} stroke="hsl(0, 72%, 51%)" strokeDasharray="4 4" />
+                    )}
+                    {mttr.outlierThresholds.hours > 0 && (
+                      <ReferenceLine y={mttr.outlierThresholds.hours} stroke="hsl(0, 72%, 51%)" strokeDasharray="4 4" />
+                    )}
+                    <Tooltip
+                      cursor={{ strokeDasharray: "3 3" }}
+                      contentStyle={tooltipStyle}
+                      content={({ active, payload }: any) => {
+                        if (!active || !payload?.length) return null;
+                        const p = payload[0].payload;
+                        return (
+                          <div style={tooltipStyle} className="p-2 max-w-[260px]">
+                            <p className="font-semibold text-xs">{p.code}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{p.title}</p>
+                            <p className="text-[11px] mt-1">{p.squad} · {p.client}</p>
+                            <p className="text-[11px]">MTTR: {p.days}d · Esforço: {p.hours}h</p>
+                            {p.outlier && <p className="text-[11px] text-destructive mt-1">{p.outlierReason}</p>}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "11px" }} />
+                    {scatterBySquad.map((s, i) => (
+                      <Scatter key={s.squad} name={s.squad} data={s.points} fill={squadColor(i)}>
+                        {s.points.map(pt => (
+                          <Cell
+                            key={pt.code}
+                            fill={pt.outlier ? "hsl(0, 72%, 51%)" : squadColor(i)}
+                          />
+                        ))}
+                      </Scatter>
+                    ))}
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+              {outliers.length > 0 && (
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <p className="text-xs font-semibold mb-3">Outliers identificados</p>
+                  <div className="max-h-52 overflow-y-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-muted-foreground text-left">
+                          <th className="py-1 pr-2 font-medium">Card</th>
+                          <th className="py-1 pr-2 font-medium">Time</th>
+                          <th className="py-1 pr-2 font-medium text-right">MTTR (d)</th>
+                          <th className="py-1 pr-2 font-medium text-right">Horas</th>
+                          <th className="py-1 font-medium">Motivo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {outliers.map(p => (
+                          <tr key={p.code} className="border-t border-border/50">
+                            <td className="py-1 pr-2 whitespace-nowrap">{p.code}</td>
+                            <td className="py-1 pr-2">{p.squad}</td>
+                            <td className="py-1 pr-2 text-right tabular-nums">{p.days}</td>
+                            <td className="py-1 pr-2 text-right tabular-nums">{p.hours}</td>
+                            <td className="py-1 text-muted-foreground">{p.outlierReason}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          <MetricInfo
+            what="Cruza o tempo de calendário até a resolução (MTTR, eixo X) com as horas efetivamente apontadas no card (eixo Y), um ponto por incidente, colorido por time."
+            formula="Ponto = (MTTR em dias, horas apontadas). Outlier quando o valor ultrapassa a cerca de Tukey: Q3 + 1,5 × IQR, calculada separadamente para tempo e para esforço (mínimo de 4 incidentes)."
+            includes={[
+              "Incidentes concluídos no período e nos times selecionados",
+              "Horas apontadas no próprio card",
+            ]}
+            excludes={["Itens arquivados", "Incidentes DeadLetter (DLQ)", "Incidentes sem data de resolução"]}
+            reading="Pontos à direita da linha vermelha vertical demoraram muito no calendário (fila/espera). Pontos acima da linha horizontal consumiram muito esforço. Pontos no canto superior direito são os casos realmente complexos e merecem análise individual."
+          />
+        </SlideShell>
+      ),
+    },
+
 
     {
       key: "cycle",

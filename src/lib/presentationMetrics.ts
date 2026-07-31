@@ -149,6 +149,20 @@ export interface EffortComparisonRow {
   count: number;
 }
 
+export interface IncidentScatterPoint {
+  code: string;
+  title: string;
+  squad: string;
+  client: string;
+  /** Tempo decorrido até a resolução, em dias corridos. */
+  days: number;
+  /** Horas apontadas no card. */
+  hours: number;
+  /** Ponto fora das cercas (IQR) de tempo e/ou esforço. */
+  outlier: boolean;
+  outlierReason: string;
+}
+
 export interface MttrResult {
   overall: DistributionStat;
   bySquad: DistributionStat[];
@@ -168,7 +182,21 @@ export interface MttrResult {
   flowEfficiencyPct: number;
   /** Comparativo tempo decorrido × esforço apontado, por time. */
   effortComparison: EffortComparisonRow[];
+  /** Um ponto por incidente resolvido (sem DLQ): MTTR em dias × horas apontadas. */
+  scatter: IncidentScatterPoint[];
+  /** Cercas superiores (IQR) usadas para marcar outliers. */
+  outlierThresholds: { days: number; hours: number };
 }
+
+/** Cerca superior de Tukey: Q3 + 1.5 × IQR. Retorna Infinity com amostra insuficiente. */
+export function upperFence(values: number[]): number {
+  if (values.length < 4) return Infinity;
+  const sorted = [...values].sort((a, b) => a - b);
+  const q1 = percentile(sorted, 0.25);
+  const q3 = percentile(sorted, 0.75);
+  return round1(q3 + 1.5 * (q3 - q1));
+}
+
 
 function buildComparisonRow(key: string, days: number[], hours: number[]): EffortComparisonRow {
   const elapsed = statsFrom(key, days).median;
@@ -194,6 +222,7 @@ export function computeMttr(tasks: PresentationTask[]): MttrResult {
   let openDeadLetterIncidents = 0;
   let totalEffortHours = 0;
   let incidentsWithoutEffort = 0;
+  const scatterRaw: Omit<IncidentScatterPoint, "outlier" | "outlierReason">[] = [];
 
   for (const t of incidents) {
     const dlq = isDeadLetter(t);
@@ -220,10 +249,33 @@ export function computeMttr(tasks: PresentationTask[]): MttrResult {
     perSquad.get(s)!.push(days);
     if (!perSquadEffort.has(s)) perSquadEffort.set(s, []);
     perSquadEffort.get(s)!.push(effortHours);
+    scatterRaw.push({
+      code: t.task_code || "—",
+      title: t.title || "",
+      squad: s,
+      client: t.client || "—",
+      days: round1(days),
+      hours: round1(effortHours),
+    });
   }
 
   const overall = statsFrom("Geral", all);
   const effort = statsFrom("Esforço", allEffort);
+  const daysFence = upperFence(all);
+  const hoursFence = upperFence(allEffort);
+  const scatter: IncidentScatterPoint[] = scatterRaw.map(p => {
+    const slowly = p.days > daysFence;
+    const heavy = p.hours > hoursFence;
+    return {
+      ...p,
+      outlier: slowly || heavy,
+      outlierReason: slowly && heavy
+        ? "Tempo e esforço acima do esperado"
+        : slowly ? "Tempo decorrido acima do esperado"
+          : heavy ? "Esforço apontado acima do esperado"
+            : "",
+    };
+  });
 
   return {
     overall,
@@ -242,6 +294,11 @@ export function computeMttr(tasks: PresentationTask[]): MttrResult {
     effortComparison: Array.from(perSquad.entries())
       .map(([squad, days]) => buildComparisonRow(squad, days, perSquadEffort.get(squad) || []))
       .sort((a, b) => b.elapsedDays - a.elapsedDays),
+    scatter,
+    outlierThresholds: {
+      days: Number.isFinite(daysFence) ? daysFence : 0,
+      hours: Number.isFinite(hoursFence) ? hoursFence : 0,
+    },
   };
 }
 
