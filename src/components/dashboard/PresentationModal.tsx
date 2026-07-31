@@ -166,21 +166,12 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
     {
       key: "mttr",
       node: (
-        <SlideShell icon={Timer} title="MTTR — Tempo Médio de Resolução" subtitle="Incidentes: abertura → resolução, descontando tempo interrompido (dias corridos). DeadLetter contabilizado à parte.">
+        <SlideShell icon={Timer} title="MTTR — Tempo Médio de Resolução" subtitle="Incidentes: abertura → resolução, descontando tempo interrompido (dias corridos).">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard label="Mediana" value={`${mttr.overall.median}d`} />
             <StatCard label="Média" value={`${mttr.overall.avg}d`} />
             <StatCard label="P85" value={`${mttr.overall.p85}d`} tone="warn" />
             <StatCard label="Em aberto" value={`${mttr.openIncidents}`} hint="Sem data de resolução" tone={mttr.openIncidents > 0 ? "bad" : "good"} />
-          </div>
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-xs font-semibold mb-3">DeadLetter (DLQ) — contabilizado à parte</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="MTTR DLQ (mediana)" value={`${mttr.deadLetter.median}d`} />
-              <StatCard label="Média DLQ" value={`${mttr.deadLetter.avg}d`} />
-              <StatCard label="Resolvidos DLQ" value={`${mttr.resolvedDeadLetterIncidents}`} />
-              <StatCard label="Em aberto DLQ" value={`${mttr.openDeadLetterIncidents}`} tone={mttr.openDeadLetterIncidents > 0 ? "bad" : "good"} />
-            </div>
           </div>
           {mttr.bySquad.length === 0 ? (
             <EmptyState text="Nenhum incidente resolvido no período selecionado." />
