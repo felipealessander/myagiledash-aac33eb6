@@ -191,6 +191,16 @@ const Index = () => {
         </div>
       </header>
 
+      <PresentationModal
+        open={presentationOpen}
+        onOpenChange={setPresentationOpen}
+        tasks={rawTasks}
+        monthLabel={currentMonthLabel}
+        selectedSquads={selectedSquads}
+      />
+
+
+
       {loading ? (
         <div className="flex items-center justify-center h-96">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
