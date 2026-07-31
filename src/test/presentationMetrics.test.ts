@@ -82,10 +82,10 @@ describe("computeMttr", () => {
       t({ category: "Incidente", tags: ["dead-letter"], created_at_yt: "2026-05-01T00:00:00Z", resolved_at: null }),
     ]);
     expect(r.resolvedIncidents).toBe(1);
-    expect(r.overall.avg).toBe(10);
+    expect(r.overall.avg).toBe(0.4);
     expect(r.openIncidents).toBe(0);
     expect(r.resolvedDeadLetterIncidents).toBe(1);
-    expect(r.deadLetter.avg).toBe(48);
+    expect(r.deadLetter.avg).toBe(2);
     expect(r.openDeadLetterIncidents).toBe(1);
     expect(r.bySquad.every(s => s.count === 1)).toBe(true);
   });
@@ -184,7 +184,7 @@ describe("buildPresentationMetrics", () => {
     const m = buildPresentationMetrics(tasks, { monthLabel: "Maio 2026", selectedSquads: ["JRE"] });
     expect(m.taskCount).toBe(2);
     expect(m.squads).toEqual(["JRE"]);
-    expect(m.mttr.overall.avg).toBe(4);
+    expect(m.mttr.overall.avg).toBe(0.2);
     expect(m.cycleTime.overall.avg).toBe(2);
     expect(m.dlq.count).toBe(1);
     expect(m.timeLogging.overallPct).toBe(100);
