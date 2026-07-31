@@ -89,6 +89,27 @@ describe("computeMttr", () => {
     expect(r.openDeadLetterIncidents).toBe(1);
     expect(r.bySquad.every(s => s.count === 1)).toBe(true);
   });
+
+  it("compares elapsed time with logged effort per squad", () => {
+    const r = computeMttr([
+      t({ squad: "A", category: "Incidente", spent_minutes: 240, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-05T00:00:00Z" }),
+      t({ squad: "B", category: "Incidente", spent_minutes: 0, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-03T00:00:00Z" }),
+      t({ squad: "A", category: "Incidente", tags: ["DeadLetter"], spent_minutes: 600, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-02T00:00:00Z" }),
+    ]);
+    expect(r.effort.median).toBe(4); // [0h, 4h] -> nearest-rank
+    expect(r.totalEffortHours).toBe(4); // DLQ effort stays out
+    expect(r.incidentsWithoutEffort).toBe(1);
+
+    const a = r.effortComparison.find(x => x.key === "A")!;
+    expect(a.elapsedDays).toBe(4);
+    expect(a.effortHours).toBe(4);
+    expect(a.effortDays).toBe(0.2);
+    expect(a.flowEfficiencyPct).toBe(4.2); // 4h / 96h
+
+    const b = r.effortComparison.find(x => x.key === "B")!;
+    expect(b.effortHours).toBe(0);
+    expect(b.flowEfficiencyPct).toBe(0);
+  });
 });
 
 

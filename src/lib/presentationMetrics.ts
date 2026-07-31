@@ -136,6 +136,19 @@ function statsFrom(key: string, values: number[]): DistributionStat {
  * DeadLetter (DLQ) incidents are counted SEPARATELY (deadLetter stat) and are
  * NOT part of the overall / bySquad MTTR.
  */
+export interface EffortComparisonRow {
+  key: string;
+  /** MTTR mediana em dias corridos (relógio de calendário). */
+  elapsedDays: number;
+  /** Esforço mediano apontado no card, em horas. */
+  effortHours: number;
+  /** Esforço mediano convertido em dias corridos, para leitura comparável. */
+  effortDays: number;
+  /** effortHours / (elapsedDays * 24) * 100 — quanto do tempo decorrido foi trabalho efetivo. */
+  flowEfficiencyPct: number;
+  count: number;
+}
+
 export interface MttrResult {
   overall: DistributionStat;
   bySquad: DistributionStat[];
@@ -145,15 +158,42 @@ export interface MttrResult {
   deadLetter: DistributionStat;
   resolvedDeadLetterIncidents: number;
   openDeadLetterIncidents: number;
+  /** Esforço apontado (horas lançadas) nos incidentes resolvidos — sem DLQ. */
+  effort: DistributionStat;
+  /** Horas apontadas somadas nos incidentes resolvidos (sem DLQ). */
+  totalEffortHours: number;
+  /** Incidentes resolvidos sem nenhuma hora apontada. */
+  incidentsWithoutEffort: number;
+  /** Eficiência de fluxo geral: esforço mediano ÷ tempo decorrido mediano. */
+  flowEfficiencyPct: number;
+  /** Comparativo tempo decorrido × esforço apontado, por time. */
+  effortComparison: EffortComparisonRow[];
+}
+
+function buildComparisonRow(key: string, days: number[], hours: number[]): EffortComparisonRow {
+  const elapsed = statsFrom(key, days).median;
+  const effort = statsFrom(key, hours).median;
+  return {
+    key,
+    elapsedDays: elapsed,
+    effortHours: effort,
+    effortDays: round1(effort / 24),
+    flowEfficiencyPct: elapsed > 0 ? round1((effort / (elapsed * 24)) * 100) : 0,
+    count: days.length,
+  };
 }
 
 export function computeMttr(tasks: PresentationTask[]): MttrResult {
   const incidents = tasks.filter(isIncident);
   const perSquad = new Map<string, number[]>();
+  const perSquadEffort = new Map<string, number[]>();
   const all: number[] = [];
+  const allEffort: number[] = [];
   const dlqValues: number[] = [];
   let openIncidents = 0;
   let openDeadLetterIncidents = 0;
+  let totalEffortHours = 0;
+  let incidentsWithoutEffort = 0;
 
   for (const t of incidents) {
     const dlq = isDeadLetter(t);
@@ -170,14 +210,23 @@ export function computeMttr(tasks: PresentationTask[]): MttrResult {
       dlqValues.push(days);
       continue;
     }
+    const effortHours = Math.max(0, (t.spent_minutes || 0) / 60);
+    if (effortHours === 0) incidentsWithoutEffort++;
+    totalEffortHours += effortHours;
     all.push(days);
+    allEffort.push(effortHours);
     const s = squadOf(t);
     if (!perSquad.has(s)) perSquad.set(s, []);
     perSquad.get(s)!.push(days);
+    if (!perSquadEffort.has(s)) perSquadEffort.set(s, []);
+    perSquadEffort.get(s)!.push(effortHours);
   }
 
+  const overall = statsFrom("Geral", all);
+  const effort = statsFrom("Esforço", allEffort);
+
   return {
-    overall: statsFrom("Geral", all),
+    overall,
     bySquad: Array.from(perSquad.entries())
       .map(([squad, values]) => statsFrom(squad, values))
       .sort((a, b) => b.median - a.median),
@@ -186,8 +235,16 @@ export function computeMttr(tasks: PresentationTask[]): MttrResult {
     deadLetter: statsFrom("DeadLetter", dlqValues),
     resolvedDeadLetterIncidents: dlqValues.length,
     openDeadLetterIncidents,
+    effort,
+    totalEffortHours: round1(totalEffortHours),
+    incidentsWithoutEffort,
+    flowEfficiencyPct: overall.median > 0 ? round1((effort.median / (overall.median * 24)) * 100) : 0,
+    effortComparison: Array.from(perSquad.entries())
+      .map(([squad, days]) => buildComparisonRow(squad, days, perSquadEffort.get(squad) || []))
+      .sort((a, b) => b.elapsedDays - a.elapsedDays),
   };
 }
+
 
 
 /**

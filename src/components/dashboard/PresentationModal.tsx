@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, Cell, LabelList,
 } from "recharts";
-import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation, Info, Hourglass } from "lucide-react";
 import { buildPresentationMetrics, type PresentationTask } from "@/lib/presentationMetrics";
 
 interface Props {
@@ -193,10 +193,98 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
             reading="Quanto menor, melhor. A mediana evita distorção por outliers; o P85 mostra o pior cenário típico. Atenção: é tempo de calendário (relógio corrido), diferente das horas apontadas na atividade — esse esforço é medido no indicador “% de Apontamento de Horas”."
           />
         </SlideShell>
-
-
       ),
     },
+    {
+      key: "esforco",
+      node: (
+        <SlideShell
+          icon={Hourglass}
+          title="Esforço Apontado × Tempo Decorrido"
+          subtitle="Horas efetivamente lançadas nos incidentes versus o tempo de calendário até a resolução"
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard label="Esforço mediano" value={`${mttr.effort.median}h`} hint="Horas apontadas por incidente" />
+            <StatCard label="Esforço médio" value={`${mttr.effort.avg}h`} hint={`${mttr.totalEffortHours}h no total`} />
+            <StatCard
+              label="Eficiência de fluxo"
+              value={`${mttr.flowEfficiencyPct}%`}
+              hint="Esforço ÷ tempo decorrido"
+              tone={mttr.flowEfficiencyPct >= 15 ? "good" : mttr.flowEfficiencyPct >= 5 ? "warn" : "bad"}
+            />
+            <StatCard
+              label="Sem apontamento"
+              value={`${mttr.incidentsWithoutEffort}`}
+              hint="Incidentes resolvidos com 0h"
+              tone={mttr.incidentsWithoutEffort > 0 ? "bad" : "good"}
+            />
+          </div>
+          {mttr.effortComparison.length === 0 ? (
+            <EmptyState text="Nenhum incidente resolvido no período selecionado." />
+          ) : (
+            <>
+              <div className="rounded-lg border border-border bg-card p-4">
+                <p className="text-xs font-semibold mb-3">Tempo decorrido × esforço apontado por time (medianas, em dias)</p>
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={mttr.effortComparison} margin={{ top: 5, right: 24, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+                    <XAxis dataKey="key" tick={axisTick} />
+                    <YAxis tick={axisTick} unit="d" />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(v: number, n: string, p: any) =>
+                        n === "Esforço apontado"
+                          ? [`${p.payload.effortHours}h (${v}d)`, n]
+                          : [`${v}d`, n]
+                      }
+                    />
+                    <Legend wrapperStyle={{ fontSize: "11px" }} />
+                    <Bar dataKey="elapsedDays" name="Tempo decorrido (MTTR)" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="effortDays" name="Esforço apontado" fill="hsl(160, 84%, 39%)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-4">
+                <p className="text-xs font-semibold mb-3">Detalhamento por time</p>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-muted-foreground text-left">
+                      <th className="py-1 pr-2 font-medium">Time</th>
+                      <th className="py-1 pr-2 font-medium text-right">Incidentes</th>
+                      <th className="py-1 pr-2 font-medium text-right">MTTR (d)</th>
+                      <th className="py-1 pr-2 font-medium text-right">Esforço (h)</th>
+                      <th className="py-1 font-medium text-right">Eficiência de fluxo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mttr.effortComparison.map(row => (
+                      <tr key={row.key} className="border-t border-border/50">
+                        <td className="py-1 pr-2">{row.key}</td>
+                        <td className="py-1 pr-2 text-right tabular-nums">{row.count}</td>
+                        <td className="py-1 pr-2 text-right tabular-nums">{row.elapsedDays}</td>
+                        <td className="py-1 pr-2 text-right tabular-nums">{row.effortHours}</td>
+                        <td className="py-1 text-right tabular-nums">{row.flowEfficiencyPct}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+          <MetricInfo
+            what="Compara o relógio de calendário (MTTR) com o trabalho efetivo lançado no card, revelando quanto do tempo total foi espera/fila."
+            formula="Esforço = horas apontadas no YouTrack (spent). Esforço em dias = horas ÷ 24. Eficiência de fluxo = esforço mediano (h) ÷ (MTTR mediano em dias × 24) × 100."
+            includes={[
+              "Incidentes concluídos no período e nos times selecionados",
+              "Horas apontadas no próprio card do incidente",
+            ]}
+            excludes={["Itens arquivados", "Incidentes DeadLetter (DLQ)", "Incidentes sem data de resolução"]}
+            reading="Eficiência baixa (<5%) indica que o incidente passou a maior parte do tempo parado em fila ou aguardando terceiros, não em execução. Incidentes resolvidos com 0h apontadas distorcem o indicador para baixo."
+          />
+        </SlideShell>
+      ),
+    },
+
     {
       key: "cycle",
       node: (
