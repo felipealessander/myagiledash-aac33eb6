@@ -26,7 +26,9 @@ import { P85BySquadTrendChart } from "@/components/dashboard/P85BySquadTrendChar
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
 import { ClientHoursWidget } from "@/components/dashboard/ClientHoursWidget";
+import { PresentationModal } from "@/components/dashboard/PresentationModal";
 import { useDashboardData } from "@/hooks/useDashboardData";
+
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
