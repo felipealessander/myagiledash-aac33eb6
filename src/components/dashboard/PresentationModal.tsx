@@ -215,7 +215,18 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
               </ResponsiveContainer>
             </div>
           )}
+          <MetricInfo
+            what="Mede a disciplina de apontamento: quantas atividades concluídas tiveram horas lançadas no YouTrack."
+            formula="% Apontamento = cards concluídos com horas > 0 ÷ total de cards concluídos × 100."
+            includes={[
+              "Todos os cards concluídos no período e nos times selecionados",
+              "Qualquer categoria (tarefas, incidentes, DLQ)",
+            ]}
+            excludes={["Itens arquivados", "Cards não concluídos no período"]}
+            reading="Meta de 90%. Verde ≥ 90%, amarelo entre 75% e 89%, vermelho abaixo de 75%. Baixa aderência compromete a confiabilidade das demais métricas de esforço."
+          />
         </SlideShell>
+
       ),
     },
     {
