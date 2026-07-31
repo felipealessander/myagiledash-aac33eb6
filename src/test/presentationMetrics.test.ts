@@ -46,15 +46,15 @@ describe("percentile", () => {
 });
 
 describe("computeMttr", () => {
-  it("measures created -> resolved in hours, discounting interruptions", () => {
+  it("measures created -> resolved in days, discounting interruptions", () => {
     const tasks = [
       t({ category: "Incidente", created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-01T10:00:00Z" }),
       t({ category: "Incidente", created_at_yt: "2026-05-02T00:00:00Z", resolved_at: "2026-05-02T06:00:00Z", interrupted_minutes: 120 }),
     ];
     const r = computeMttr(tasks);
     expect(r.resolvedIncidents).toBe(2);
-    expect(r.overall.avg).toBe(7); // (10 + 4) / 2
-    expect(r.overall.p85).toBe(10);
+    expect(r.overall.avg).toBe(0.3); // (10h + 4h) / 2 = 7h ≈ 0.3d
+    expect(r.overall.p85).toBe(0.4);
   });
 
   it("counts unresolved incidents separately and ignores non-incidents", () => {
@@ -82,10 +82,10 @@ describe("computeMttr", () => {
       t({ category: "Incidente", tags: ["dead-letter"], created_at_yt: "2026-05-01T00:00:00Z", resolved_at: null }),
     ]);
     expect(r.resolvedIncidents).toBe(1);
-    expect(r.overall.avg).toBe(10);
+    expect(r.overall.avg).toBe(0.4);
     expect(r.openIncidents).toBe(0);
     expect(r.resolvedDeadLetterIncidents).toBe(1);
-    expect(r.deadLetter.avg).toBe(48);
+    expect(r.deadLetter.avg).toBe(2);
     expect(r.openDeadLetterIncidents).toBe(1);
     expect(r.bySquad.every(s => s.count === 1)).toBe(true);
   });
@@ -184,7 +184,7 @@ describe("buildPresentationMetrics", () => {
     const m = buildPresentationMetrics(tasks, { monthLabel: "Maio 2026", selectedSquads: ["JRE"] });
     expect(m.taskCount).toBe(2);
     expect(m.squads).toEqual(["JRE"]);
-    expect(m.mttr.overall.avg).toBe(4);
+    expect(m.mttr.overall.avg).toBe(0.2);
     expect(m.cycleTime.overall.avg).toBe(2);
     expect(m.dlq.count).toBe(1);
     expect(m.timeLogging.overallPct).toBe(100);

@@ -26,7 +26,6 @@ export interface PresentationTask {
 
 const DEADLETTER_RE = /dead[\s-]?letter/i;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
-const MS_PER_HOUR = 1000 * 60 * 60;
 
 export function isArchived(status?: string | null): boolean {
   return (status || "").toLowerCase().trim().includes("arquivado");
@@ -130,8 +129,9 @@ function statsFrom(key: string, values: number[]): DistributionStat {
 }
 
 /**
- * MTTR — Mean Time To Repair, in HOURS.
- * Only incidents that were resolved. Clock = created_at_yt -> resolved_at,
+ * MTTR — Mean Time To Repair, in DAYS.
+ * Only incidents that were resolved. Clock = created_at_yt -> resolved_at (calendar
+ * elapsed time, NOT hours logged on the card),
  * discounting time parked in "Interrompido".
  * DeadLetter (DLQ) incidents are counted SEPARATELY (deadLetter stat) and are
  * NOT part of the overall / bySquad MTTR.
@@ -164,16 +164,16 @@ export function computeMttr(tasks: PresentationTask[]): MttrResult {
       else openIncidents++;
       continue;
     }
-    const interruptedHours = Math.max(0, (t.interrupted_minutes || 0) / 60);
-    const hours = Math.max(0, (resolved - created) / MS_PER_HOUR - interruptedHours);
+    const interruptedDays = Math.max(0, (t.interrupted_minutes || 0) / 60 / 24);
+    const days = Math.max(0, (resolved - created) / MS_PER_DAY - interruptedDays);
     if (dlq) {
-      dlqValues.push(hours);
+      dlqValues.push(days);
       continue;
     }
-    all.push(hours);
+    all.push(days);
     const s = squadOf(t);
     if (!perSquad.has(s)) perSquad.set(s, []);
-    perSquad.get(s)!.push(hours);
+    perSquad.get(s)!.push(days);
   }
 
   return {

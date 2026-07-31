@@ -132,7 +132,7 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
             (itens arquivados excluídos)
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-3xl mt-4">
-            <StatCard label="MTTR (mediana)" value={`${mttr.overall.median}h`} hint={`${mttr.resolvedIncidents} incidentes`} />
+            <StatCard label="MTTR (mediana)" value={`${mttr.overall.median}d`} hint={`${mttr.resolvedIncidents} incidentes`} />
             <StatCard label="Cycle Time (mediana)" value={`${cycleTime.overall.median}d`} hint={`${cycleTime.consideredTasks} entregas`} />
             <StatCard label="Apontamento" value={`${timeLogging.overallPct}%`} hint={`${timeLogging.totalSpentHours}h lançadas`} tone={loggingTone} />
             <StatCard label="DLQ" value={`${dlq.count}`} hint={`${dlq.hours}h · ${dlq.sharePct}% do volume`} tone={dlq.sharePct > 10 ? "bad" : "default"} />
@@ -143,18 +143,18 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
     {
       key: "mttr",
       node: (
-        <SlideShell icon={Timer} title="MTTR — Tempo Médio de Resolução" subtitle="Incidentes: abertura → resolução, descontando tempo interrompido (horas). DeadLetter contabilizado à parte.">
+        <SlideShell icon={Timer} title="MTTR — Tempo Médio de Resolução" subtitle="Incidentes: abertura → resolução, descontando tempo interrompido (dias corridos). DeadLetter contabilizado à parte.">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Mediana" value={`${mttr.overall.median}h`} />
-            <StatCard label="Média" value={`${mttr.overall.avg}h`} />
-            <StatCard label="P85" value={`${mttr.overall.p85}h`} tone="warn" />
+            <StatCard label="Mediana" value={`${mttr.overall.median}d`} />
+            <StatCard label="Média" value={`${mttr.overall.avg}d`} />
+            <StatCard label="P85" value={`${mttr.overall.p85}d`} tone="warn" />
             <StatCard label="Em aberto" value={`${mttr.openIncidents}`} hint="Sem data de resolução" tone={mttr.openIncidents > 0 ? "bad" : "good"} />
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="text-xs font-semibold mb-3">DeadLetter (DLQ) — contabilizado à parte</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="MTTR DLQ (mediana)" value={`${mttr.deadLetter.median}h`} />
-              <StatCard label="Média DLQ" value={`${mttr.deadLetter.avg}h`} />
+              <StatCard label="MTTR DLQ (mediana)" value={`${mttr.deadLetter.median}d`} />
+              <StatCard label="Média DLQ" value={`${mttr.deadLetter.avg}d`} />
               <StatCard label="Resolvidos DLQ" value={`${mttr.resolvedDeadLetterIncidents}`} />
               <StatCard label="Em aberto DLQ" value={`${mttr.openDeadLetterIncidents}`} tone={mttr.openDeadLetterIncidents > 0 ? "bad" : "good"} />
             </div>
@@ -163,13 +163,13 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
             <EmptyState text="Nenhum incidente resolvido no período selecionado." />
           ) : (
             <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs font-semibold mb-3">MTTR por time (horas) — sem DeadLetter</p>
+              <p className="text-xs font-semibold mb-3">MTTR por time (dias) — sem DeadLetter</p>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={mttr.bySquad} margin={{ top: 5, right: 24, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={grid} />
                   <XAxis dataKey="key" tick={axisTick} />
-                  <YAxis tick={axisTick} unit="h" />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n: string) => [`${v}h`, n]} />
+                  <YAxis tick={axisTick} unit="d" />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n: string) => [`${v}d`, n]} />
                   <Legend wrapperStyle={{ fontSize: "11px" }} />
                   <Bar dataKey="median" name="Mediana" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="p85" name="P85" fill="hsl(38, 92%, 50%)" radius={[4, 4, 0, 0]} />
@@ -179,7 +179,7 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
           )}
           <MetricInfo
             what="MTTR (Mean Time To Repair): tempo entre a abertura e a resolução de um incidente."
-            formula="MTTR (horas) = (data de resolução − data de abertura no YouTrack) − tempo interrompido. Reportamos mediana, média e P85 dos incidentes resolvidos no período."
+            formula="MTTR (dias corridos) = (data de resolução − data de abertura no YouTrack) − tempo interrompido. Reportamos mediana, média e P85 dos incidentes resolvidos no período."
             includes={[
               "Somente cards da categoria Incidente",
               "Incidentes concluídos dentro do mês/período selecionado, independentemente da data de abertura",
@@ -190,7 +190,7 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
               "Incidentes DeadLetter (DLQ) — apurados em bloco separado",
               "Incidentes ainda em aberto (exibidos como “Em aberto”)",
             ]}
-            reading="Quanto menor, melhor. A mediana evita distorção por outliers; o P85 mostra o pior cenário típico de atendimento."
+            reading="Quanto menor, melhor. A mediana evita distorção por outliers; o P85 mostra o pior cenário típico. Atenção: é tempo de calendário (relógio corrido), diferente das horas apontadas na atividade — esse esforço é medido no indicador “% de Apontamento de Horas”."
           />
         </SlideShell>
 
