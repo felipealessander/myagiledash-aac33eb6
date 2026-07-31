@@ -258,8 +258,46 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, selec
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+              <div className="rounded-lg border border-border bg-card p-4 lg:col-span-2">
+                <p className="text-xs font-semibold mb-3">
+                  Cards DeadLetter no mês ({dlq.items.length})
+                </p>
+                <div className="max-h-[240px] overflow-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-card">
+                      <tr className="text-muted-foreground text-left">
+                        <th className="py-1 pr-2 font-medium">Card</th>
+                        <th className="py-1 pr-2 font-medium">Título</th>
+                        <th className="py-1 pr-2 font-medium">Time</th>
+                        <th className="py-1 pr-2 font-medium">Cliente</th>
+                        <th className="py-1 pr-2 font-medium">Status</th>
+                        <th className="py-1 pr-2 font-medium">Identificado por</th>
+                        <th className="py-1 text-right font-medium">Horas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dlq.items.map(item => (
+                        <tr key={item.taskCode} className="border-t border-border/50">
+                          <td className="py-1 pr-2 font-mono">{item.taskCode}</td>
+                          <td className="py-1 pr-2 max-w-[260px] truncate" title={item.title}>{item.title}</td>
+                          <td className="py-1 pr-2">{item.squad}</td>
+                          <td className="py-1 pr-2">{item.client}</td>
+                          <td className="py-1 pr-2">{item.status}</td>
+                          <td className="py-1 pr-2">
+                            <span className="rounded bg-muted px-1.5 py-0.5" title={item.matchedValue}>
+                              {item.matchedBy}
+                            </span>
+                          </td>
+                          <td className="py-1 text-right tabular-nums">{item.hours}h</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
+
         </SlideShell>
       ),
     },
