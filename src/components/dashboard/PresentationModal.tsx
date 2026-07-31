@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, Cell, LabelList,
 } from "recharts";
-import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation } from "lucide-react";
+import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation, Info } from "lucide-react";
 import { buildPresentationMetrics, type PresentationTask } from "@/lib/presentationMetrics";
 
 interface Props {
@@ -64,9 +64,40 @@ function SlideShell({
   );
 }
 
+function MetricInfo({
+  what, formula, includes, excludes, reading,
+}: { what: string; formula: string; includes: string[]; excludes: string[]; reading: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Info className="h-3.5 w-3.5 text-primary" />
+        <p className="text-xs font-semibold">Como o indicador é calculado</p>
+      </div>
+      <p className="text-xs text-muted-foreground">{what}</p>
+      <p className="text-xs font-mono bg-card border border-border rounded px-3 py-2 leading-relaxed">{formula}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <p className="text-[11px] font-semibold text-[hsl(160,84%,39%)] mb-1">Considera</p>
+          <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-0.5">
+            {includes.map(i => <li key={i}>{i}</li>)}
+          </ul>
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold text-destructive mb-1">Não considera</p>
+          <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-0.5">
+            {excludes.map(i => <li key={i}>{i}</li>)}
+          </ul>
+        </div>
+      </div>
+      <p className="text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">Como ler: </span>{reading}</p>
+    </div>
+  );
+}
+
 function EmptyState({ text }: { text: string }) {
   return <p className="text-xs text-muted-foreground text-center py-12">{text}</p>;
 }
+
 
 export function PresentationModal({ open, onOpenChange, tasks, monthLabel, periodKey, selectedSquads }: Props) {
   const [slide, setSlide] = useState(0);
@@ -146,7 +177,23 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
               </ResponsiveContainer>
             </div>
           )}
+          <MetricInfo
+            what="MTTR (Mean Time To Repair): tempo entre a abertura e a resolução de um incidente."
+            formula="MTTR (horas) = (data de resolução − data de abertura no YouTrack) − tempo interrompido. Reportamos mediana, média e P85 dos incidentes resolvidos no período."
+            includes={[
+              "Somente cards da categoria Incidente",
+              "Incidentes concluídos dentro do mês/período selecionado, independentemente da data de abertura",
+              "Times selecionados no filtro (ou todos, se nenhum for selecionado)",
+            ]}
+            excludes={[
+              "Itens arquivados",
+              "Incidentes DeadLetter (DLQ) — apurados em bloco separado",
+              "Incidentes ainda em aberto (exibidos como “Em aberto”)",
+            ]}
+            reading="Quanto menor, melhor. A mediana evita distorção por outliers; o P85 mostra o pior cenário típico de atendimento."
+          />
         </SlideShell>
+
 
       ),
     },
@@ -178,7 +225,18 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
               </ResponsiveContainer>
             </div>
           )}
+          <MetricInfo
+            what="Tempo de ciclo de uma entrega: do início do desenvolvimento até a conclusão do card."
+            formula="Cycle Time (dias) = (data de conclusão − data de início) − tempo interrompido (bloqueios/impedimentos). Mediana, média e P85 calculados sobre os cards concluídos no período."
+            includes={[
+              "Cards concluídos no período selecionado, com data de início e de conclusão",
+              "Times selecionados no filtro (ou todos, se nenhum for selecionado)",
+            ]}
+            excludes={["Épicos", "Squad Qualidade", "Itens arquivados", "Cards sem data de início ou conclusão (contados em “sem datas”)"]}
+            reading="A mediana representa o comportamento típico; o P85 mostra o compromisso realista de prazo (85% das entregas saem em até esse tempo)."
+          />
         </SlideShell>
+
       ),
     },
     {
@@ -215,7 +273,18 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
               </ResponsiveContainer>
             </div>
           )}
+          <MetricInfo
+            what="Mede a disciplina de apontamento: quantas atividades concluídas tiveram horas lançadas no YouTrack."
+            formula="% Apontamento = cards concluídos com horas > 0 ÷ total de cards concluídos × 100."
+            includes={[
+              "Todos os cards concluídos no período e nos times selecionados",
+              "Qualquer categoria (tarefas, incidentes, DLQ)",
+            ]}
+            excludes={["Itens arquivados", "Cards não concluídos no período"]}
+            reading="Meta de 90%. Verde ≥ 90%, amarelo entre 75% e 89%, vermelho abaixo de 75%. Baixa aderência compromete a confiabilidade das demais métricas de esforço."
+          />
         </SlideShell>
+
       ),
     },
     {
@@ -299,6 +368,18 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
               </div>
             </div>
           )}
+          <MetricInfo
+            what="Cards tratados como DeadLetter (DLQ) — itens que falharam no processamento e caíram na fila de reprocessamento."
+            formula="Itens DLQ = cards com tag OU tipo contendo “DeadLetter/DLQ”. % do volume = itens DLQ ÷ total de cards concluídos × 100. % do esforço = horas DLQ ÷ horas totais × 100."
+            includes={[
+              "Identificação por tag, por tipo do card ou por ambos (coluna “Identificado por”)",
+              "Somente cards concluídos no período selecionado",
+              "Horas = horas apontadas no YouTrack no card",
+            ]}
+            excludes={["Itens arquivados", "Cards sem qualquer marcação de DeadLetter"]}
+            reading="Quanto menor, melhor. Acima de 10% do volume ou do esforço indica retrabalho operacional relevante e merece plano de ação."
+          />
+
 
         </SlideShell>
       ),
