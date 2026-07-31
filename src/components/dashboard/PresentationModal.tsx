@@ -299,6 +299,18 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
               </div>
             </div>
           )}
+          <MetricInfo
+            what="Cards tratados como DeadLetter (DLQ) — itens que falharam no processamento e caíram na fila de reprocessamento."
+            formula="Itens DLQ = cards com tag OU tipo contendo “DeadLetter/DLQ”. % do volume = itens DLQ ÷ total de cards concluídos × 100. % do esforço = horas DLQ ÷ horas totais × 100."
+            includes={[
+              "Identificação por tag, por tipo do card ou por ambos (coluna “Identificado por”)",
+              "Somente cards concluídos no período selecionado",
+              "Horas = horas apontadas no YouTrack no card",
+            ]}
+            excludes={["Itens arquivados", "Cards sem qualquer marcação de DeadLetter"]}
+            reading="Quanto menor, melhor. Acima de 10% do volume ou do esforço indica retrabalho operacional relevante e merece plano de ação."
+          />
+
 
         </SlideShell>
       ),
