@@ -196,6 +196,7 @@ const Index = () => {
         onOpenChange={setPresentationOpen}
         tasks={rawTasks}
         monthLabel={currentMonthLabel}
+        periodKey={selectedMonth}
         selectedSquads={selectedSquads}
       />
 
