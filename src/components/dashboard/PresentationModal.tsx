@@ -64,9 +64,40 @@ function SlideShell({
   );
 }
 
+function MetricInfo({
+  what, formula, includes, excludes, reading,
+}: { what: string; formula: string; includes: string[]; excludes: string[]; reading: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Info className="h-3.5 w-3.5 text-primary" />
+        <p className="text-xs font-semibold">Como o indicador é calculado</p>
+      </div>
+      <p className="text-xs text-muted-foreground">{what}</p>
+      <p className="text-xs font-mono bg-card border border-border rounded px-3 py-2 leading-relaxed">{formula}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <p className="text-[11px] font-semibold text-[hsl(160,84%,39%)] mb-1">Considera</p>
+          <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-0.5">
+            {includes.map(i => <li key={i}>{i}</li>)}
+          </ul>
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold text-destructive mb-1">Não considera</p>
+          <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-0.5">
+            {excludes.map(i => <li key={i}>{i}</li>)}
+          </ul>
+        </div>
+      </div>
+      <p className="text-[11px] text-muted-foreground"><span className="font-semibold text-foreground">Como ler: </span>{reading}</p>
+    </div>
+  );
+}
+
 function EmptyState({ text }: { text: string }) {
   return <p className="text-xs text-muted-foreground text-center py-12">{text}</p>;
 }
+
 
 export function PresentationModal({ open, onOpenChange, tasks, monthLabel, periodKey, selectedSquads }: Props) {
   const [slide, setSlide] = useState(0);
