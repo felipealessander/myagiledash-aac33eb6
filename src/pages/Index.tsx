@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogOut, Gauge, RotateCcw, GitCompare } from "lucide-react";
+import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogOut, Gauge, RotateCcw, GitCompare, MonitorPlay } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AgileMetricsComparisonChart } from "@/components/dashboard/AgileMetricsComparisonChart";
 import { ReworkComparisonChart } from "@/components/dashboard/ReworkComparisonChart";
@@ -26,7 +26,9 @@ import { P85BySquadTrendChart } from "@/components/dashboard/P85BySquadTrendChar
 import { YouTrackSyncDialog } from "@/components/dashboard/YouTrackSyncDialog";
 import { AIInsightsWidget } from "@/components/dashboard/AIInsightsWidget";
 import { ClientHoursWidget } from "@/components/dashboard/ClientHoursWidget";
+import { PresentationModal } from "@/components/dashboard/PresentationModal";
 import { useDashboardData } from "@/hooks/useDashboardData";
+
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
@@ -38,11 +40,13 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { approved, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  const { months, selectedMonth, setSelectedMonth, dashboardData, unfilteredDashboardData, allTeams, loading, refetchMonths, selectedSquads, setSelectedSquads, monthlyTrend, isYearView } = useDashboardData();
+  const { months, selectedMonth, setSelectedMonth, dashboardData, unfilteredDashboardData, allTeams, loading, refetchMonths, selectedSquads, setSelectedSquads, monthlyTrend, isYearView, rawTasks } = useDashboardData();
+  const [presentationOpen, setPresentationOpen] = useState(false);
   const isComparing = selectedSquads.length >= 2;
   const toggleSquad = (name: string) => {
     setSelectedSquads(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]);
   };
+
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -135,6 +139,17 @@ const Index = () => {
             <LastSyncBadge />
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
             <YouTrackSyncDialog onImported={refetchMonths} />
+            <Button
+              size="sm"
+              variant="secondary"
+              className="gap-1.5 text-xs"
+              onClick={() => setPresentationOpen(true)}
+              disabled={loading || rawTasks.length === 0}
+            >
+              <MonitorPlay className="h-3.5 w-3.5" />
+              Show Results
+            </Button>
+
             <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
               <LogOut className="h-3.5 w-3.5" />
               Sair
@@ -175,6 +190,16 @@ const Index = () => {
           </div>
         </div>
       </header>
+
+      <PresentationModal
+        open={presentationOpen}
+        onOpenChange={setPresentationOpen}
+        tasks={rawTasks}
+        monthLabel={currentMonthLabel}
+        selectedSquads={selectedSquads}
+      />
+
+
 
       {loading ? (
         <div className="flex items-center justify-center h-96">

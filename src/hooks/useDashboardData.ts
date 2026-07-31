@@ -698,5 +698,8 @@ export function useDashboardData() {
     setSelectedSquads,
     monthlyTrend,
     isYearView,
+    // Raw (unfiltered) task rows for the presentation module
+    rawTasks: dbTasks ?? [],
   };
 }
+
