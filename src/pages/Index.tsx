@@ -139,6 +139,17 @@ const Index = () => {
             <LastSyncBadge />
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
             <YouTrackSyncDialog onImported={refetchMonths} />
+            <Button
+              size="sm"
+              variant="secondary"
+              className="gap-1.5 text-xs"
+              onClick={() => setPresentationOpen(true)}
+              disabled={loading || rawTasks.length === 0}
+            >
+              <MonitorPlay className="h-3.5 w-3.5" />
+              Show Results
+            </Button>
+
             <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
               <LogOut className="h-3.5 w-3.5" />
               Sair
