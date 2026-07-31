@@ -110,18 +110,27 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, selec
     {
       key: "mttr",
       node: (
-        <SlideShell icon={Timer} title="MTTR — Tempo Médio de Resolução" subtitle="Incidentes: abertura → resolução, descontando tempo interrompido (horas)">
+        <SlideShell icon={Timer} title="MTTR — Tempo Médio de Resolução" subtitle="Incidentes: abertura → resolução, descontando tempo interrompido (horas). DeadLetter contabilizado à parte.">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard label="Mediana" value={`${mttr.overall.median}h`} />
             <StatCard label="Média" value={`${mttr.overall.avg}h`} />
             <StatCard label="P85" value={`${mttr.overall.p85}h`} tone="warn" />
             <StatCard label="Em aberto" value={`${mttr.openIncidents}`} hint="Sem data de resolução" tone={mttr.openIncidents > 0 ? "bad" : "good"} />
           </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-xs font-semibold mb-3">DeadLetter (DLQ) — contabilizado à parte</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="MTTR DLQ (mediana)" value={`${mttr.deadLetter.median}h`} />
+              <StatCard label="Média DLQ" value={`${mttr.deadLetter.avg}h`} />
+              <StatCard label="Resolvidos DLQ" value={`${mttr.resolvedDeadLetterIncidents}`} />
+              <StatCard label="Em aberto DLQ" value={`${mttr.openDeadLetterIncidents}`} tone={mttr.openDeadLetterIncidents > 0 ? "bad" : "good"} />
+            </div>
+          </div>
           {mttr.bySquad.length === 0 ? (
             <EmptyState text="Nenhum incidente resolvido no período selecionado." />
           ) : (
             <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs font-semibold mb-3">MTTR por time (horas)</p>
+              <p className="text-xs font-semibold mb-3">MTTR por time (horas) — sem DeadLetter</p>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={mttr.bySquad} margin={{ top: 5, right: 24, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={grid} />
@@ -136,6 +145,7 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, selec
             </div>
           )}
         </SlideShell>
+
       ),
     },
     {

@@ -114,29 +114,43 @@ function statsFrom(key: string, values: number[]): DistributionStat {
  * MTTR — Mean Time To Repair, in HOURS.
  * Only incidents that were resolved. Clock = created_at_yt -> resolved_at,
  * discounting time parked in "Interrompido".
+ * DeadLetter (DLQ) incidents are counted SEPARATELY (deadLetter stat) and are
+ * NOT part of the overall / bySquad MTTR.
  */
 export interface MttrResult {
   overall: DistributionStat;
   bySquad: DistributionStat[];
   resolvedIncidents: number;
   openIncidents: number;
+  /** DLQ incidents measured apart from the regular MTTR. */
+  deadLetter: DistributionStat;
+  resolvedDeadLetterIncidents: number;
+  openDeadLetterIncidents: number;
 }
 
 export function computeMttr(tasks: PresentationTask[]): MttrResult {
   const incidents = tasks.filter(isIncident);
   const perSquad = new Map<string, number[]>();
   const all: number[] = [];
+  const dlqValues: number[] = [];
   let openIncidents = 0;
+  let openDeadLetterIncidents = 0;
 
   for (const t of incidents) {
+    const dlq = isDeadLetter(t);
     const created = ts(t.created_at_yt);
     const resolved = ts(t.resolved_at);
     if (created === null || resolved === null) {
-      openIncidents++;
+      if (dlq) openDeadLetterIncidents++;
+      else openIncidents++;
       continue;
     }
     const interruptedHours = Math.max(0, (t.interrupted_minutes || 0) / 60);
     const hours = Math.max(0, (resolved - created) / MS_PER_HOUR - interruptedHours);
+    if (dlq) {
+      dlqValues.push(hours);
+      continue;
+    }
     all.push(hours);
     const s = squadOf(t);
     if (!perSquad.has(s)) perSquad.set(s, []);
@@ -150,8 +164,12 @@ export function computeMttr(tasks: PresentationTask[]): MttrResult {
       .sort((a, b) => b.median - a.median),
     resolvedIncidents: all.length,
     openIncidents,
+    deadLetter: statsFrom("DeadLetter", dlqValues),
+    resolvedDeadLetterIncidents: dlqValues.length,
+    openDeadLetterIncidents,
   };
 }
+
 
 /**
  * Cycle Time in DAYS: started_at -> resolved_at, discounting "Interrompido".

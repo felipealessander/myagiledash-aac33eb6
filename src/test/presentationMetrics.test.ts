@@ -74,7 +74,23 @@ describe("computeMttr", () => {
     ]);
     expect(r.overall.avg).toBe(0);
   });
+
+  it("counts DeadLetter incidents apart from the regular MTTR", () => {
+    const r = computeMttr([
+      t({ category: "Incidente", created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-01T10:00:00Z" }),
+      t({ category: "Incidente", tags: ["DeadLetter"], created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-03T00:00:00Z" }),
+      t({ category: "Incidente", tags: ["dead-letter"], created_at_yt: "2026-05-01T00:00:00Z", resolved_at: null }),
+    ]);
+    expect(r.resolvedIncidents).toBe(1);
+    expect(r.overall.avg).toBe(10);
+    expect(r.openIncidents).toBe(0);
+    expect(r.resolvedDeadLetterIncidents).toBe(1);
+    expect(r.deadLetter.avg).toBe(48);
+    expect(r.openDeadLetterIncidents).toBe(1);
+    expect(r.bySquad.every(s => s.count === 1)).toBe(true);
+  });
 });
+
 
 describe("computeCycleTime", () => {
   it("measures started -> resolved in days", () => {
