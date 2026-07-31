@@ -178,7 +178,18 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
               </ResponsiveContainer>
             </div>
           )}
+          <MetricInfo
+            what="Tempo de ciclo de uma entrega: do início do desenvolvimento até a conclusão do card."
+            formula="Cycle Time (dias) = (data de conclusão − data de início) − tempo interrompido (bloqueios/impedimentos). Mediana, média e P85 calculados sobre os cards concluídos no período."
+            includes={[
+              "Cards concluídos no período selecionado, com data de início e de conclusão",
+              "Times selecionados no filtro (ou todos, se nenhum for selecionado)",
+            ]}
+            excludes={["Épicos", "Squad Qualidade", "Itens arquivados", "Cards sem data de início ou conclusão (contados em “sem datas”)"]}
+            reading="A mediana representa o comportamento típico; o P85 mostra o compromisso realista de prazo (85% das entregas saem em até esse tempo)."
+          />
         </SlideShell>
+
       ),
     },
     {
