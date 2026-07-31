@@ -146,7 +146,23 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
               </ResponsiveContainer>
             </div>
           )}
+          <MetricInfo
+            what="MTTR (Mean Time To Repair): tempo entre a abertura e a resolução de um incidente."
+            formula="MTTR (horas) = (data de resolução − data de abertura no YouTrack) − tempo interrompido. Reportamos mediana, média e P85 dos incidentes resolvidos no período."
+            includes={[
+              "Somente cards da categoria Incidente",
+              "Incidentes concluídos dentro do mês/período selecionado, independentemente da data de abertura",
+              "Times selecionados no filtro (ou todos, se nenhum for selecionado)",
+            ]}
+            excludes={[
+              "Itens arquivados",
+              "Incidentes DeadLetter (DLQ) — apurados em bloco separado",
+              "Incidentes ainda em aberto (exibidos como “Em aberto”)",
+            ]}
+            reading="Quanto menor, melhor. A mediana evita distorção por outliers; o P85 mostra o pior cenário típico de atendimento."
+          />
         </SlideShell>
+
 
       ),
     },
