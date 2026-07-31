@@ -74,17 +74,36 @@ export function squadOf(t: PresentationTask): string {
 }
 
 /**
+ * True when the task was CONCLUDED (resolved) inside the given period.
+ * periodKey accepts "YYYY-MM" or "year-YYYY". Empty/undefined = no period filter.
+ */
+export function isResolvedInPeriod(t: PresentationTask, periodKey?: string): boolean {
+  const resolved = ts(t.resolved_at);
+  if (resolved === null) return false;
+  if (!periodKey) return true;
+  const d = new Date(resolved);
+  const year = String(d.getFullYear());
+  const month = `${year}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  if (periodKey.startsWith("year-")) return year === periodKey.replace("year-", "");
+  return month === periodKey;
+}
+
+/**
  * Filter the raw task list for the presentation:
  *  - drops archived tasks
  *  - keeps only the selected squads (empty selection = all squads)
+ *  - keeps only tasks CONCLUDED within the selected period (regardless of when
+ *    they were created)
  */
 export function filterPresentationTasks(
   tasks: PresentationTask[],
   selectedSquads: string[] = [],
+  periodKey?: string,
 ): PresentationTask[] {
   return tasks.filter(t => {
     if (isArchived(t.status)) return false;
     if (selectedSquads.length > 0 && !selectedSquads.includes(squadOf(t))) return false;
+    if (!isResolvedInPeriod(t, periodKey)) return false;
     return true;
   });
 }
