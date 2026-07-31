@@ -46,15 +46,15 @@ describe("percentile", () => {
 });
 
 describe("computeMttr", () => {
-  it("measures created -> resolved in hours, discounting interruptions", () => {
+  it("measures created -> resolved in days, discounting interruptions", () => {
     const tasks = [
       t({ category: "Incidente", created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-01T10:00:00Z" }),
       t({ category: "Incidente", created_at_yt: "2026-05-02T00:00:00Z", resolved_at: "2026-05-02T06:00:00Z", interrupted_minutes: 120 }),
     ];
     const r = computeMttr(tasks);
     expect(r.resolvedIncidents).toBe(2);
-    expect(r.overall.avg).toBe(7); // (10 + 4) / 2
-    expect(r.overall.p85).toBe(10);
+    expect(r.overall.avg).toBe(0.3); // (10h + 4h) / 2 = 7h ≈ 0.3d
+    expect(r.overall.p85).toBe(0.4);
   });
 
   it("counts unresolved incidents separately and ignores non-incidents", () => {
