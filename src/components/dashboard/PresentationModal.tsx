@@ -13,6 +13,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   tasks: PresentationTask[];
   monthLabel: string;
+  /** "YYYY-MM" or "year-YYYY" — only tasks concluded in this period are counted. */
+  periodKey?: string;
   selectedSquads: string[];
 }
 

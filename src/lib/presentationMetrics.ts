@@ -397,10 +397,10 @@ export interface PresentationMetrics {
 
 export function buildPresentationMetrics(
   rawTasks: PresentationTask[],
-  options: { monthLabel: string; selectedSquads?: string[] },
+  options: { monthLabel: string; selectedSquads?: string[]; periodKey?: string },
 ): PresentationMetrics {
   const selectedSquads = options.selectedSquads ?? [];
-  const tasks = filterPresentationTasks(rawTasks, selectedSquads);
+  const tasks = filterPresentationTasks(rawTasks, selectedSquads, options.periodKey);
   const squads =
     selectedSquads.length > 0
       ? selectedSquads.slice().sort()
