@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, Cell, LabelList,
 } from "recharts";
-import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation } from "lucide-react";
+import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation, Info } from "lucide-react";
 import { buildPresentationMetrics, type PresentationTask } from "@/lib/presentationMetrics";
 
 interface Props {
