@@ -146,7 +146,6 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, selec
           )}
         </SlideShell>
 
-        </SlideShell>
       ),
     },
     {
