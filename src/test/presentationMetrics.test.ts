@@ -190,3 +190,23 @@ describe("buildPresentationMetrics", () => {
     expect(m.timeLogging.overallPct).toBe(100);
   });
 });
+
+describe("period filter (concluídos no mês)", () => {
+  const base = { status: "Done", squad: "A", spent_minutes: 60 };
+  const tasks = [
+    { ...base, task_code: "IN", created_at_yt: "2026-04-20T10:00:00Z", started_at: "2026-04-20T10:00:00Z", resolved_at: "2026-05-10T10:00:00Z" },
+    { ...base, task_code: "OUT", created_at_yt: "2026-05-02T10:00:00Z", started_at: "2026-05-02T10:00:00Z", resolved_at: "2026-06-02T10:00:00Z" },
+    { ...base, task_code: "OPEN", created_at_yt: "2026-05-03T10:00:00Z", started_at: "2026-05-03T10:00:00Z", resolved_at: null },
+  ];
+
+  it("keeps only tasks resolved inside the month, regardless of creation", () => {
+    const m = buildPresentationMetrics(tasks, { monthLabel: "Maio", periodKey: "2026-05" });
+    expect(m.taskCount).toBe(1);
+    expect(m.cycleTime.consideredTasks).toBe(1);
+  });
+
+  it("supports year view", () => {
+    const m = buildPresentationMetrics(tasks, { monthLabel: "2026", periodKey: "year-2026" });
+    expect(m.taskCount).toBe(2);
+  });
+});
