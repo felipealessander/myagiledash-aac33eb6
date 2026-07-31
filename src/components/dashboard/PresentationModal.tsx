@@ -3,9 +3,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Legend, Cell, LabelList,
+  Legend, Cell, LabelList, ScatterChart, Scatter, ZAxis, ReferenceLine,
 } from "recharts";
-import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation, Info, Hourglass } from "lucide-react";
+import { ChevronLeft, ChevronRight, Timer, Gauge, Clock, PackageX, Presentation, Info, Hourglass, ScatterChart as ScatterIcon } from "lucide-react";
 import { buildPresentationMetrics, type PresentationTask } from "@/lib/presentationMetrics";
 
 interface Props {
