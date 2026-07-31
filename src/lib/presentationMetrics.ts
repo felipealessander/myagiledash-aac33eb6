@@ -149,6 +149,20 @@ export interface EffortComparisonRow {
   count: number;
 }
 
+export interface IncidentScatterPoint {
+  code: string;
+  title: string;
+  squad: string;
+  client: string;
+  /** Tempo decorrido até a resolução, em dias corridos. */
+  days: number;
+  /** Horas apontadas no card. */
+  hours: number;
+  /** Ponto fora das cercas (IQR) de tempo e/ou esforço. */
+  outlier: boolean;
+  outlierReason: string;
+}
+
 export interface MttrResult {
   overall: DistributionStat;
   bySquad: DistributionStat[];
@@ -168,7 +182,21 @@ export interface MttrResult {
   flowEfficiencyPct: number;
   /** Comparativo tempo decorrido × esforço apontado, por time. */
   effortComparison: EffortComparisonRow[];
+  /** Um ponto por incidente resolvido (sem DLQ): MTTR em dias × horas apontadas. */
+  scatter: IncidentScatterPoint[];
+  /** Cercas superiores (IQR) usadas para marcar outliers. */
+  outlierThresholds: { days: number; hours: number };
 }
+
+/** Cerca superior de Tukey: Q3 + 1.5 × IQR. Retorna Infinity com amostra insuficiente. */
+export function upperFence(values: number[]): number {
+  if (values.length < 4) return Infinity;
+  const sorted = [...values].sort((a, b) => a - b);
+  const q1 = percentile(sorted, 25);
+  const q3 = percentile(sorted, 75);
+  return round1(q3 + 1.5 * (q3 - q1));
+}
+
 
 function buildComparisonRow(key: string, days: number[], hours: number[]): EffortComparisonRow {
   const elapsed = statsFrom(key, days).median;
