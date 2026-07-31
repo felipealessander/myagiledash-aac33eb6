@@ -115,6 +115,29 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
   const loggingColor = (pct: number) =>
     pct >= 90 ? "hsl(160, 84%, 39%)" : pct >= 75 ? "hsl(38, 92%, 50%)" : "hsl(0, 72%, 51%)";
 
+  const SQUAD_COLORS = [
+    "hsl(var(--primary))", "hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)",
+    "hsl(260, 70%, 60%)", "hsl(190, 80%, 45%)", "hsl(320, 65%, 55%)", "hsl(20, 80%, 55%)",
+  ];
+  const squadColor = (i: number) => SQUAD_COLORS[i % SQUAD_COLORS.length];
+
+  const scatterBySquad = useMemo(() => {
+    const map = new Map<string, typeof mttr.scatter>();
+    for (const p of mttr.scatter) {
+      if (!map.has(p.squad)) map.set(p.squad, []);
+      map.get(p.squad)!.push(p);
+    }
+    return Array.from(map.entries())
+      .map(([squad, points]) => ({ squad, points }))
+      .sort((a, b) => b.points.length - a.points.length);
+  }, [mttr.scatter]);
+
+  const outliers = useMemo(
+    () => mttr.scatter.filter(p => p.outlier).sort((a, b) => b.days - a.days),
+    [mttr.scatter],
+  );
+
+
   const slides = [
     {
       key: "capa",
