@@ -96,7 +96,7 @@ describe("computeMttr", () => {
       t({ squad: "B", category: "Incidente", spent_minutes: 0, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-03T00:00:00Z" }),
       t({ squad: "A", category: "Incidente", tags: ["DeadLetter"], spent_minutes: 600, created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-02T00:00:00Z" }),
     ]);
-    expect(r.effort.median).toBe(0);
+    expect(r.effort.median).toBe(4); // [0h, 4h] -> nearest-rank
     expect(r.totalEffortHours).toBe(4); // DLQ effort stays out
     expect(r.incidentsWithoutEffort).toBe(1);
 
