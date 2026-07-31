@@ -13,6 +13,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   tasks: PresentationTask[];
   monthLabel: string;
+  /** "YYYY-MM" or "year-YYYY" — only tasks concluded in this period are counted. */
+  periodKey?: string;
   selectedSquads: string[];
 }
 
@@ -66,12 +68,12 @@ function EmptyState({ text }: { text: string }) {
   return <p className="text-xs text-muted-foreground text-center py-12">{text}</p>;
 }
 
-export function PresentationModal({ open, onOpenChange, tasks, monthLabel, selectedSquads }: Props) {
+export function PresentationModal({ open, onOpenChange, tasks, monthLabel, periodKey, selectedSquads }: Props) {
   const [slide, setSlide] = useState(0);
 
   const metrics = useMemo(
-    () => buildPresentationMetrics(tasks, { monthLabel, selectedSquads }),
-    [tasks, monthLabel, selectedSquads],
+    () => buildPresentationMetrics(tasks, { monthLabel, selectedSquads, periodKey }),
+    [tasks, monthLabel, selectedSquads, periodKey],
   );
 
   useEffect(() => { if (open) setSlide(0); }, [open]);
