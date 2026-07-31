@@ -376,16 +376,17 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
                       }}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    {scatterBySquad.map((s, i) => (
-                      <Scatter key={s.squad} name={s.squad} data={s.points} fill={squadColor(i)}>
+                    {scatterBySquad.map(s => (
+                      <Scatter key={s.squad} name={s.squad} data={s.points} fill={squadColor(s.squad)}>
                         {s.points.map(pt => (
                           <Cell
                             key={pt.code}
-                            fill={pt.outlier ? "hsl(0, 72%, 51%)" : squadColor(i)}
+                            fill={pt.outlier ? "hsl(0, 72%, 51%)" : squadColor(s.squad)}
                           />
                         ))}
                       </Scatter>
                     ))}
+
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>
