@@ -115,11 +115,34 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
   const loggingColor = (pct: number) =>
     pct >= 90 ? "hsl(160, 84%, 39%)" : pct >= 75 ? "hsl(38, 92%, 50%)" : "hsl(0, 72%, 51%)";
 
-  const SQUAD_COLORS = [
-    "hsl(var(--primary))", "hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)",
+  const SQUAD_COLOR_MAP: Record<string, string> = {
+    "Golden Gate": "hsl(217, 91%, 60%)",
+    "Code418": "hsl(160, 84%, 39%)",
+    "Tesseract": "hsl(38, 92%, 50%)",
+    "Code402": "hsl(260, 70%, 60%)",
+    "JRE": "hsl(190, 80%, 45%)",
+    "TheBigBang": "hsl(320, 65%, 55%)",
+    "Qualidade": "hsl(20, 80%, 55%)",
+    "Sem Squad": "hsl(0, 0%, 60%)",
+  };
+  const EXTENDED_PALETTE = [
+    "hsl(217, 91%, 60%)", "hsl(160, 84%, 39%)", "hsl(38, 92%, 50%)",
     "hsl(260, 70%, 60%)", "hsl(190, 80%, 45%)", "hsl(320, 65%, 55%)", "hsl(20, 80%, 55%)",
+    "hsl(120, 60%, 45%)", "hsl(300, 70%, 55%)", "hsl(45, 90%, 50%)",
+    "hsl(170, 80%, 45%)", "hsl(250, 75%, 60%)", "hsl(10, 85%, 55%)",
+    "hsl(140, 70%, 45%)", "hsl(280, 70%, 55%)", "hsl(55, 90%, 50%)",
+    "hsl(200, 85%, 50%)", "hsl(340, 75%, 55%)", "hsl(80, 70%, 45%)", "hsl(230, 80%, 55%)",
   ];
-  const squadColor = (i: number) => SQUAD_COLORS[i % SQUAD_COLORS.length];
+  function hashString(str: string): number {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
+    return Math.abs(h);
+  }
+  function squadColor(squad: string): string {
+    if (SQUAD_COLOR_MAP[squad]) return SQUAD_COLOR_MAP[squad];
+    return EXTENDED_PALETTE[hashString(squad) % EXTENDED_PALETTE.length];
+  }
+
 
   const scatterBySquad = useMemo(() => {
     const map = new Map<string, typeof mttr.scatter>();
@@ -353,16 +376,17 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
                       }}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    {scatterBySquad.map((s, i) => (
-                      <Scatter key={s.squad} name={s.squad} data={s.points} fill={squadColor(i)}>
+                    {scatterBySquad.map(s => (
+                      <Scatter key={s.squad} name={s.squad} data={s.points} fill={squadColor(s.squad)}>
                         {s.points.map(pt => (
                           <Cell
                             key={pt.code}
-                            fill={pt.outlier ? "hsl(0, 72%, 51%)" : squadColor(i)}
+                            fill={pt.outlier ? "hsl(0, 72%, 51%)" : squadColor(s.squad)}
                           />
                         ))}
                       </Scatter>
                     ))}
+
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>
