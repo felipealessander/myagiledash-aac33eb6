@@ -286,6 +286,19 @@ export interface DlqRow {
   hours: number;
 }
 
+export type DlqMatch = "tag" | "tipo" | "tag+tipo";
+
+export interface DlqItem {
+  taskCode: string;
+  title: string;
+  squad: string;
+  client: string;
+  status: string;
+  hours: number;
+  matchedBy: DlqMatch;
+  matchedValue: string;
+}
+
 export interface DlqResult {
   count: number;
   hours: number;
@@ -293,6 +306,17 @@ export interface DlqResult {
   hoursSharePct: number;
   bySquad: DlqRow[];
   byClient: DlqRow[];
+  items: DlqItem[];
+}
+
+/** How a task was identified as DeadLetter (null when it is not). */
+export function deadLetterMatch(t: PresentationTask): { matchedBy: DlqMatch; matchedValue: string } | null {
+  const tag = (t.tags || []).find(tag => DEADLETTER_RE.test(tag || ""));
+  const byType = !!(t.category && DEADLETTER_RE.test(t.category));
+  if (tag && byType) return { matchedBy: "tag+tipo", matchedValue: `${t.category} · ${tag}` };
+  if (tag) return { matchedBy: "tag", matchedValue: tag };
+  if (byType) return { matchedBy: "tipo", matchedValue: t.category as string };
+  return null;
 }
 
 export function computeDlq(tasks: PresentationTask[]): DlqResult {
@@ -314,6 +338,22 @@ export function computeDlq(tasks: PresentationTask[]): DlqResult {
       .sort((a, b) => b.count - a.count || b.hours - a.hours);
   };
 
+  const items: DlqItem[] = dlq
+    .map(t => {
+      const m = deadLetterMatch(t)!;
+      return {
+        taskCode: t.task_code || "—",
+        title: t.title || "(sem título)",
+        squad: squadOf(t),
+        client: t.client || "Sem Cliente",
+        status: t.status || "—",
+        hours: round1((t.spent_minutes || 0) / 60),
+        matchedBy: m.matchedBy,
+        matchedValue: m.matchedValue,
+      };
+    })
+    .sort((a, b) => b.hours - a.hours || a.taskCode.localeCompare(b.taskCode));
+
   return {
     count: dlq.length,
     hours: round1(dlqHours),
@@ -321,8 +361,10 @@ export function computeDlq(tasks: PresentationTask[]): DlqResult {
     hoursSharePct: totalHours > 0 ? round1((dlqHours / totalHours) * 100) : 0,
     bySquad: group(squadOf),
     byClient: group(t => t.client || "Sem Cliente"),
+    items,
   };
 }
+
 
 export interface PresentationMetrics {
   monthLabel: string;
