@@ -78,9 +78,9 @@ export function squadOf(t: PresentationTask): string {
  * periodKey accepts "YYYY-MM" or "year-YYYY". Empty/undefined = no period filter.
  */
 export function isResolvedInPeriod(t: PresentationTask, periodKey?: string): boolean {
+  if (!periodKey) return true;
   const resolved = ts(t.resolved_at);
   if (resolved === null) return false;
-  if (!periodKey) return true;
   const d = new Date(resolved);
   const year = String(d.getFullYear());
   const month = `${year}-${String(d.getMonth() + 1).padStart(2, "0")}`;
