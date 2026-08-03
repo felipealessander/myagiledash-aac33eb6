@@ -62,16 +62,19 @@ const Index = () => {
     setSelectedSquads(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]);
   };
 
-  // Cards de um mês específico (drill-down das comparações mensais)
+  // Cards de um mês específico ("*" = todo o período ativo) — drill-down
   const drillTasks = useMemo(() => {
     if (!drill) return [];
+    const allowed = drill.month === "*" ? new Set(period.months) : new Set([drill.month]);
     return (trendTasks as any[]).filter(t => {
       const month = monthByReportId.get(t.report_id || "");
-      if (month !== drill.month) return false;
+      if (!month || !allowed.has(month)) return false;
       if (selectedSquads.length > 0 && !selectedSquads.includes(t.squad || "Sem Squad")) return false;
-      return !(t.status || "").toLowerCase().includes("arquivado");
+      if ((t.status || "").toLowerCase().includes("arquivado")) return false;
+      return drill.filter ? drill.filter(t) : true;
     });
-  }, [drill, trendTasks, monthByReportId, selectedSquads]);
+  }, [drill, trendTasks, monthByReportId, selectedSquads, period.months]);
+
 
   const buildMetric = (key: string, label: string, pick: (p: (typeof comparisonPoints)[number]) => number, unit?: string, lowerIsBetter?: boolean): ComparisonMetric => ({
     key, label, unit, lowerIsBetter,
