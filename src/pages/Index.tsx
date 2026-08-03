@@ -54,7 +54,7 @@ const Index = () => {
     monthlyTrend, isYearView, rawTasks, trendTasks, monthByReportId,
   } = useDashboardData();
   const [presentationOpen, setPresentationOpen] = useState(false);
-  const [drill, setDrill] = useState<{ month: string; label: string } | null>(null);
+  const [drill, setDrill] = useState<{ month: string; label: string; filter?: (t: any) => boolean } | null>(null);
   const isComparing = selectedSquads.length >= 2;
   const hasSquadFilter = selectedSquads.length > 0;
   const isMultiMonth = period.months.length > 1;
