@@ -280,10 +280,11 @@ const Index = () => {
 
           {/* ═══════ PRODUTO ═══════ */}
           <section>
-            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
               <BarChart3 className="h-4 w-4" />
-              Produto
+              Visão Geral
             </h2>
+            <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
             <div className="space-y-4">
               {/* KPIs de Produto */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -292,6 +293,24 @@ const Index = () => {
                 <KpiCard title="Total de Tarefas" value={totalTasks} subtitle="Itens rastreados no período" icon={ListTodo} variant="default" delay={100} />
                 <KpiCard title="Desvio de Estimativa" value={`${Number(overrun) >= 0 ? "+" : ""}${overrun}%`} subtitle="Horas além do estimado" icon={AlertTriangle} variant="warning" delay={150} />
               </div>
+
+              {/* Comparação mensal — visão geral */}
+              {isMultiMonth && (
+                <MonthComparisonPanel
+                  title="Comparação mensal — visão geral"
+                  months={period.months}
+                  metrics={[
+                    buildMetric("hours", "Horas realizadas", p => p.totalSpentHours, "h"),
+                    buildMetric("tasks", "Tarefas", p => p.totalTasks),
+                    buildMetric("throughput", "Entregas", p => p.throughput),
+                    buildMetric("lead", "Lead Time médio", p => p.leadTimeAvg, "d", true),
+                    buildMetric("cycle", "Cycle Time médio", p => p.cycleTimeAvg, "d", true),
+                  ]}
+                  onDrill={(month) => setDrill({ month, label: comparisonPoints.find(p => p.month === month)?.label ?? month })}
+                />
+              )}
+
+
 
               {/* Visão por Time */}
               <div>
