@@ -42,12 +42,61 @@ export function isDeadLetterTask(t: FlowTask): boolean {
   return !!t.category && DEADLETTER_RE.test(t.category);
 }
 
-/** Incidente, Bug e DeadLetter são tratados como "incidentes" e saem dos indicadores gerais. */
-export function isIncidentTask(t: FlowTask): boolean {
-  if (isDeadLetterTask(t)) return true;
+/** Bug puro (tipo Bug no YouTrack). */
+export function isBugTask(t: FlowTask): boolean {
   const c = (t.category || "").toLowerCase().trim();
-  return c === "incidente" || c === "incidentes" || c === "bug" || c === "bugs";
+  return c === "bug" || c === "bugs";
 }
+
+/** Incidente "puro" (tipo Incidente) — nunca entra nos indicadores gerais. */
+export function isPureIncidentTask(t: FlowTask): boolean {
+  const c = (t.category || "").toLowerCase().trim();
+  return c === "incidente" || c === "incidentes";
+}
+
+/** Incidente, Bug e DeadLetter compõem a visão separada de incidentes. */
+export function isIncidentTask(t: FlowTask): boolean {
+  return isDeadLetterTask(t) || isBugTask(t) || isPureIncidentTask(t);
+}
+
+export type FlowTaskClass = "regular" | "bug" | "deadletter" | "incident";
+
+/**
+ * Classificação principal de um card (para rótulos e detalhamento).
+ * DeadLetter tem precedência sobre Bug quando o card possui as duas marcações.
+ */
+export function classifyFlowTask(t: FlowTask): FlowTaskClass {
+  if (isDeadLetterTask(t)) return "deadletter";
+  if (isBugTask(t)) return "bug";
+  if (isPureIncidentTask(t)) return "incident";
+  return "regular";
+}
+
+export interface FlowInclusion {
+  /** Incluir cards do tipo Bug nos indicadores gerais. Padrão: false. */
+  bugs?: boolean;
+  /** Incluir cards DeadLetter nos indicadores gerais. Padrão: false. */
+  deadletters?: boolean;
+}
+
+export const DEFAULT_INCLUSION: Required<FlowInclusion> = { bugs: false, deadletters: false };
+
+/**
+ * Um card entra nos indicadores gerais quando é uma demanda regular ou quando
+ * a opção correspondente à sua classificação está ativa. Cards com mais de uma
+ * classificação entram uma única vez (a deduplicação por task_code garante isso).
+ * Incidentes "puros" nunca entram.
+ */
+export function isIncludedInGeneral(t: FlowTask, inclusion: FlowInclusion = {}): boolean {
+  const includeBugs = inclusion.bugs ?? DEFAULT_INCLUSION.bugs;
+  const includeDl = inclusion.deadletters ?? DEFAULT_INCLUSION.deadletters;
+  if (isPureIncidentTask(t) && !isDeadLetterTask(t) && !isBugTask(t)) return false;
+  const dl = isDeadLetterTask(t);
+  const bug = isBugTask(t);
+  if (!dl && !bug) return true;
+  return (dl && includeDl) || (bug && includeBugs);
+}
+
 
 export function isEpicTask(t: FlowTask): boolean {
   const c = (t.category || "").toLowerCase().trim();
