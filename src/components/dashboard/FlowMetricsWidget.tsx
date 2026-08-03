@@ -35,11 +35,13 @@ const SEGMENT_LABEL: Record<SegmentKey, string> = {
   incidents: "Incidentes",
 };
 
-const SEGMENT_HINT: Record<SegmentKey, string> = {
-  general: "Demandas e itens sob demanda concluídos no mês. Incidentes, Bugs e DeadLetter ficam fora.",
-  onDemand: "Somente itens com cliente vinculado, concluídos no mês (exclui incidentes).",
-  incidents: "Incidente, Bug e DeadLetter — contabilizados separadamente dos indicadores gerais.",
+const TYPE_LABEL: Record<string, string> = {
+  regular: "Demanda regular",
+  bug: "Bug",
+  deadletter: "DeadLetter",
+  incident: "Incidente",
 };
+
 
 const tooltipStyle = {
   backgroundColor: "hsl(var(--card))",
@@ -117,9 +119,23 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
     [selection, monthOnly],
   );
 
+  const [includeBugs, setIncludeBugs] = useState(false);
+  const [includeDeadletters, setIncludeDeadletters] = useState(false);
+  const inclusion = useMemo(
+    () => ({ bugs: includeBugs, deadletters: includeDeadletters }),
+    [includeBugs, includeDeadletters],
+  );
+
+  const includedTypesLabel = useMemo(() => {
+    const parts = ["Demandas regulares"];
+    if (includeBugs) parts.push("Bugs");
+    if (includeDeadletters) parts.push("DeadLetters");
+    return parts.join(" + ");
+  }, [includeBugs, includeDeadletters]);
+
   const comparison = useMemo(
-    () => buildFlowComparison(tasksByPeriod, periods, { squads: selectedSquads }),
-    [tasksByPeriod, periods, selectedSquads],
+    () => buildFlowComparison(tasksByPeriod, periods, { squads: selectedSquads, inclusion }),
+    [tasksByPeriod, periods, selectedSquads, inclusion],
   );
 
   const history = useMemo(
@@ -127,9 +143,9 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
       buildOnDemandHistory(
         tasksByPeriod,
         historyValues.map(v => ({ value: v, label: monthOnly.find(m => m.value === v)?.label || v })),
-        { squads: selectedSquads },
+        { squads: selectedSquads, inclusion },
       ),
-    [tasksByPeriod, historyValues, monthOnly, selectedSquads],
+    [tasksByPeriod, historyValues, monthOnly, selectedSquads, inclusion],
   );
 
   const toggleMonth = (value: string) => {
@@ -143,6 +159,16 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
     setManualSelection([...current, value]);
   };
 
+  const segmentHint = (segment: SegmentKey) => {
+    if (segment === "incidents")
+      return "Incidente, Bug e DeadLetter — visão separada e sempre completa, independente das opções de inclusão acima.";
+    const base =
+      segment === "general"
+        ? "Itens concluídos no mês (data de fechamento)."
+        : "Itens com cliente vinculado concluídos no mês (data de fechamento).";
+    return `${base} Participando do cálculo: ${includedTypesLabel}. Incidentes nunca entram.`;
+  };
+
   const renderSegment = (segment: SegmentKey) => {
     const chart = (metric: FlowMetricKind) => toComparisonChartData(comparison, segment, metric);
     const latest = comparison[comparison.length - 1]?.metrics[segment];
@@ -151,8 +177,9 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
       <div className="space-y-4">
         <p className="text-xs text-muted-foreground flex items-start gap-2">
           <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-          {SEGMENT_HINT[segment]}
+          {segmentHint(segment)}
         </p>
+
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
@@ -167,6 +194,18 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
             </div>
           ))}
         </div>
+
+        {latest && (
+          <div className="flex flex-wrap gap-1.5">
+            {(Object.keys(TYPE_LABEL) as (keyof typeof TYPE_LABEL)[])
+              .filter(k => (latest.byType[k as keyof typeof latest.byType] ?? 0) > 0)
+              .map(k => (
+                <Badge key={k} variant="outline" className="text-[10px]">
+                  {TYPE_LABEL[k]}: {latest.byType[k as keyof typeof latest.byType]}
+                </Badge>
+              ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <MetricComparisonChart title="Lead Time — Criação → Conclusão" icon={Clock} data={chart("lead")} />
@@ -227,6 +266,45 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
             </ResponsiveContainer>
           </div>
         )}
+
+        {latest && latest.items.length > 0 && (
+          <details className="rounded-lg border border-border p-3">
+            <summary className="text-xs font-semibold cursor-pointer">
+              Detalhamento dos cards — {comparison[comparison.length - 1]?.label} ({latest.items.length})
+            </summary>
+            <div className="mt-3 max-h-72 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-card">
+                  <tr className="text-muted-foreground border-b border-border">
+                    <th className="text-left py-2 font-medium">Card</th>
+                    <th className="text-left py-2 font-medium">Tipo</th>
+                    <th className="text-left py-2 font-medium">Squad</th>
+                    <th className="text-left py-2 font-medium">Cliente</th>
+                    <th className="text-right py-2 font-medium">Lead</th>
+                    <th className="text-right py-2 font-medium">Cycle</th>
+                    <th className="text-right py-2 font-medium">Horas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {latest.items.map(item => (
+                    <tr key={item.code} className="border-b border-border/50">
+                      <td className="py-1.5 pr-2">
+                        <span className="font-medium">{item.code}</span>
+                        {item.title && <span className="text-muted-foreground"> · {item.title}</span>}
+                      </td>
+                      <td className="py-1.5">{TYPE_LABEL[item.type]}</td>
+                      <td className="py-1.5">{item.squad}</td>
+                      <td className="py-1.5">{item.client}</td>
+                      <td className="py-1.5 text-right">{item.lead === null ? "—" : `${item.lead}d`}</td>
+                      <td className="py-1.5 text-right">{item.cycle === null ? "—" : `${item.cycle}d`}</td>
+                      <td className="py-1.5 text-right">{item.hours.toFixed(1)}h</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
       </div>
     );
   };
@@ -244,38 +322,49 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
               Dias úteis, considerando o mês de conclusão. Incidentes têm visão própria.
             </p>
           </div>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-2">
-                <CalendarRange className="h-3.5 w-3.5" />
-                Comparar meses ({selection.length}/3)
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-56 p-2 max-h-72 overflow-y-auto">
-              <p className="text-[11px] text-muted-foreground px-1 pb-2">Selecione até 3 meses</p>
-              {monthOnly.map(m => {
-                const checked = selection.includes(m.value);
-                return (
-                  <label
-                    key={m.value}
-                    className="flex items-center gap-2 px-1 py-1.5 rounded hover:bg-muted cursor-pointer text-xs"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      disabled={!checked && selection.length >= 3}
-                      onCheckedChange={() => toggleMonth(m.value)}
-                    />
-                    {m.label}
-                  </label>
-                );
-              })}
-            </PopoverContent>
-          </Popover>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-xs rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-muted">
+              <Checkbox checked={includeBugs} onCheckedChange={v => setIncludeBugs(v === true)} />
+              Incluir Bugs
+            </label>
+            <label className="flex items-center gap-2 text-xs rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-muted">
+              <Checkbox checked={includeDeadletters} onCheckedChange={v => setIncludeDeadletters(v === true)} />
+              Incluir DeadLetters
+            </label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-2">
+                  <CalendarRange className="h-3.5 w-3.5" />
+                  Comparar meses ({selection.length}/3)
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-56 p-2 max-h-72 overflow-y-auto">
+                <p className="text-[11px] text-muted-foreground px-1 pb-2">Selecione até 3 meses</p>
+                {monthOnly.map(m => {
+                  const checked = selection.includes(m.value);
+                  return (
+                    <label
+                      key={m.value}
+                      className="flex items-center gap-2 px-1 py-1.5 rounded hover:bg-muted cursor-pointer text-xs"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        disabled={!checked && selection.length >= 3}
+                        onCheckedChange={() => toggleMonth(m.value)}
+                      />
+                      {m.label}
+                    </label>
+                  );
+                })}
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1.5 pt-2">
           {periods.map(p => (
             <Badge key={p.value} variant="secondary" className="text-[10px]">{p.label}</Badge>
           ))}
+          <Badge variant="default" className="text-[10px]">No cálculo: {includedTypesLabel}</Badge>
           {selectedSquads.length > 0 && (
             <Badge variant="outline" className="text-[10px]">Squads: {selectedSquads.join(", ")}</Badge>
           )}

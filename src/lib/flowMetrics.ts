@@ -42,12 +42,66 @@ export function isDeadLetterTask(t: FlowTask): boolean {
   return !!t.category && DEADLETTER_RE.test(t.category);
 }
 
-/** Incidente, Bug e DeadLetter são tratados como "incidentes" e saem dos indicadores gerais. */
-export function isIncidentTask(t: FlowTask): boolean {
-  if (isDeadLetterTask(t)) return true;
+/** Bug puro (tipo Bug no YouTrack). */
+export function isBugTask(t: FlowTask): boolean {
   const c = (t.category || "").toLowerCase().trim();
-  return c === "incidente" || c === "incidentes" || c === "bug" || c === "bugs";
+  return c === "bug" || c === "bugs";
 }
+
+/** Incidente "puro" (tipo Incidente) — nunca entra nos indicadores gerais. */
+export function isPureIncidentTask(t: FlowTask): boolean {
+  const c = (t.category || "").toLowerCase().trim();
+  return c === "incidente" || c === "incidentes";
+}
+
+/** Incidente, Bug e DeadLetter compõem a visão separada de incidentes. */
+export function isIncidentTask(t: FlowTask): boolean {
+  return isDeadLetterTask(t) || isBugTask(t) || isPureIncidentTask(t);
+}
+
+export type FlowTaskClass = "regular" | "bug" | "deadletter" | "incident";
+
+/**
+ * Classificação principal de um card (para rótulos e detalhamento).
+ * DeadLetter tem precedência sobre Bug quando o card possui as duas marcações.
+ */
+export function classifyFlowTask(t: FlowTask): FlowTaskClass {
+  if (isDeadLetterTask(t)) return "deadletter";
+  if (isBugTask(t)) return "bug";
+  if (isPureIncidentTask(t)) return "incident";
+  return "regular";
+}
+
+export interface FlowInclusion {
+  /** Incluir cards do tipo Bug nos indicadores gerais. Padrão: false. */
+  bugs?: boolean;
+  /** Incluir cards DeadLetter nos indicadores gerais. Padrão: false. */
+  deadletters?: boolean;
+}
+
+export const DEFAULT_INCLUSION: Required<FlowInclusion> = { bugs: false, deadletters: false };
+
+/**
+ * Um card entra nos indicadores gerais quando é uma demanda regular ou quando
+ * a opção correspondente à sua classificação está ativa. Cards com mais de uma
+ * classificação entram uma única vez (a deduplicação por task_code garante isso).
+ * Incidentes "puros" nunca entram.
+ */
+export function isIncludedInGeneral(t: FlowTask, inclusion: FlowInclusion = {}): boolean {
+  const includeBugs = inclusion.bugs ?? DEFAULT_INCLUSION.bugs;
+  const includeDl = inclusion.deadletters ?? DEFAULT_INCLUSION.deadletters;
+  switch (classifyFlowTask(t)) {
+    case "regular":
+      return true;
+    case "deadletter":
+      return includeDl;
+    case "bug":
+      return includeBugs;
+    default:
+      return false;
+  }
+}
+
 
 export function isEpicTask(t: FlowTask): boolean {
   const c = (t.category || "").toLowerCase().trim();
@@ -181,6 +235,8 @@ export interface FlowFilters {
   periodKey?: string | null;
   squads?: string[];
   clients?: string[];
+  /** Tipos opcionalmente incluídos nos indicadores gerais (Bug / DeadLetter). */
+  inclusion?: FlowInclusion;
 }
 
 /** Aplica os filtros globais do portal (arquivados, squad, cliente). */
@@ -204,6 +260,19 @@ export function segmentOf(t: FlowTask): FlowSegmentKey {
 
 /* ────────────────────────── cálculo ────────────────────────── */
 
+export interface FlowItemDetail {
+  code: string;
+  title: string;
+  squad: string;
+  client: string;
+  type: FlowTaskClass;
+  category: string;
+  resolvedAt: string | null;
+  lead: number | null;
+  cycle: number | null;
+  hours: number;
+}
+
 export interface FlowSegmentResult {
   key: FlowSegmentKey;
   /** Itens concluídos no período (base dos indicadores). */
@@ -216,10 +285,14 @@ export interface FlowSegmentResult {
   missingCreated: number;
   /** Itens reabertos / com retorno de QA. */
   reopened: number;
+  /** Concluídos por classificação de card. */
+  byType: Record<FlowTaskClass, number>;
   leadTime: FlowStats;
   cycleTime: FlowStats;
   bySquad: { squad: string; count: number; leadMedian: number; leadP85: number; cycleMedian: number; cycleP85: number }[];
   byClient: { client: string; count: number; leadMedian: number; cycleMedian: number }[];
+  /** Cards que compõem o resultado (concluídos no período). */
+  items: FlowItemDetail[];
 }
 
 function emptySegment(key: FlowSegmentKey): FlowSegmentResult {
@@ -230,10 +303,12 @@ function emptySegment(key: FlowSegmentKey): FlowSegmentResult {
     missingStart: 0,
     missingCreated: 0,
     reopened: 0,
+    byType: { regular: 0, bug: 0, deadletter: 0, incident: 0 },
     leadTime: { ...EMPTY_STATS },
     cycleTime: { ...EMPTY_STATS },
     bySquad: [],
     byClient: [],
+    items: [],
   };
 }
 
@@ -283,7 +358,24 @@ export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey
     cEntry.count += 1;
     if (lead !== null) cEntry.lead.push(lead);
     if (cycle !== null) cEntry.cycle.push(cycle);
+
+    const type = classifyFlowTask(t);
+    result.byType[type] += 1;
+    result.items.push({
+      code: t.task_code,
+      title: t.title || "",
+      squad: sq,
+      client: cl,
+      type,
+      category: t.category || "—",
+      resolvedAt: t.resolved_at ?? null,
+      lead,
+      cycle,
+      hours: Math.round(((t.spent_minutes || 0) / 60) * 10) / 10,
+    });
   }
+
+  result.items.sort((a, b) => (b.lead ?? -1) - (a.lead ?? -1) || a.code.localeCompare(b.code));
 
   result.leadTime = computeStats(leadValues);
   result.cycleTime = computeStats(cycleValues);
@@ -313,13 +405,15 @@ export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey
 
 export interface FlowMetricsResult {
   periodKey: string | null;
-  /** Indicadores gerais: demandas comuns + sob demanda, SEM incidentes. */
+  /** Configuração de inclusão aplicada a este resultado. */
+  inclusion: Required<FlowInclusion>;
+  /** Indicadores gerais: demandas regulares (+ Bug/DeadLetter quando incluídos). */
   general: FlowSegmentResult;
   /** Somente demandas sem cliente vinculado. */
   demands: FlowSegmentResult;
   /** Somente itens com cliente vinculado (Sob Demanda). */
   onDemand: FlowSegmentResult;
-  /** Incidente, Bug e DeadLetter — contabilizados à parte. */
+  /** Incidente, Bug e DeadLetter — contabilizados à parte, sempre completos. */
   incidents: FlowSegmentResult;
   squads: string[];
   clients: string[];
@@ -328,17 +422,20 @@ export interface FlowMetricsResult {
 export function buildFlowMetrics(rawTasks: FlowTask[], filters: FlowFilters = {}): FlowMetricsResult {
   const tasks = applyFlowFilters(rawTasks, filters);
   const periodKey = filters.periodKey ?? null;
+  const inclusion: Required<FlowInclusion> = {
+    bugs: filters.inclusion?.bugs ?? DEFAULT_INCLUSION.bugs,
+    deadletters: filters.inclusion?.deadletters ?? DEFAULT_INCLUSION.deadletters,
+  };
 
   const incidentTasks = tasks.filter(isIncidentTask);
-  const nonIncident = tasks.filter(t => !isIncidentTask(t));
-  const onDemandTasks = nonIncident.filter(isOnDemandTask);
-  const plainTasks = nonIncident.filter(t => !isOnDemandTask(t));
-
-  const general = computeSegment(nonIncident, "demands", periodKey);
+  const generalTasks = tasks.filter(t => isIncludedInGeneral(t, inclusion));
+  const onDemandTasks = generalTasks.filter(isOnDemandTask);
+  const plainTasks = generalTasks.filter(t => !isOnDemandTask(t));
 
   return {
     periodKey,
-    general,
+    inclusion,
+    general: computeSegment(generalTasks, "demands", periodKey),
     demands: computeSegment(plainTasks, "demands", periodKey),
     onDemand: computeSegment(onDemandTasks, "onDemand", periodKey),
     incidents: computeSegment(incidentTasks, "incidents", periodKey),
@@ -431,7 +528,7 @@ export function buildOnDemandHistory(
       const metrics = buildFlowMetrics(tasksByPeriod[p.value] || [], { ...filters, periodKey: p.value });
       const seg = metrics.onDemand;
       const monthTasks = applyFlowFilters(tasksByPeriod[p.value] || [], filters)
-        .filter(t => !isIncidentTask(t) && isOnDemandTask(t) && matchesPeriod(t.resolved_at, p.value));
+        .filter(t => isFlowEligible(t) && isIncludedInGeneral(t, metrics.inclusion) && isOnDemandTask(t) && matchesPeriod(t.resolved_at, p.value));
       return {
         periodKey: p.value,
         label: p.label,
