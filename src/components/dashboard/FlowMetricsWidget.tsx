@@ -43,6 +43,9 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 
+const fmtDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
+
 const tooltipStyle = {
   backgroundColor: "hsl(var(--card))",
   border: "1px solid hsl(var(--border))",
