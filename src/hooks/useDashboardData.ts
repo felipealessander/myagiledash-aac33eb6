@@ -5,6 +5,7 @@ import { getSafeErrorMessage } from "@/lib/safeError";
 import type { TeamData, CategoryName, BillingData, BillingStatus } from "@/data/dashboardData";
 import { getTeamColor } from "@/data/dashboardData";
 import * as staticData from "@/data/dashboardData";
+import { businessDaysBetween, computeStats, isFlowEligible, isIncidentTask, percentile } from "@/lib/flowMetrics";
 
 export interface MonthOption {
   value: string;
@@ -194,56 +195,49 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     return resolved === selectedMonth;
   };
 
-  // Agile metrics - Lead Time: created_at_yt -> resolved_at, descontando tempo em "Interrompido"
-  // Exclude "Qualidade" squad from agile metrics as their workflow differs significantly
-  const isQualidadeSquad = (t: DBTask) => (t.squad || '').toLowerCase().trim() === 'qualidade';
-  const interruptedDays = (t: DBTask) => Math.max(0, (t.interrupted_minutes || 0) / (60 * 24));
-  const resolvedTasks = tasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && !isQualidadeSquad(t) && isResolvedInPeriod(t.resolved_at!));
-  const leadTimes = resolvedTasks.map(t => {
-    const created = new Date(t.created_at_yt!).getTime();
-    const resolved = new Date(t.resolved_at!).getTime();
-    const raw = (resolved - created) / (1000 * 60 * 60 * 24);
-    return Math.max(0, raw - interruptedDays(t));
-  });
+  // Agile metrics — regras unificadas em src/lib/flowMetrics.ts:
+  // Lead Time  = criação -> conclusão, em dias úteis.
+  // Cycle Time = início do dev (ou criação, na ausência dele) -> conclusão, em dias úteis.
+  // Incidentes (Incidente, Bug e DeadLetter), Épicos e a squad "Qualidade" ficam fora.
+  const flowBase = tasks.filter(t => isFlowEligible(t) && !isIncidentTask(t));
+  const businessDaysFrom = (from: string | null | undefined, to: string) => {
+    if (!from) return null;
+    const a = new Date(from);
+    const b = new Date(to);
+    if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
+    return businessDaysBetween(a, b);
+  };
+  const stats = (values: number[]) => {
+    const s = computeStats(values);
+    return { avg: s.avg, median: s.median, p85: s.p85 };
+  };
+
+  const resolvedTasks = flowBase.filter(t => t.created_at_yt && t.resolved_at && isResolvedInPeriod(t.resolved_at!));
+  const leadTimes = resolvedTasks
+    .map(t => businessDaysFrom(t.created_at_yt, t.resolved_at!))
+    .filter((v): v is number => v !== null);
 
   // Lead time by squad
   const leadTimeBySquad: { squad: string; avg: number; median: number; p85: number; count: number }[] = [];
   for (const squadName of squadNames) {
     const squadResolved = resolvedTasks.filter(t => (t.squad || "Sem Squad") === squadName);
-    if (squadResolved.length === 0) {
-      leadTimeBySquad.push({ squad: squadName, avg: 0, median: 0, p85: 0, count: 0 });
-      continue;
-    }
-    const times = squadResolved.map(t => {
-      const c = new Date(t.created_at_yt!).getTime();
-      const r = new Date(t.resolved_at!).getTime();
-      return Math.max(0, (r - c) / (1000 * 60 * 60 * 24) - interruptedDays(t));
-    }).sort((a, b) => a - b);
-    const avg = times.reduce((s, v) => s + v, 0) / times.length;
-    const median = times[Math.floor(times.length / 2)];
-    const p85 = times[Math.floor(times.length * 0.85)];
-    leadTimeBySquad.push({ squad: squadName, avg: Math.round(avg * 10) / 10, median: Math.round(median * 10) / 10, p85: Math.round(p85 * 10) / 10, count: squadResolved.length });
+    const times = squadResolved
+      .map(t => businessDaysFrom(t.created_at_yt, t.resolved_at!))
+      .filter((v): v is number => v !== null);
+    leadTimeBySquad.push({ squad: squadName, ...stats(times), count: squadResolved.length });
   }
 
-  // Cycle Time by squad (started_at -> resolved_at, descontando tempo em "Interrompido")
-  const cycleTimeTasks = tasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && !isQualidadeSquad(t) && isResolvedInPeriod(t.resolved_at!));
+  // Cycle Time by squad
+  const cycleTimeTasks = flowBase.filter(t => t.resolved_at && (t.started_at || t.created_at_yt) && isResolvedInPeriod(t.resolved_at!));
   const cycleTimeBySquad: { squad: string; avg: number; median: number; p85: number; count: number }[] = [];
   for (const squadName of squadNames) {
     const squadCycle = cycleTimeTasks.filter(t => (t.squad || "Sem Squad") === squadName);
-    if (squadCycle.length === 0) {
-      cycleTimeBySquad.push({ squad: squadName, avg: 0, median: 0, p85: 0, count: 0 });
-      continue;
-    }
-    const times = squadCycle.map(t => {
-      const started = new Date(t.started_at!).getTime();
-      const resolved = new Date(t.resolved_at!).getTime();
-      return Math.max(0, (resolved - started) / (1000 * 60 * 60 * 24) - interruptedDays(t));
-    }).sort((a, b) => a - b);
-    const avg = times.reduce((s, v) => s + v, 0) / times.length;
-    const median = times[Math.floor(times.length / 2)];
-    const p85 = times[Math.floor(times.length * 0.85)];
-    cycleTimeBySquad.push({ squad: squadName, avg: Math.round(avg * 10) / 10, median: Math.round(median * 10) / 10, p85: Math.round(p85 * 10) / 10, count: squadCycle.length });
+    const times = squadCycle
+      .map(t => businessDaysFrom(t.started_at || t.created_at_yt, t.resolved_at!))
+      .filter((v): v is number => v !== null);
+    cycleTimeBySquad.push({ squad: squadName, ...stats(times), count: squadCycle.length });
   }
+
 
   // Throughput by week
   const throughputByWeek: { week: string; count: number }[] = [];
@@ -259,9 +253,9 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     .sort(([a], [b]) => a.localeCompare(b))
     .forEach(([week, count]) => throughputByWeek.push({ week, count }));
 
-  // WIP: tasks with status not done/delivered (exclude Qualidade squad)
+  // WIP: tasks with status not done/delivered (exclude Qualidade squad e incidentes)
   const wipBySquad: { squad: string; wip: number }[] = squadNames.filter(n => n.toLowerCase() !== 'qualidade').map(name => {
-    const squadTasks = squadTasksMap.get(name) || [];
+    const squadTasks = (squadTasksMap.get(name) || []).filter(t => !isIncidentTask(t));
     const openTasks = squadTasks.filter(t => !isDoneStatus(t.status));
     return { squad: name, wip: openTasks.length };
   });
@@ -408,30 +402,33 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       const reworkCount = mTasks.filter(t => (t.qa_returns || 0) > 0 || (t.corrections_count || 0) > 0).length;
       const reworkRate = totalTasks > 0 ? Math.round((reworkCount / totalTasks) * 1000) / 10 : 0;
 
-      // Only count tasks resolved within THIS month for lead/cycle time
+      // Only count tasks resolved within THIS month for lead/cycle time.
+      // Mesmas regras dos widgets: dias úteis, sem incidentes/épicos/Qualidade.
       const isResolvedInThisMonth = (ra: string) => ra.slice(0, 7) === m.value;
-      // Exclude Qualidade squad from agile metrics in trend
-      const isQualidade = (t: DBTask) => (t.squad || '').toLowerCase().trim() === 'qualidade';
-      const interruptedDaysT = (t: DBTask) => Math.max(0, (t.interrupted_minutes || 0) / (60 * 24));
-      const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
-      const leadTimes = resolved.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.created_at_yt!).getTime()) / 86400000 - interruptedDaysT(t)));
-      const leadTimeAvg = leadTimes.length > 0 ? Math.round((leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length) * 10) / 10 : 0;
-
-      const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
-      const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000 - interruptedDaysT(t)));
-      const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
-
-      // Stats helpers
-      const pct = (arr: number[], p: number) => {
-        if (arr.length === 0) return 0;
-        const sorted = [...arr].sort((a, b) => a - b);
-        const idx = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
-        return Math.round(sorted[idx] * 10) / 10;
+      const bDays = (from: string | null | undefined, to: string) => {
+        if (!from) return null;
+        const a = new Date(from);
+        const b = new Date(to);
+        if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
+        return businessDaysBetween(a, b);
       };
-      const leadTimeMedianGlobal = pct(leadTimes, 0.5);
-      const leadTimeP85Global = pct(leadTimes, 0.85);
-      const cycleTimeMedianGlobal = pct(cycleTimes, 0.5);
-      const cycleTimeP85Global = pct(cycleTimes, 0.85);
+      const flowMonthTasks = mTasks.filter(t => isFlowEligible(t) && !isIncidentTask(t) && t.resolved_at && isResolvedInThisMonth(t.resolved_at!));
+
+      const resolved = flowMonthTasks.filter(t => t.created_at_yt);
+      const leadTimes = resolved.map(t => bDays(t.created_at_yt, t.resolved_at!) ?? 0);
+      const leadStats = computeStats(leadTimes);
+      const leadTimeAvg = leadStats.avg;
+
+      const cycled = flowMonthTasks.filter(t => t.started_at || t.created_at_yt);
+      const cycleTimes = cycled.map(t => bDays(t.started_at || t.created_at_yt, t.resolved_at!) ?? 0);
+      const cycleStats = computeStats(cycleTimes);
+      const cycleTimeAvg = cycleStats.avg;
+
+      const pct = (arr: number[], p: number) => Math.round(percentile(arr, p) * 10) / 10;
+      const leadTimeMedianGlobal = leadStats.median;
+      const leadTimeP85Global = leadStats.p85;
+      const cycleTimeMedianGlobal = cycleStats.median;
+      const cycleTimeP85Global = cycleStats.p85;
 
       // Per-squad lead/cycle stats
       const groupBySquad = (items: { squad: string | null; v: number }[]) => {
@@ -450,6 +447,7 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       };
       const leadTimeBySquad = groupBySquad(resolved.map((t, i) => ({ squad: t.squad, v: leadTimes[i] })));
       const cycleTimeBySquad = groupBySquad(cycled.map((t, i) => ({ squad: t.squad, v: cycleTimes[i] })));
+
 
       // Throughput: count tasks with done status (aligned with CFD definition)
       const throughput = mTasks.filter(t => isDoneStatus(t.status)).length;

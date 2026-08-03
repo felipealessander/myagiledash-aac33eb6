@@ -22,7 +22,7 @@ export function CycleTimeChart({ data }: CycleTimeChartProps) {
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <Gauge className="h-4 w-4 text-muted-foreground" />
-          Cycle Time por Squad (dias)
+          Cycle Time por Squad (dias úteis, sem incidentes)
         </CardTitle>
       </CardHeader>
       <CardContent>

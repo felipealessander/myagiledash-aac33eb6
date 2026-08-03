@@ -15,6 +15,7 @@ import { BillingOverviewChart } from "@/components/dashboard/BillingOverviewChar
 import { BillingComparisonChart } from "@/components/dashboard/BillingComparisonChart";
 import { BillingKpiCards } from "@/components/dashboard/BillingKpiCards";
 import { LeadTimeChart } from "@/components/dashboard/LeadTimeChart";
+import { FlowMetricsWidget } from "@/components/dashboard/FlowMetricsWidget";
 import { ThroughputChart } from "@/components/dashboard/ThroughputChart";
 import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
@@ -361,7 +362,7 @@ const Index = () => {
                   <KpiCard
                     title="Lead Time Médio"
                     value={`${leadTimeBySquad.length > 0 ? (leadTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, leadTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d`}
-                    subtitle={`P85: ${leadTimeBySquad.length > 0 ? (leadTimeBySquad.reduce((s, l) => s + l.p85 * l.count, 0) / Math.max(1, leadTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d · Criação → Conclusão`}
+                    subtitle={`P85: ${leadTimeBySquad.length > 0 ? (leadTimeBySquad.reduce((s, l) => s + l.p85 * l.count, 0) / Math.max(1, leadTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d · Criação → Conclusão (dias úteis, sem incidentes)`}
                     icon={Clock}
                     variant="info"
                     delay={0}
@@ -369,7 +370,7 @@ const Index = () => {
                   <KpiCard
                     title="Cycle Time Médio"
                     value={`${cycleTimeBySquad.length > 0 ? (cycleTimeBySquad.reduce((s, l) => s + l.avg * l.count, 0) / Math.max(1, cycleTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d`}
-                    subtitle={`P85: ${cycleTimeBySquad.length > 0 ? (cycleTimeBySquad.reduce((s, l) => s + l.p85 * l.count, 0) / Math.max(1, cycleTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d · Em andamento → Conclusão`}
+                    subtitle={`P85: ${cycleTimeBySquad.length > 0 ? (cycleTimeBySquad.reduce((s, l) => s + l.p85 * l.count, 0) / Math.max(1, cycleTimeBySquad.reduce((s, l) => s + l.count, 0))).toFixed(1) : "0"}d · Início do dev → Conclusão (dias úteis, sem incidentes)`}
                     icon={Gauge}
                     variant="primary"
                     delay={50}
@@ -391,6 +392,7 @@ const Index = () => {
                     delay={150}
                   />
                 </div>
+                <FlowMetricsWidget months={months} selectedMonth={selectedMonth} selectedSquads={selectedSquads} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <LeadTimeChart data={leadTimeBySquad || []} />
                   <CycleTimeChart data={cycleTimeBySquad || []} />

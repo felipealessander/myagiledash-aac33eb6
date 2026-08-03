@@ -22,7 +22,7 @@ export function LeadTimeChart({ data }: LeadTimeChartProps) {
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <Timer className="h-4 w-4 text-muted-foreground" />
-          Lead Time por Squad (dias)
+          Lead Time por Squad (dias úteis, sem incidentes)
         </CardTitle>
       </CardHeader>
       <CardContent>

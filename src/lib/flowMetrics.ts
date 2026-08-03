@@ -1,0 +1,448 @@
+/**
+ * Flow metrics (Lead Time / Cycle Time) — Portal de Indicadores Attus.
+ *
+ * Regras de negócio acordadas:
+ *  - Lead Time  = dias ÚTEIS entre a criação (created_at_yt) e a conclusão (resolved_at).
+ *  - Cycle Time = dias ÚTEIS entre o início efetivo do desenvolvimento (started_at) e a
+ *                 conclusão. Quando não há data de início, usa-se a data de criação.
+ *  - Itens arquivados nunca entram em nenhum cálculo.
+ *  - Épicos e a squad "Qualidade" ficam fora das métricas de fluxo.
+ *  - Incidentes (Incidente, Bug e DeadLetter) NÃO entram nos indicadores gerais:
+ *    são contabilizados e apresentados separadamente.
+ *  - "Sob Demanda" = itens com cliente vinculado.
+ *  - Um mesmo task_code aparece uma única vez (mudanças de status/squad não duplicam).
+ *  - O período é definido pela data de CONCLUSÃO (independente de quando foi aberto).
+ */
+
+export interface FlowTask {
+  task_code: string;
+  title?: string | null;
+  category?: string | null;
+  squad?: string | null;
+  status?: string | null;
+  client?: string | null;
+  created_at_yt?: string | null;
+  started_at?: string | null;
+  resolved_at?: string | null;
+  tags?: string[] | null;
+  spent_minutes?: number | null;
+  interrupted_minutes?: number | null;
+}
+
+export type FlowSegmentKey = "demands" | "onDemand" | "incidents";
+
+const DEADLETTER_RE = /dead[\s-]?letter/i;
+
+export function isArchivedTask(t: FlowTask): boolean {
+  return (t.status || "").toLowerCase().trim().includes("arquivado");
+}
+
+export function isDeadLetterTask(t: FlowTask): boolean {
+  if ((t.tags || []).some(tag => DEADLETTER_RE.test(tag || ""))) return true;
+  return !!t.category && DEADLETTER_RE.test(t.category);
+}
+
+/** Incidente, Bug e DeadLetter são tratados como "incidentes" e saem dos indicadores gerais. */
+export function isIncidentTask(t: FlowTask): boolean {
+  if (isDeadLetterTask(t)) return true;
+  const c = (t.category || "").toLowerCase().trim();
+  return c === "incidente" || c === "incidentes" || c === "bug" || c === "bugs";
+}
+
+export function isEpicTask(t: FlowTask): boolean {
+  const c = (t.category || "").toLowerCase().trim();
+  return c === "épico" || c === "epico" || c === "epic";
+}
+
+export function isQualidadeSquad(t: FlowTask): boolean {
+  return (t.squad || "").toLowerCase().trim() === "qualidade";
+}
+
+/** "Sob Demanda" = item com cliente vinculado. */
+export function isOnDemandTask(t: FlowTask): boolean {
+  return !!(t.client && t.client.trim().length > 0);
+}
+
+export function squadOf(t: FlowTask): string {
+  return t.squad && t.squad.trim() ? t.squad.trim() : "Sem Squad";
+}
+
+export function clientOf(t: FlowTask): string {
+  return t.client && t.client.trim() ? t.client.trim() : "Sem Cliente";
+}
+
+/* ────────────────────────── datas ────────────────────────── */
+
+function parseDate(value?: string | null): Date | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function startOfUtcDay(d: Date): number {
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+const DAY_MS = 86400000;
+
+/**
+ * Dias úteis (seg–sex) decorridos entre duas datas.
+ * Mesmo dia = 0. Sexta → segunda = 1. Datas retroativas (fim < início) = 0.
+ */
+export function businessDaysBetween(start: Date, end: Date): number {
+  let cursor = startOfUtcDay(start);
+  const target = startOfUtcDay(end);
+  if (target <= cursor) return 0;
+  let days = 0;
+  while (cursor < target) {
+    cursor += DAY_MS;
+    const dow = new Date(cursor).getUTCDay();
+    if (dow !== 0 && dow !== 6) days += 1;
+  }
+  return days;
+}
+
+/** Mês "YYYY-MM" de uma data ISO. */
+export function monthKeyOf(iso?: string | null): string | null {
+  if (!iso) return null;
+  const d = parseDate(iso);
+  return d ? iso.slice(0, 7) : null;
+}
+
+/** Aceita "YYYY-MM" ou "year-YYYY". Sem chave = aceita tudo. */
+export function matchesPeriod(iso: string | null | undefined, periodKey?: string | null): boolean {
+  if (!periodKey) return true;
+  const key = monthKeyOf(iso);
+  if (!key) return false;
+  if (periodKey.startsWith("year-")) return key.startsWith(periodKey.replace("year-", ""));
+  return key === periodKey;
+}
+
+/* ────────────────────────── estatística ────────────────────────── */
+
+/** Percentil por nearest-rank sobre a lista ordenada. */
+export function percentile(values: number[], p: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1));
+  return sorted[idx];
+}
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+export interface FlowStats {
+  count: number;
+  avg: number;
+  median: number;
+  p85: number;
+  min: number;
+  max: number;
+}
+
+export const EMPTY_STATS: FlowStats = { count: 0, avg: 0, median: 0, p85: 0, min: 0, max: 0 };
+
+export function computeStats(values: number[]): FlowStats {
+  if (values.length === 0) return { ...EMPTY_STATS };
+  const sorted = [...values].sort((a, b) => a - b);
+  const avg = sorted.reduce((s, v) => s + v, 0) / sorted.length;
+  return {
+    count: sorted.length,
+    avg: round1(avg),
+    median: round1(percentile(sorted, 0.5)),
+    p85: round1(percentile(sorted, 0.85)),
+    min: round1(sorted[0]),
+    max: round1(sorted[sorted.length - 1]),
+  };
+}
+
+/* ────────────────────────── normalização ────────────────────────── */
+
+/**
+ * Remove duplicidades de task_code (mudança de status, squad ou reimportação).
+ * Mantém o registro mais "completo": prioriza o que tem conclusão e, em empate,
+ * a conclusão/início mais recentes — refletindo o estado final do card.
+ */
+export function dedupeByTaskCode(tasks: FlowTask[]): FlowTask[] {
+  const score = (t: FlowTask) => {
+    const resolved = parseDate(t.resolved_at)?.getTime() ?? -1;
+    const started = parseDate(t.started_at)?.getTime() ?? -1;
+    return resolved * 10 + (started > 0 ? 1 : 0);
+  };
+  const map = new Map<string, FlowTask>();
+  for (const t of tasks) {
+    const key = t.task_code || `${t.title}-${t.created_at_yt}`;
+    const current = map.get(key);
+    if (!current || score(t) > score(current)) map.set(key, t);
+  }
+  return Array.from(map.values());
+}
+
+export interface FlowFilters {
+  periodKey?: string | null;
+  squads?: string[];
+  clients?: string[];
+}
+
+/** Aplica os filtros globais do portal (arquivados, squad, cliente). */
+export function applyFlowFilters(tasks: FlowTask[], filters: FlowFilters = {}): FlowTask[] {
+  const squads = filters.squads ?? [];
+  const clients = filters.clients ?? [];
+  return dedupeByTaskCode(tasks.filter(t => !isArchivedTask(t)))
+    .filter(t => (squads.length === 0 ? true : squads.includes(squadOf(t))))
+    .filter(t => (clients.length === 0 ? true : clients.includes(clientOf(t))));
+}
+
+/** Itens elegíveis a métricas de fluxo (fora: épicos e squad Qualidade). */
+export function isFlowEligible(t: FlowTask): boolean {
+  return !isEpicTask(t) && !isQualidadeSquad(t);
+}
+
+export function segmentOf(t: FlowTask): FlowSegmentKey {
+  if (isIncidentTask(t)) return "incidents";
+  return isOnDemandTask(t) ? "onDemand" : "demands";
+}
+
+/* ────────────────────────── cálculo ────────────────────────── */
+
+export interface FlowSegmentResult {
+  key: FlowSegmentKey;
+  /** Itens concluídos no período (base dos indicadores). */
+  completed: number;
+  /** Itens ainda abertos criados no período. */
+  open: number;
+  /** Concluídos sem data de início — Cycle Time usa a data de criação. */
+  missingStart: number;
+  /** Concluídos sem data de criação — ficam fora do Lead Time. */
+  missingCreated: number;
+  /** Itens reabertos / com retorno de QA. */
+  reopened: number;
+  leadTime: FlowStats;
+  cycleTime: FlowStats;
+  bySquad: { squad: string; count: number; leadMedian: number; leadP85: number; cycleMedian: number; cycleP85: number }[];
+  byClient: { client: string; count: number; leadMedian: number; cycleMedian: number }[];
+}
+
+function emptySegment(key: FlowSegmentKey): FlowSegmentResult {
+  return {
+    key,
+    completed: 0,
+    open: 0,
+    missingStart: 0,
+    missingCreated: 0,
+    reopened: 0,
+    leadTime: { ...EMPTY_STATS },
+    cycleTime: { ...EMPTY_STATS },
+    bySquad: [],
+    byClient: [],
+  };
+}
+
+function isReopened(t: FlowTask): boolean {
+  const tags = (t.tags || []).map(x => (x || "").toLowerCase());
+  return tags.some(x => x.includes("reabert") || x.includes("retorno") || x.includes("corrigir"));
+}
+
+export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey?: string | null): FlowSegmentResult {
+  const eligible = tasks.filter(isFlowEligible);
+  const result = emptySegment(key);
+
+  const completed = eligible.filter(t => t.resolved_at && matchesPeriod(t.resolved_at, periodKey));
+  result.completed = completed.length;
+  result.open = eligible.filter(t => !t.resolved_at && matchesPeriod(t.created_at_yt, periodKey)).length;
+  result.reopened = completed.filter(isReopened).length;
+
+  const leadValues: number[] = [];
+  const cycleValues: number[] = [];
+  const perSquad = new Map<string, { lead: number[]; cycle: number[]; count: number }>();
+  const perClient = new Map<string, { lead: number[]; cycle: number[]; count: number }>();
+
+  for (const t of completed) {
+    const resolved = parseDate(t.resolved_at)!;
+    const created = parseDate(t.created_at_yt);
+    const started = parseDate(t.started_at);
+    if (!started) result.missingStart += 1;
+    if (!created) result.missingCreated += 1;
+
+    const lead = created ? businessDaysBetween(created, resolved) : null;
+    const cycleStart = started ?? created;
+    const cycle = cycleStart ? businessDaysBetween(cycleStart, resolved) : null;
+
+    if (lead !== null) leadValues.push(lead);
+    if (cycle !== null) cycleValues.push(cycle);
+
+    const sq = squadOf(t);
+    if (!perSquad.has(sq)) perSquad.set(sq, { lead: [], cycle: [], count: 0 });
+    const sEntry = perSquad.get(sq)!;
+    sEntry.count += 1;
+    if (lead !== null) sEntry.lead.push(lead);
+    if (cycle !== null) sEntry.cycle.push(cycle);
+
+    const cl = clientOf(t);
+    if (!perClient.has(cl)) perClient.set(cl, { lead: [], cycle: [], count: 0 });
+    const cEntry = perClient.get(cl)!;
+    cEntry.count += 1;
+    if (lead !== null) cEntry.lead.push(lead);
+    if (cycle !== null) cEntry.cycle.push(cycle);
+  }
+
+  result.leadTime = computeStats(leadValues);
+  result.cycleTime = computeStats(cycleValues);
+
+  result.bySquad = Array.from(perSquad.entries())
+    .map(([squad, v]) => ({
+      squad,
+      count: v.count,
+      leadMedian: round1(percentile(v.lead, 0.5)),
+      leadP85: round1(percentile(v.lead, 0.85)),
+      cycleMedian: round1(percentile(v.cycle, 0.5)),
+      cycleP85: round1(percentile(v.cycle, 0.85)),
+    }))
+    .sort((a, b) => b.count - a.count || a.squad.localeCompare(b.squad));
+
+  result.byClient = Array.from(perClient.entries())
+    .map(([client, v]) => ({
+      client,
+      count: v.count,
+      leadMedian: round1(percentile(v.lead, 0.5)),
+      cycleMedian: round1(percentile(v.cycle, 0.5)),
+    }))
+    .sort((a, b) => b.count - a.count || a.client.localeCompare(b.client));
+
+  return result;
+}
+
+export interface FlowMetricsResult {
+  periodKey: string | null;
+  /** Indicadores gerais: demandas comuns + sob demanda, SEM incidentes. */
+  general: FlowSegmentResult;
+  /** Somente demandas sem cliente vinculado. */
+  demands: FlowSegmentResult;
+  /** Somente itens com cliente vinculado (Sob Demanda). */
+  onDemand: FlowSegmentResult;
+  /** Incidente, Bug e DeadLetter — contabilizados à parte. */
+  incidents: FlowSegmentResult;
+  squads: string[];
+  clients: string[];
+}
+
+export function buildFlowMetrics(rawTasks: FlowTask[], filters: FlowFilters = {}): FlowMetricsResult {
+  const tasks = applyFlowFilters(rawTasks, filters);
+  const periodKey = filters.periodKey ?? null;
+
+  const incidentTasks = tasks.filter(isIncidentTask);
+  const nonIncident = tasks.filter(t => !isIncidentTask(t));
+  const onDemandTasks = nonIncident.filter(isOnDemandTask);
+  const plainTasks = nonIncident.filter(t => !isOnDemandTask(t));
+
+  const general = computeSegment(nonIncident, "demands", periodKey);
+
+  return {
+    periodKey,
+    general,
+    demands: computeSegment(plainTasks, "demands", periodKey),
+    onDemand: computeSegment(onDemandTasks, "onDemand", periodKey),
+    incidents: computeSegment(incidentTasks, "incidents", periodKey),
+    squads: Array.from(new Set(tasks.map(squadOf))).sort(),
+    clients: Array.from(new Set(tasks.filter(isOnDemandTask).map(clientOf))).sort(),
+  };
+}
+
+/* ────────────────────────── comparação mensal ────────────────────────── */
+
+export interface FlowPeriodComparison {
+  periodKey: string;
+  label: string;
+  metrics: FlowMetricsResult;
+}
+
+/**
+ * Compara até 3 períodos. Meses sem registros retornam um resultado zerado
+ * (e não são omitidos) para manter a leitura de evolução.
+ */
+export function buildFlowComparison(
+  tasksByPeriod: Record<string, FlowTask[]>,
+  periods: { value: string; label: string }[],
+  filters: Omit<FlowFilters, "periodKey"> = {},
+  maxPeriods = 3,
+): FlowPeriodComparison[] {
+  return periods.slice(0, maxPeriods).map(p => ({
+    periodKey: p.value,
+    label: p.label,
+    metrics: buildFlowMetrics(tasksByPeriod[p.value] || [], { ...filters, periodKey: p.value }),
+  }));
+}
+
+export type FlowMetricKind = "lead" | "cycle";
+
+export interface ComparisonChartRow {
+  label: string;
+  periodKey: string;
+  media: number;
+  mediana: number;
+  p85: number;
+  volume: number;
+}
+
+/** Série pronta para o gráfico de comparação mensal. */
+export function toComparisonChartData(
+  comparison: FlowPeriodComparison[],
+  segment: "general" | "demands" | "onDemand" | "incidents",
+  metric: FlowMetricKind,
+): ComparisonChartRow[] {
+  return comparison.map(c => {
+    const seg = c.metrics[segment];
+    const stats = metric === "lead" ? seg.leadTime : seg.cycleTime;
+    return {
+      label: c.label,
+      periodKey: c.periodKey,
+      media: stats.avg,
+      mediana: stats.median,
+      p85: stats.p85,
+      volume: seg.completed,
+    };
+  });
+}
+
+/* ────────────────────────── histórico Sob Demanda ────────────────────────── */
+
+export interface OnDemandHistoryPoint {
+  periodKey: string;
+  label: string;
+  completed: number;
+  open: number;
+  clients: number;
+  hours: number;
+  leadMedian: number;
+  leadP85: number;
+  cycleMedian: number;
+  cycleP85: number;
+}
+
+/** Evolução mês a mês dos itens Sob Demanda (cliente vinculado). */
+export function buildOnDemandHistory(
+  tasksByPeriod: Record<string, FlowTask[]>,
+  periods: { value: string; label: string }[],
+  filters: Omit<FlowFilters, "periodKey"> = {},
+): OnDemandHistoryPoint[] {
+  return periods
+    .slice()
+    .sort((a, b) => a.value.localeCompare(b.value))
+    .map(p => {
+      const metrics = buildFlowMetrics(tasksByPeriod[p.value] || [], { ...filters, periodKey: p.value });
+      const seg = metrics.onDemand;
+      const monthTasks = applyFlowFilters(tasksByPeriod[p.value] || [], filters)
+        .filter(t => !isIncidentTask(t) && isOnDemandTask(t) && matchesPeriod(t.resolved_at, p.value));
+      return {
+        periodKey: p.value,
+        label: p.label,
+        completed: seg.completed,
+        open: seg.open,
+        clients: new Set(monthTasks.map(clientOf)).size,
+        hours: Math.round(monthTasks.reduce((s, t) => s + (t.spent_minutes || 0) / 60, 0) * 10) / 10,
+        leadMedian: seg.leadTime.median,
+        leadP85: seg.leadTime.p85,
+        cycleMedian: seg.cycleTime.median,
+        cycleP85: seg.cycleTime.p85,
+      };
+    });
+}
