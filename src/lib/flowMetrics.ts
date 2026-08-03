@@ -255,6 +255,19 @@ export function segmentOf(t: FlowTask): FlowSegmentKey {
 
 /* ────────────────────────── cálculo ────────────────────────── */
 
+export interface FlowItemDetail {
+  code: string;
+  title: string;
+  squad: string;
+  client: string;
+  type: FlowTaskClass;
+  category: string;
+  resolvedAt: string | null;
+  lead: number | null;
+  cycle: number | null;
+  hours: number;
+}
+
 export interface FlowSegmentResult {
   key: FlowSegmentKey;
   /** Itens concluídos no período (base dos indicadores). */
@@ -267,10 +280,14 @@ export interface FlowSegmentResult {
   missingCreated: number;
   /** Itens reabertos / com retorno de QA. */
   reopened: number;
+  /** Concluídos por classificação de card. */
+  byType: Record<FlowTaskClass, number>;
   leadTime: FlowStats;
   cycleTime: FlowStats;
   bySquad: { squad: string; count: number; leadMedian: number; leadP85: number; cycleMedian: number; cycleP85: number }[];
   byClient: { client: string; count: number; leadMedian: number; cycleMedian: number }[];
+  /** Cards que compõem o resultado (concluídos no período). */
+  items: FlowItemDetail[];
 }
 
 function emptySegment(key: FlowSegmentKey): FlowSegmentResult {
@@ -281,10 +298,12 @@ function emptySegment(key: FlowSegmentKey): FlowSegmentResult {
     missingStart: 0,
     missingCreated: 0,
     reopened: 0,
+    byType: { regular: 0, bug: 0, deadletter: 0, incident: 0 },
     leadTime: { ...EMPTY_STATS },
     cycleTime: { ...EMPTY_STATS },
     bySquad: [],
     byClient: [],
+    items: [],
   };
 }
 
