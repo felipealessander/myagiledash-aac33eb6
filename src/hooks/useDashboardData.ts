@@ -253,9 +253,9 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     .sort(([a], [b]) => a.localeCompare(b))
     .forEach(([week, count]) => throughputByWeek.push({ week, count }));
 
-  // WIP: tasks with status not done/delivered (exclude Qualidade squad)
+  // WIP: tasks with status not done/delivered (exclude Qualidade squad e incidentes)
   const wipBySquad: { squad: string; wip: number }[] = squadNames.filter(n => n.toLowerCase() !== 'qualidade').map(name => {
-    const squadTasks = squadTasksMap.get(name) || [];
+    const squadTasks = (squadTasksMap.get(name) || []).filter(t => !isIncidentTask(t));
     const openTasks = squadTasks.filter(t => !isDoneStatus(t.status));
     return { squad: name, wip: openTasks.length };
   });
