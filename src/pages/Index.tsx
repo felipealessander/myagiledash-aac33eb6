@@ -324,10 +324,11 @@ const Index = () => {
 
 
           <section>
-            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
               <AlertTriangle className="h-4 w-4" />
               Incidentes
             </h2>
+            <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <KpiCard title="Incidentes Criados" value={unfilteredDashboardData.incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={0} />
@@ -335,6 +336,21 @@ const Index = () => {
                 <KpiCard title="Total de Correções" value={unfilteredDashboardData.reworkTotalCorrections} subtitle="Soma de correções aplicadas" icon={RotateCcw} variant="warning" delay={100} />
                 <KpiCard title="Correções / Tarefa" value={unfilteredDashboardData.reworkCount > 0 ? (unfilteredDashboardData.reworkTotalCorrections / unfilteredDashboardData.reworkCount).toFixed(1) : "0"} subtitle="Média por tarefa retrabalhada" icon={RotateCcw} variant="info" delay={150} />
               </div>
+
+              {isMultiMonth && (
+                <MonthComparisonPanel
+                  title="Comparação mensal — incidentes e retrabalho"
+                  months={period.months}
+                  metrics={[
+                    buildMetric("incidentes", "Incidentes", p => p.incidentes, "", true),
+                    buildMetric("bugs", "Bugs", p => p.bugs, "", true),
+                    buildMetric("dlq", "DeadLetter (DLQ)", p => p.deadLetters, "", true),
+                    buildMetric("reworkRate", "Retrabalho", p => p.reworkRate, "%", true),
+                  ]}
+                  onDrill={(month) => setDrill({ month, label: comparisonPoints.find(p => p.month === month)?.label ?? month })}
+                />
+              )}
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ReworkChart data={unfilteredDashboardData.reworkBySquad || []} />
                 <IncidentsByClientChart data={unfilteredDashboardData.incidentsByClient || []} />
@@ -342,6 +358,7 @@ const Index = () => {
               <IncidentsList tasks={rawTasks} selectedSquads={selectedSquads} />
             </div>
           </section>
+
 
 
 
