@@ -51,8 +51,11 @@ export function MonthComparisonPanel({ title = "Comparação mensal", months, me
   );
 
   const chartData = useMemo(() => {
-    const trend = linearTrend(rows.map(r => r.value));
+    // Meses sem registros não influenciam a inclinação da tendência.
+    const mask = rows.map(r => r.hasData);
+    const trend = linearTrend(rows.map(r => r.value), mask.some(Boolean) ? mask : undefined);
     return rows.map((r, i) => ({ ...r, trend: trend[i] }));
+
   }, [rows]);
 
   const summary = useMemo(() => summarizeSeries(rows), [rows]);
