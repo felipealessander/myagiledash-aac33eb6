@@ -7,6 +7,8 @@ import { getTeamColor } from "@/data/dashboardData";
 import * as staticData from "@/data/dashboardData";
 import { businessDaysBetween, computeStats, isFlowEligible, isIncidentTask, percentile } from "@/lib/flowMetrics";
 import { isArchivedStatus, isDoneStatus as ruleIsDoneStatus, isDeadLetter as ruleIsDeadLetter } from "@/lib/taskRules";
+import { describePeriod, type PeriodSummary } from "@/lib/monthComparison";
+
 
 export interface MonthOption {
   value: string;
