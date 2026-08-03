@@ -242,6 +242,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
               <tr className="text-muted-foreground border-b border-border">
                 <th className="text-left py-2 font-medium">Mês</th>
                 <th className="text-right py-2 font-medium">Itens</th>
+                <th className="text-right py-2 font-medium">WIP (em aberto)</th>
                 <th className="text-right py-2 font-medium">Lead mediana</th>
                 <th className="text-right py-2 font-medium">Lead P85</th>
                 <th className="text-right py-2 font-medium">Cycle mediana</th>
@@ -258,6 +259,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
                   <tr key={c.periodKey} className="border-b border-border/50">
                     <td className="py-2">{c.label}</td>
                     <td className="py-2 text-right">{seg.completed}</td>
+                    <td className="py-2 text-right">{seg.open}</td>
                     <td className="py-2 text-right">{seg.leadTime.median}d</td>
                     <td className="py-2 text-right">{seg.leadTime.p85}d</td>
                     <td className="py-2 text-right">{seg.cycleTime.median}d</td>
@@ -272,7 +274,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
               })}
               {comparison.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-6 text-center text-muted-foreground">Selecione ao menos um mês.</td>
+                  <td colSpan={8} className="py-6 text-center text-muted-foreground">Selecione ao menos um mês.</td>
                 </tr>
               )}
 
