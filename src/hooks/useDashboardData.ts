@@ -51,15 +51,13 @@ const SQUAD_MEMBERS_STATIC: Record<string, string[]> = {
   "TheBigBang": ["João Victor", "Amanda Nunes", "Caio Rezende"],
 };
 
-// Helper: check if a task status is "archived" (should be excluded from all metrics)
+// Regras canônicas compartilhadas — ver src/lib/taskRules.ts
 function isArchived(status: string | null): boolean {
-  return (status || '').toLowerCase().trim().includes('arquivado');
+  return isArchivedStatus(status);
 }
 
-// Helper: check if a task status is "done" (delivered)
 function isDoneStatus(status: string | null): boolean {
-  const s = (status || '').toLowerCase().trim();
-  return s.includes('conclu') || s.includes('done') || s.includes('delivery');
+  return ruleIsDoneStatus(status);
 }
 
 function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
