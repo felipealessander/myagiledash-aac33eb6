@@ -48,12 +48,37 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { approved, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  const { months, selectedMonth, setSelectedMonth, dashboardData, unfilteredDashboardData, allTeams, loading, refetchMonths, selectedSquads, setSelectedSquads, monthlyTrend, isYearView, rawTasks } = useDashboardData();
+  const {
+    months, selectedMonth, setSelectedMonth, selectedMonths, setSelectedMonths, period, comparisonPoints,
+    dashboardData, unfilteredDashboardData, allTeams, loading, refetchMonths, selectedSquads, setSelectedSquads,
+    monthlyTrend, isYearView, rawTasks, trendTasks, monthByReportId,
+  } = useDashboardData();
   const [presentationOpen, setPresentationOpen] = useState(false);
+  const [drill, setDrill] = useState<{ month: string; label: string } | null>(null);
   const isComparing = selectedSquads.length >= 2;
+  const hasSquadFilter = selectedSquads.length > 0;
+  const isMultiMonth = period.months.length > 1;
   const toggleSquad = (name: string) => {
     setSelectedSquads(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]);
   };
+
+  // Cards de um mês específico (drill-down das comparações mensais)
+  const drillTasks = useMemo(() => {
+    if (!drill) return [];
+    return (trendTasks as any[]).filter(t => {
+      const month = monthByReportId.get(t.report_id || "");
+      if (month !== drill.month) return false;
+      if (selectedSquads.length > 0 && !selectedSquads.includes(t.squad || "Sem Squad")) return false;
+      return !(t.status || "").toLowerCase().includes("arquivado");
+    });
+  }, [drill, trendTasks, monthByReportId, selectedSquads]);
+
+  const buildMetric = (key: string, label: string, pick: (p: (typeof comparisonPoints)[number]) => number, unit?: string, lowerIsBetter?: boolean): ComparisonMetric => ({
+    key, label, unit, lowerIsBetter,
+    values: comparisonPoints.map(p => ({ month: p.month, value: pick(p) })),
+  });
+
+
 
 
   useEffect(() => {
