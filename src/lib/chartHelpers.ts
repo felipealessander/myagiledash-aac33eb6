@@ -75,7 +75,10 @@ export function withTrend<T extends Record<string, unknown>>(
   key: keyof T,
 ): (T & { trend: number; deltaAbs: number; deltaPct: number | null })[] {
   const values = rows.map(r => Number(r[key]) || 0);
-  const trend = linearTrend(values);
+  // Períodos zerados (mês sem registros) não entram no ajuste da tendência.
+  const mask = values.map(v => v !== 0);
+  const trend = linearTrend(values, mask.some(Boolean) ? mask : undefined);
+
   return rows.map((r, i) => {
     const v = variation(i === 0 ? values[0] : values[i - 1], values[i]);
     return { ...r, trend: trend[i], deltaAbs: v.abs, deltaPct: i === 0 ? null : v.pct };
