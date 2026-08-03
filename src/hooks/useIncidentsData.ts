@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isArchivedStatus, isDoneStatus, isIncident as ruleIsIncident } from "@/lib/taskRules";
 
 interface IncidentTask {
   task_code: string;
