@@ -111,12 +111,11 @@ export function isIncludedInGeneral(t: FlowTask, inclusion: FlowInclusion = {}):
 
 
 export function isEpicTask(t: FlowTask): boolean {
-  const c = (t.category || "").toLowerCase().trim();
-  return c === "épico" || c === "epico" || c === "epic";
+  return ruleIsEpic(t);
 }
 
 export function isQualidadeSquad(t: FlowTask): boolean {
-  return (t.squad || "").toLowerCase().trim() === "qualidade";
+  return ruleIsQualidadeSquad(t.squad);
 }
 
 /** "Sob Demanda" = item com cliente vinculado. */
