@@ -391,6 +391,7 @@ const Index = () => {
                     delay={150}
                   />
                 </div>
+                <FlowMetricsWidget months={months} selectedMonth={selectedMonth} selectedSquads={selectedSquads} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <LeadTimeChart data={leadTimeBySquad || []} />
                   <CycleTimeChart data={cycleTimeBySquad || []} />
