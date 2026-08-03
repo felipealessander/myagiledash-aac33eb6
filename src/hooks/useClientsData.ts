@@ -59,10 +59,20 @@ export function useClientsData(month: string | null) {
         setUnmappedClients([]);
         return;
       }
-      // Determine month range (UTC to match ISO timestamps from DB)
-      const [yyyy, mm] = month.split("-").map(Number);
-      const monthStartISO = new Date(Date.UTC(yyyy, mm - 1, 1)).toISOString();
-      const monthEndISO = new Date(Date.UTC(yyyy, mm, 1)).toISOString();
+      // Determine range (UTC to match ISO timestamps from DB). Supports "YYYY-MM" and "year-YYYY".
+      let monthStartISO: string;
+      let monthEndISO: string;
+      if (month.startsWith("year-")) {
+        const yyyy = Number(month.slice(5));
+        if (!Number.isFinite(yyyy)) { setUsage([]); setUnmappedClients([]); return; }
+        monthStartISO = new Date(Date.UTC(yyyy, 0, 1)).toISOString();
+        monthEndISO = new Date(Date.UTC(yyyy + 1, 0, 1)).toISOString();
+      } else {
+        const [yyyy, mm] = month.split("-").map(Number);
+        if (!Number.isFinite(yyyy) || !Number.isFinite(mm)) { setUsage([]); setUnmappedClients([]); return; }
+        monthStartISO = new Date(Date.UTC(yyyy, mm - 1, 1)).toISOString();
+        monthEndISO = new Date(Date.UTC(yyyy, mm, 1)).toISOString();
+      }
 
       // Fetch tasks attributed to this month (resolved_at within month, OR created_at_yt within month when not resolved)
       // Server-side filter + pagination to bypass the default 1000-row cap.
