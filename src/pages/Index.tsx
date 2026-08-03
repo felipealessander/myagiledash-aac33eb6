@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import { Clock, ListTodo, AlertTriangle, TrendingUp, Users, BarChart3, Receipt, Loader2, LogOut, Gauge, RotateCcw, GitCompare, MonitorPlay } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,6 +22,11 @@ import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
 import { IncidentsList } from "@/components/dashboard/IncidentsList";
+import { MonthMultiSelector } from "@/components/dashboard/MonthMultiSelector";
+import { PeriodBadge } from "@/components/dashboard/PeriodBadge";
+import { MonthComparisonPanel, type ComparisonMetric } from "@/components/dashboard/MonthComparisonPanel";
+import { DrillDownSheet } from "@/components/dashboard/DrillDownSheet";
+
 
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { MonthlyTrendCharts } from "@/components/dashboard/MonthlyTrendCharts";
@@ -43,12 +48,37 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { approved, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  const { months, selectedMonth, setSelectedMonth, dashboardData, unfilteredDashboardData, allTeams, loading, refetchMonths, selectedSquads, setSelectedSquads, monthlyTrend, isYearView, rawTasks } = useDashboardData();
+  const {
+    months, selectedMonth, setSelectedMonth, selectedMonths, setSelectedMonths, period, comparisonPoints,
+    dashboardData, unfilteredDashboardData, allTeams, loading, refetchMonths, selectedSquads, setSelectedSquads,
+    monthlyTrend, isYearView, rawTasks, trendTasks, monthByReportId,
+  } = useDashboardData();
   const [presentationOpen, setPresentationOpen] = useState(false);
+  const [drill, setDrill] = useState<{ month: string; label: string } | null>(null);
   const isComparing = selectedSquads.length >= 2;
+  const hasSquadFilter = selectedSquads.length > 0;
+  const isMultiMonth = period.months.length > 1;
   const toggleSquad = (name: string) => {
     setSelectedSquads(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]);
   };
+
+  // Cards de um mês específico (drill-down das comparações mensais)
+  const drillTasks = useMemo(() => {
+    if (!drill) return [];
+    return (trendTasks as any[]).filter(t => {
+      const month = monthByReportId.get(t.report_id || "");
+      if (month !== drill.month) return false;
+      if (selectedSquads.length > 0 && !selectedSquads.includes(t.squad || "Sem Squad")) return false;
+      return !(t.status || "").toLowerCase().includes("arquivado");
+    });
+  }, [drill, trendTasks, monthByReportId, selectedSquads]);
+
+  const buildMetric = (key: string, label: string, pick: (p: (typeof comparisonPoints)[number]) => number, unit?: string, lowerIsBetter?: boolean): ComparisonMetric => ({
+    key, label, unit, lowerIsBetter,
+    values: comparisonPoints.map(p => ({ month: p.month, value: pick(p) })),
+  });
+
+
 
 
   useEffect(() => {
@@ -141,6 +171,8 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <LastSyncBadge />
             <MonthSelector months={months} selected={selectedMonth} onSelect={setSelectedMonth} />
+            <MonthMultiSelector months={months} selected={selectedMonths} onChange={setSelectedMonths} />
+
             <YouTrackSyncDialog onImported={refetchMonths} />
             <Button
               size="sm"
@@ -212,6 +244,32 @@ const Index = () => {
       ) : (
         <main className="container mx-auto px-4 py-6 space-y-8">
 
+          {/* ═══════ FILTROS GLOBAIS ═══════ */}
+          <section className="rounded-lg border border-border bg-muted/20 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Período ativo</span>
+              <PeriodBadge period={period} squads={selectedSquads} />
+            </div>
+            <div className="flex items-center gap-2">
+              <MonthMultiSelector months={months} selected={selectedMonths} onChange={setSelectedMonths} />
+              {selectedSquads.length > 0 && (
+                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setSelectedSquads([])}>
+                  Limpar squads
+                </Button>
+              )}
+            </div>
+          </section>
+
+          <DrillDownSheet
+            open={!!drill}
+            onOpenChange={(v) => !v && setDrill(null)}
+            title={`Cards de ${drill?.label ?? ""}`}
+            subtitle={selectedSquads.length > 0 ? `Squads: ${selectedSquads.join(", ")}` : "Todas as squads"}
+            tasks={drillTasks}
+          />
+
+
+
           {/* ═══════ INSIGHTS DE IA ═══════ */}
           <AIInsightsWidget
             scope="global"
@@ -222,10 +280,11 @@ const Index = () => {
 
           {/* ═══════ PRODUTO ═══════ */}
           <section>
-            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
               <BarChart3 className="h-4 w-4" />
-              Produto
+              Visão Geral
             </h2>
+            <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
             <div className="space-y-4">
               {/* KPIs de Produto */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -235,96 +294,41 @@ const Index = () => {
                 <KpiCard title="Desvio de Estimativa" value={`${Number(overrun) >= 0 ? "+" : ""}${overrun}%`} subtitle="Horas além do estimado" icon={AlertTriangle} variant="warning" delay={150} />
               </div>
 
-              {/* Visão por Time */}
-              <div>
-                <h3 className="text-xs font-medium mb-3 flex items-center gap-2 text-muted-foreground">
-                  <Users className="h-3.5 w-3.5" />
-                  {isComparing ? `Comparativo entre ${teams.length} times selecionados` : "Visão por Time"}
-                </h3>
-                <div className={`grid grid-cols-1 sm:grid-cols-2 ${teams.length <= 4 ? 'lg:grid-cols-4' : teams.length <= 6 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
-                  {teams.map((team, i) => {
-                    const lt = leadTimeBySquad.find(l => l.squad === team.name);
-                    const ct = cycleTimeBySquad.find(l => l.squad === team.name);
-                    const wp = wipBySquad.find(w => w.squad === team.name);
-                    const rw = (reworkBySquad || []).find((r: any) => r.squad === team.name);
-                    const tput = lt && lt.count > 0 && throughputByWeek.length > 0
-                      ? Math.round((lt.count / throughputByWeek.length) * 10) / 10
-                      : 0;
-                    return (
-                      <TeamCard
-                        key={team.name}
-                        team={team}
-                        teamIndex={i}
-                        delay={200 + i * 50}
-                        monthLabel={currentMonthLabel}
-                        agileMetrics={{
-                          leadTimeAvg: lt?.avg ?? 0,
-                          cycleTimeAvg: ct?.avg ?? 0,
-                          throughput: tput,
-                          wip: wp?.wip ?? 0,
-                        }}
-                        reworkMetrics={{
-                          reworkCount: rw?.count ?? 0,
-                          reworkRate: rw?.rate ?? 0,
-                          corrections: rw?.corrections ?? 0,
-                        }}
-                        previousMetrics={previousGlobalMetrics}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Comparativo entre Times (só quando 2+ selecionados) */}
-              {isComparing && (
-                <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
-                  <h3 className="text-xs font-semibold flex items-center gap-2 text-primary uppercase tracking-wider">
-                    <GitCompare className="h-3.5 w-3.5" />
-                    Comparativo entre Times
-                  </h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <AgileMetricsComparisonChart
-                      data={teams.map(t => {
-                        const lt = leadTimeBySquad.find(l => l.squad === t.name);
-                        const ct = cycleTimeBySquad.find(l => l.squad === t.name);
-                        const wp = wipBySquad.find(w => w.squad === t.name);
-                        // throughput: avg per week of resolved tasks belonging to this squad's count over weeks
-                        const throughput = lt && lt.count > 0 && throughputByWeek.length > 0
-                          ? Math.round((lt.count / throughputByWeek.length) * 10) / 10
-                          : 0;
-                        return {
-                          squad: t.name,
-                          leadAvg: lt?.avg || 0,
-                          cycleAvg: ct?.avg || 0,
-                          throughput,
-                          wip: wp?.wip || 0,
-                        };
-                      })}
-                    />
-                    <ReworkComparisonChart data={reworkBySquad || []} />
-                  </div>
-                  <CategoriesBySquadChart teams={teams} />
-                </div>
+              {/* Comparação mensal — visão geral */}
+              {isMultiMonth && (
+                <MonthComparisonPanel
+                  title="Comparação mensal — visão geral"
+                  months={period.months}
+                  metrics={[
+                    buildMetric("hours", "Horas realizadas", p => p.totalSpentHours, "h"),
+                    buildMetric("tasks", "Tarefas", p => p.totalTasks),
+                    buildMetric("throughput", "Entregas", p => p.throughput),
+                    buildMetric("lead", "Lead Time médio", p => p.leadTimeAvg, "d", true),
+                    buildMetric("cycle", "Cycle Time médio", p => p.cycleTimeAvg, "d", true),
+                  ]}
+                  onDrill={(month) => setDrill({ month, label: comparisonPoints.find(p => p.month === month)?.label ?? month })}
+                />
               )}
 
-              {/* Gráficos de Produto */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <CategoryChart categoryTotals={categoryTotals} />
-                <EstimationVsSpentChart teams={teams} />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <TeamDistributionChart teams={teams} />
-                <TaskTable categoryTotals={categoryTotals} />
-              </div>
+
+
+              {!hasSquadFilter && (
+                <p className="text-[11px] text-muted-foreground">
+                  Visão consolidada de todas as squads. Selecione um ou mais times no topo para abrir os widgets detalhados por squad.
+                </p>
+              )}
             </div>
           </section>
 
 
+
+
           <section>
-            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
               <AlertTriangle className="h-4 w-4" />
               Incidentes
             </h2>
+            <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <KpiCard title="Incidentes Criados" value={unfilteredDashboardData.incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={0} />
@@ -332,6 +336,21 @@ const Index = () => {
                 <KpiCard title="Total de Correções" value={unfilteredDashboardData.reworkTotalCorrections} subtitle="Soma de correções aplicadas" icon={RotateCcw} variant="warning" delay={100} />
                 <KpiCard title="Correções / Tarefa" value={unfilteredDashboardData.reworkCount > 0 ? (unfilteredDashboardData.reworkTotalCorrections / unfilteredDashboardData.reworkCount).toFixed(1) : "0"} subtitle="Média por tarefa retrabalhada" icon={RotateCcw} variant="info" delay={150} />
               </div>
+
+              {isMultiMonth && (
+                <MonthComparisonPanel
+                  title="Comparação mensal — incidentes e retrabalho"
+                  months={period.months}
+                  metrics={[
+                    buildMetric("incidentes", "Incidentes", p => p.incidentes, "", true),
+                    buildMetric("bugs", "Bugs", p => p.bugs, "", true),
+                    buildMetric("dlq", "DeadLetter (DLQ)", p => p.deadLetters, "", true),
+                    buildMetric("reworkRate", "Retrabalho", p => p.reworkRate, "%", true),
+                  ]}
+                  onDrill={(month) => setDrill({ month, label: comparisonPoints.find(p => p.month === month)?.label ?? month })}
+                />
+              )}
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ReworkChart data={unfilteredDashboardData.reworkBySquad || []} />
                 <IncidentsByClientChart data={unfilteredDashboardData.incidentsByClient || []} />
@@ -342,14 +361,30 @@ const Index = () => {
 
 
 
+
           {/* ═══════ MÉTRICAS ÁGEIS ═══════ */}
           {selectedMonth !== "static" && (leadTimeBySquad?.length > 0 || cycleTimeBySquad?.length > 0 || throughputByWeek?.length > 0 || wipBySquad?.length > 0) && (
             <section>
-              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+              <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
                 <TrendingUp className="h-4 w-4" />
                 Métricas Ágeis
               </h2>
+              <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
               <div className="space-y-4">
+                {isMultiMonth && (
+                  <MonthComparisonPanel
+                    title="Comparação mensal — métricas ágeis"
+                    months={period.months}
+                    metrics={[
+                      buildMetric("lead", "Lead Time médio", p => p.leadTimeAvg, "d", true),
+                      buildMetric("cycle", "Cycle Time médio", p => p.cycleTimeAvg, "d", true),
+                      buildMetric("throughput", "Throughput", p => p.throughput),
+                      buildMetric("wip", "WIP", p => p.wip, "", true),
+                    ]}
+                    onDrill={(month) => setDrill({ month, label: comparisonPoints.find(p => p.month === month)?.label ?? month })}
+                  />
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <KpiCard
                     title="Lead Time Médio"
@@ -428,6 +463,95 @@ const Index = () => {
               </div>
             </section>
           )}
+
+          {/* ═══════ ENTREGAS POR TIPO / DISTRIBUIÇÃO / CATEGORIAS ═══════ */}
+          <section>
+            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+              <BarChart3 className="h-4 w-4" />
+              Entregas por Tipo e Distribuição
+            </h2>
+            <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <CategoryChart categoryTotals={categoryTotals} />
+                <TeamDistributionChart teams={teams} />
+              </div>
+              <TaskTable categoryTotals={categoryTotals} />
+            </div>
+          </section>
+
+          {/* ═══════ VISÃO DETALHADA POR SQUAD ═══════ */}
+          {hasSquadFilter && (
+            <section>
+              <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+                <Users className="h-4 w-4" />
+                Visão por Squad
+              </h2>
+              <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
+              <div className="space-y-4">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${teams.length <= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
+                  {teams.map((team, i) => {
+                    const lt = leadTimeBySquad.find(l => l.squad === team.name);
+                    const ct = cycleTimeBySquad.find(l => l.squad === team.name);
+                    const wp = wipBySquad.find(w => w.squad === team.name);
+                    const rw = (reworkBySquad || []).find((r: any) => r.squad === team.name);
+                    const tput = lt && lt.count > 0 && throughputByWeek.length > 0
+                      ? Math.round((lt.count / throughputByWeek.length) * 10) / 10
+                      : 0;
+                    return (
+                      <TeamCard
+                        key={team.name}
+                        team={team}
+                        teamIndex={i}
+                        delay={i * 50}
+                        monthLabel={currentMonthLabel}
+                        agileMetrics={{
+                          leadTimeAvg: lt?.avg ?? 0,
+                          cycleTimeAvg: ct?.avg ?? 0,
+                          throughput: tput,
+                          wip: wp?.wip ?? 0,
+                        }}
+                        reworkMetrics={{
+                          reworkCount: rw?.count ?? 0,
+                          reworkRate: rw?.rate ?? 0,
+                          corrections: rw?.corrections ?? 0,
+                        }}
+                        previousMetrics={previousGlobalMetrics}
+                      />
+                    );
+                  })}
+                </div>
+
+                <EstimationVsSpentChart teams={teams} />
+
+                {isComparing && (
+                  <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                    <h3 className="text-xs font-semibold flex items-center gap-2 text-primary uppercase tracking-wider">
+                      <GitCompare className="h-3.5 w-3.5" />
+                      Comparativo entre Times
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <AgileMetricsComparisonChart
+                        data={teams.map(t => {
+                          const lt = leadTimeBySquad.find(l => l.squad === t.name);
+                          const ct = cycleTimeBySquad.find(l => l.squad === t.name);
+                          const wp = wipBySquad.find(w => w.squad === t.name);
+                          const throughput = lt && lt.count > 0 && throughputByWeek.length > 0
+                            ? Math.round((lt.count / throughputByWeek.length) * 10) / 10
+                            : 0;
+                          return { squad: t.name, leadAvg: lt?.avg || 0, cycleAvg: ct?.avg || 0, throughput, wip: wp?.wip || 0 };
+                        })}
+                      />
+                      <ReworkComparisonChart data={reworkBySquad || []} />
+                    </div>
+                    <CategoriesBySquadChart teams={teams} />
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+
 
           {/* ═══════ EVOLUÇÃO MENSAL (só no ano consolidado) ═══════ */}
           {isYearView && monthlyTrend.length > 0 && (

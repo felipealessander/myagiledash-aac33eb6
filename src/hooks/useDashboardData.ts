@@ -7,6 +7,8 @@ import { getTeamColor } from "@/data/dashboardData";
 import * as staticData from "@/data/dashboardData";
 import { businessDaysBetween, computeStats, isFlowEligible, isIncidentTask, percentile } from "@/lib/flowMetrics";
 import { isArchivedStatus, isDoneStatus as ruleIsDoneStatus, isDeadLetter as ruleIsDeadLetter } from "@/lib/taskRules";
+import { describePeriod, type PeriodSummary } from "@/lib/monthComparison";
+
 
 export interface MonthOption {
   value: string;
@@ -631,9 +633,26 @@ export function useDashboardData() {
     fetchYearForTrend();
   }, [selectedMonth, months, toast]);
 
+  // ── Filtro global de meses (multi-seleção) ────────────────────────────────
+  // Seleção vazia = consolidado do período base (ano ou mês selecionado).
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+
+  const selectedReportIds = useMemo(
+    () => new Set(months.filter(m => selectedMonths.includes(m.value)).map(m => m.id)),
+    [months, selectedMonths],
+  );
+
+  /** Tarefas efetivas do período ativo (respeita a multi-seleção de meses). */
+  const effectiveTasks = useMemo(() => {
+    if (selectedMonths.length === 0) return dbTasks;
+    if (!dbTasksForTrend) return dbTasks;
+    return dbTasksForTrend.filter(t => selectedReportIds.has((t as unknown as { report_id?: string }).report_id || ""));
+  }, [selectedMonths, dbTasks, dbTasksForTrend, selectedReportIds]);
+
   const dashboardData: DashboardData = useMemo(() => {
-    if (!dbTasks || dbTasks.length === 0) {
+    if (!effectiveTasks || effectiveTasks.length === 0) {
       return {
+
         teams: [],
         categoryTotals: [],
         billingData: [],
@@ -656,23 +675,23 @@ export function useDashboardData() {
       };
     }
 
-    return buildDashboardData(dbTasks, selectedMonth);
-  }, [dbTasks, selectedMonth]);
+    return buildDashboardData(effectiveTasks, selectedMonth);
+  }, [effectiveTasks, selectedMonth]);
 
   const [selectedSquads, setSelectedSquads] = useState<string[]>([]);
 
   const filteredDashboardData: DashboardData = useMemo(() => {
     if (selectedSquads.length === 0) return dashboardData;
-    if (!dbTasks || dbTasks.length === 0) {
+    if (!effectiveTasks || effectiveTasks.length === 0) {
       const filtered = {
         ...dashboardData,
         teams: dashboardData.teams.filter(t => selectedSquads.includes(t.name)),
       };
       return filtered;
     }
-    const filtered = dbTasks.filter(t => selectedSquads.includes(t.squad || "Sem Squad"));
+    const filtered = effectiveTasks.filter(t => selectedSquads.includes(t.squad || "Sem Squad"));
     return buildDashboardData(filtered, selectedMonth);
-  }, [dashboardData, selectedSquads, selectedMonth, dbTasks]);
+  }, [dashboardData, selectedSquads, selectedMonth, effectiveTasks]);
 
   const isYearView = selectedMonth.startsWith("year-");
   const yearMonthsForTrend = useMemo(() => {
@@ -693,11 +712,38 @@ export function useDashboardData() {
     return buildMonthlyTrend(source, yearMonthsForTrend);
   }, [dbTasksForTrend, yearMonthsForTrend, selectedSquads]);
 
+  const activeYear = isYearView ? selectedMonth.replace("year-", "") : selectedMonth.slice(0, 4);
+
+  /** Período ativo, exibido em todos os blocos. */
+  const period: PeriodSummary = useMemo(
+    () => describePeriod(selectedMonths, activeYear, yearMonthsForTrend.map(m => m.value)),
+    [selectedMonths, activeYear, yearMonthsForTrend],
+  );
+
+  /** Série mensal restrita aos meses comparados (mesma regra de negócio). */
+  const comparisonPoints: MonthlyTrendPoint[] = useMemo(() => {
+    if (selectedMonths.length === 0) return monthlyTrend;
+    return monthlyTrend.filter(p => selectedMonths.includes(p.month));
+  }, [monthlyTrend, selectedMonths]);
+
+  /** Cards do período ativo, já sem arquivados, para drill-down e listagens. */
+  const periodTasks = useMemo(() => (effectiveTasks ?? []).filter(t => !isArchived(t.status)), [effectiveTasks]);
+
+  /** Mapa report_id -> mês, usado no detalhamento por mês. */
+  const monthByReportId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const opt of months) m.set(opt.id, opt.value);
+    return m;
+  }, [months]);
 
   return {
     months,
     selectedMonth,
     setSelectedMonth,
+    selectedMonths,
+    setSelectedMonths,
+    period,
+    comparisonPoints,
     dashboardData: filteredDashboardData,
     unfilteredDashboardData: dashboardData,
     allTeams: dashboardData.teams,
@@ -707,8 +753,12 @@ export function useDashboardData() {
     setSelectedSquads,
     monthlyTrend,
     isYearView,
+    periodTasks,
+    monthByReportId,
+    trendTasks: dbTasksForTrend ?? [],
     // Raw (unfiltered) task rows for the presentation module
-    rawTasks: dbTasks ?? [],
+    rawTasks: effectiveTasks ?? [],
   };
 }
+
 
