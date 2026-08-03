@@ -119,9 +119,23 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
     [selection, monthOnly],
   );
 
+  const [includeBugs, setIncludeBugs] = useState(false);
+  const [includeDeadletters, setIncludeDeadletters] = useState(false);
+  const inclusion = useMemo(
+    () => ({ bugs: includeBugs, deadletters: includeDeadletters }),
+    [includeBugs, includeDeadletters],
+  );
+
+  const includedTypesLabel = useMemo(() => {
+    const parts = ["Demandas regulares"];
+    if (includeBugs) parts.push("Bugs");
+    if (includeDeadletters) parts.push("DeadLetters");
+    return parts.join(" + ");
+  }, [includeBugs, includeDeadletters]);
+
   const comparison = useMemo(
-    () => buildFlowComparison(tasksByPeriod, periods, { squads: selectedSquads }),
-    [tasksByPeriod, periods, selectedSquads],
+    () => buildFlowComparison(tasksByPeriod, periods, { squads: selectedSquads, inclusion }),
+    [tasksByPeriod, periods, selectedSquads, inclusion],
   );
 
   const history = useMemo(
@@ -129,9 +143,9 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
       buildOnDemandHistory(
         tasksByPeriod,
         historyValues.map(v => ({ value: v, label: monthOnly.find(m => m.value === v)?.label || v })),
-        { squads: selectedSquads },
+        { squads: selectedSquads, inclusion },
       ),
-    [tasksByPeriod, historyValues, monthOnly, selectedSquads],
+    [tasksByPeriod, historyValues, monthOnly, selectedSquads, inclusion],
   );
 
   const toggleMonth = (value: string) => {
@@ -145,6 +159,16 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
     setManualSelection([...current, value]);
   };
 
+  const segmentHint = (segment: SegmentKey) => {
+    if (segment === "incidents")
+      return "Incidente, Bug e DeadLetter — visão separada e sempre completa, independente das opções de inclusão acima.";
+    const base =
+      segment === "general"
+        ? "Itens concluídos no mês (data de fechamento)."
+        : "Itens com cliente vinculado concluídos no mês (data de fechamento).";
+    return `${base} Participando do cálculo: ${includedTypesLabel}. Incidentes nunca entram.`;
+  };
+
   const renderSegment = (segment: SegmentKey) => {
     const chart = (metric: FlowMetricKind) => toComparisonChartData(comparison, segment, metric);
     const latest = comparison[comparison.length - 1]?.metrics[segment];
@@ -153,8 +177,9 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
       <div className="space-y-4">
         <p className="text-xs text-muted-foreground flex items-start gap-2">
           <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-          {SEGMENT_HINT[segment]}
+          {segmentHint(segment)}
         </p>
+
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
