@@ -26,7 +26,7 @@ export interface ClientUsage {
   unmappedAlias?: string;
 }
 
-const STATUS_ARQUIVADO = "arquivado";
+
 
 export function useClientsData(month: string | null) {
   const [clients, setClients] = useState<Client[]>([]);
