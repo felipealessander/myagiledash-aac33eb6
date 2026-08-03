@@ -28,25 +28,34 @@ export function splitBySufficiency<T extends { count: number }>(
 /**
  * Linha de tendência por mínimos quadrados (regressão linear simples).
  * Retorna os valores ajustados, na mesma ordem/cardinalidade da entrada.
+ *
+ * `mask` permite excluir do ajuste períodos sem dados (meses vazios ou
+ * ainda em curso). Esses períodos continuam recebendo o valor projetado
+ * da reta, mas não puxam a inclinação para baixo.
  * Apoio visual — nunca substitui os valores reais.
  */
-export function linearTrend(values: number[]): number[] {
+export function linearTrend(values: number[], mask?: boolean[]): number[] {
   const n = values.length;
   if (n === 0) return [];
   if (n === 1) return [round1(values[0])];
+  const idx = values.map((_, i) => i).filter(i => (mask ? mask[i] : true));
+  if (idx.length === 0) return values.map(round1);
+  if (idx.length === 1) return values.map(() => round1(values[idx[0]]));
   let sx = 0, sy = 0, sxy = 0, sxx = 0;
-  for (let i = 0; i < n; i++) {
+  for (const i of idx) {
     sx += i;
     sy += values[i];
     sxy += i * values[i];
     sxx += i * i;
   }
-  const denom = n * sxx - sx * sx;
+  const m = idx.length;
+  const denom = m * sxx - sx * sx;
   if (denom === 0) return values.map(round1);
-  const slope = (n * sxy - sx * sy) / denom;
-  const intercept = (sy - slope * sx) / n;
+  const slope = (m * sxy - sx * sy) / denom;
+  const intercept = (sy - slope * sx) / m;
   return values.map((_, i) => round1(intercept + slope * i));
 }
+
 
 export interface Variation {
   abs: number;
