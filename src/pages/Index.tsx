@@ -335,7 +335,7 @@ const Index = () => {
             <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KpiCard title="Incidentes Criados" value={unfilteredDashboardData.incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={0} />
+                <KpiCard title="Incidentes Criados" value={unfilteredDashboardData.incidentsCreatedInMonth} subtitle="Criados no período · clique para detalhar" icon={AlertTriangle} variant="destructive" delay={0} onClick={() => setDrill({ month: "*", label: `Incidentes — ${period.label}`, filter: (t) => isIncident(t) })} />
                 <KpiCard title="Tarefas com Retrabalho" value={unfilteredDashboardData.reworkCount} subtitle={`${unfilteredDashboardData.reworkRate}% do total`} icon={RotateCcw} variant="destructive" delay={50} />
                 <KpiCard title="Total de Correções" value={unfilteredDashboardData.reworkTotalCorrections} subtitle="Soma de correções aplicadas" icon={RotateCcw} variant="warning" delay={100} />
                 <KpiCard title="Correções / Tarefa" value={unfilteredDashboardData.reworkCount > 0 ? (unfilteredDashboardData.reworkTotalCorrections / unfilteredDashboardData.reworkCount).toFixed(1) : "0"} subtitle="Média por tarefa retrabalhada" icon={RotateCcw} variant="info" delay={150} />
