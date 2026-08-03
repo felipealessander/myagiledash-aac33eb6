@@ -322,38 +322,49 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
               Dias úteis, considerando o mês de conclusão. Incidentes têm visão própria.
             </p>
           </div>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-2">
-                <CalendarRange className="h-3.5 w-3.5" />
-                Comparar meses ({selection.length}/3)
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-56 p-2 max-h-72 overflow-y-auto">
-              <p className="text-[11px] text-muted-foreground px-1 pb-2">Selecione até 3 meses</p>
-              {monthOnly.map(m => {
-                const checked = selection.includes(m.value);
-                return (
-                  <label
-                    key={m.value}
-                    className="flex items-center gap-2 px-1 py-1.5 rounded hover:bg-muted cursor-pointer text-xs"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      disabled={!checked && selection.length >= 3}
-                      onCheckedChange={() => toggleMonth(m.value)}
-                    />
-                    {m.label}
-                  </label>
-                );
-              })}
-            </PopoverContent>
-          </Popover>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-xs rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-muted">
+              <Checkbox checked={includeBugs} onCheckedChange={v => setIncludeBugs(v === true)} />
+              Incluir Bugs
+            </label>
+            <label className="flex items-center gap-2 text-xs rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-muted">
+              <Checkbox checked={includeDeadletters} onCheckedChange={v => setIncludeDeadletters(v === true)} />
+              Incluir DeadLetters
+            </label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-2">
+                  <CalendarRange className="h-3.5 w-3.5" />
+                  Comparar meses ({selection.length}/3)
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-56 p-2 max-h-72 overflow-y-auto">
+                <p className="text-[11px] text-muted-foreground px-1 pb-2">Selecione até 3 meses</p>
+                {monthOnly.map(m => {
+                  const checked = selection.includes(m.value);
+                  return (
+                    <label
+                      key={m.value}
+                      className="flex items-center gap-2 px-1 py-1.5 rounded hover:bg-muted cursor-pointer text-xs"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        disabled={!checked && selection.length >= 3}
+                        onCheckedChange={() => toggleMonth(m.value)}
+                      />
+                      {m.label}
+                    </label>
+                  );
+                })}
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1.5 pt-2">
           {periods.map(p => (
             <Badge key={p.value} variant="secondary" className="text-[10px]">{p.label}</Badge>
           ))}
+          <Badge variant="default" className="text-[10px]">No cálculo: {includedTypesLabel}</Badge>
           {selectedSquads.length > 0 && (
             <Badge variant="outline" className="text-[10px]">Squads: {selectedSquads.join(", ")}</Badge>
           )}
