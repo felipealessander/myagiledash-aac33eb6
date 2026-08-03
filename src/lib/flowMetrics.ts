@@ -95,7 +95,10 @@ export function isIncludedInGeneral(t: FlowTask, inclusion: FlowInclusion = {}):
       return true;
     case "deadletter":
       return includeDl;
+    // Bug e Incidente são tratados como a mesma coisa pelo negócio:
+    // a opção "Incluir Bugs / Incidentes" controla ambos.
     case "bug":
+    case "incident":
       return includeBugs;
     default:
       return false;

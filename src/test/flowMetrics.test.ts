@@ -308,11 +308,12 @@ describe("inclusão de Bugs e DeadLetters", () => {
     expect(m.general.items.map(i => i.code)).toEqual(["R-1"]);
   });
 
-  it("inclui somente Bugs quando a opção de Bug está ativa", () => {
+  it("inclui Bugs e Incidentes quando a opção de Bug está ativa", () => {
     const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: { bugs: true } });
-    expect(m.general.completed).toBe(2);
-    expect(m.general.items.map(i => i.code).sort()).toEqual(["B-1", "R-1"]); // BD-1 conta como DeadLetter
+    expect(m.general.completed).toBe(3);
+    expect(m.general.items.map(i => i.code).sort()).toEqual(["B-1", "I-1", "R-1"]); // BD-1 conta como DeadLetter
     expect(m.general.byType.bug).toBe(1);
+    expect(m.general.byType.incident).toBe(1);
   });
 
   it("inclui somente DeadLetters quando a opção de DLQ está ativa", () => {
@@ -323,14 +324,14 @@ describe("inclusão de Bugs e DeadLetters", () => {
 
   it("inclui Bugs e DeadLetters juntos sem duplicar card com dupla classificação", () => {
     const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: { bugs: true, deadletters: true } });
-    expect(m.general.completed).toBe(4);
+    expect(m.general.completed).toBe(5);
     expect(m.general.items.filter(i => i.code === "BD-1")).toHaveLength(1);
     expect(m.general.byType.deadletter).toBe(2); // DeadLetter tem precedência de rótulo
     expect(m.general.byType.bug).toBe(1);
   });
 
-  it("mantém incidentes fora dos gerais em todas as combinações", () => {
-    for (const inc of [{}, { bugs: true }, { deadletters: true }, { bugs: true, deadletters: true }]) {
+  it("mantém incidentes fora dos gerais quando a opção de Bug está desligada", () => {
+    for (const inc of [{}, { deadletters: true }]) {
       const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: inc });
       expect(m.general.items.some(i => i.code === "I-1")).toBe(false);
       expect(m.general.byType.incident).toBe(0);

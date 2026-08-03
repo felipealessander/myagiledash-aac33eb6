@@ -128,7 +128,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
 
   const includedTypesLabel = useMemo(() => {
     const parts = ["Demandas regulares"];
-    if (includeBugs) parts.push("Bugs");
+    if (includeBugs) parts.push("Bugs/Incidentes");
     if (includeDeadletters) parts.push("DeadLetters");
     return parts.join(" + ");
   }, [includeBugs, includeDeadletters]);
@@ -166,7 +166,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
       segment === "general"
         ? "Itens concluídos no mês (data de fechamento)."
         : "Itens com cliente vinculado concluídos no mês (data de fechamento).";
-    return `${base} Participando do cálculo: ${includedTypesLabel}. Incidentes nunca entram.`;
+    return `${base} Participando do cálculo: ${includedTypesLabel}.`;
   };
 
   const renderSegment = (segment: SegmentKey) => {
@@ -325,7 +325,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 text-xs rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-muted">
               <Checkbox checked={includeBugs} onCheckedChange={v => setIncludeBugs(v === true)} />
-              Incluir Bugs
+              Incluir Bugs / Incidentes
             </label>
             <label className="flex items-center gap-2 text-xs rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-muted">
               <Checkbox checked={includeDeadletters} onCheckedChange={v => setIncludeDeadletters(v === true)} />
