@@ -687,8 +687,12 @@ export function useDashboardData() {
 
   const monthlyTrend: MonthlyTrendPoint[] = useMemo(() => {
     if (!dbTasksForTrend || dbTasksForTrend.length === 0 || yearMonthsForTrend.length === 0) return [];
-    return buildMonthlyTrend(dbTasksForTrend, yearMonthsForTrend);
-  }, [dbTasksForTrend, yearMonthsForTrend]);
+    const source = selectedSquads.length === 0
+      ? dbTasksForTrend
+      : dbTasksForTrend.filter(t => selectedSquads.includes(t.squad || "Sem Squad"));
+    return buildMonthlyTrend(source, yearMonthsForTrend);
+  }, [dbTasksForTrend, yearMonthsForTrend, selectedSquads]);
+
 
   return {
     months,

@@ -1,8 +1,9 @@
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  LineChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, ComposedChart, Area, AreaChart,
 } from "recharts";
 import type { MonthlyTrendPoint } from "@/hooks/useDashboardData";
+import { linearTrend } from "@/lib/chartHelpers";
 
 interface Props {
   data: MonthlyTrendPoint[];
@@ -18,25 +19,37 @@ const tooltipStyle = {
 const axisTickStyle = { fill: "hsl(215, 15%, 52%)", fontSize: 10 };
 const gridStroke = "hsl(225, 15%, 18%)";
 
+const DELIVERY_KEYS = ["tarefas", "melhorias", "incidentes", "bugs", "deadLetters", "epicos", "outros"] as const;
+
 function shortLabel(label: string) {
   // "Março 2026" -> "Mar"
   return label.slice(0, 3);
 }
 
 export function MonthlyTrendCharts({ data }: Props) {
-  const chartData = data.map(d => ({ ...d, shortLabel: shortLabel(d.label) }));
+  const totals = data.map(d =>
+    DELIVERY_KEYS.reduce((s, k) => s + (Number((d as unknown as Record<string, number>)[k]) || 0), 0),
+  );
+  const deliveryTrend = linearTrend(totals);
+  const chartData = data.map((d, i) => ({
+    ...d,
+    shortLabel: shortLabel(d.label),
+    totalEntregas: totals[i],
+    tendencia: deliveryTrend[i],
+  }));
+
 
   return (
     <div className="space-y-4">
       {/* Tasks by Category */}
       <div className="gradient-card rounded-lg border border-border p-5">
         <h3 className="text-sm font-semibold mb-1">Entregas por Tipo (Mensal)</h3>
-        <p className="text-xs text-muted-foreground mb-4">Evolução mensal de tarefas entregues por categoria</p>
+        <p className="text-xs text-muted-foreground mb-4">Evolução mensal de tarefas entregues por categoria (mês = data de fechamento) · linha tracejada = tendência geral</p>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
+            <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-              <XAxis dataKey="shortLabel" tick={axisTickStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
+              <XAxis dataKey="shortLabel" interval={0} tick={axisTickStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
               <YAxis tick={axisTickStyle} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "hsl(210, 20%, 92%)" }} />
               <Legend wrapperStyle={{ fontSize: "11px" }} />
@@ -47,7 +60,9 @@ export function MonthlyTrendCharts({ data }: Props) {
               <Bar dataKey="deadLetters" name="DeadLetter" stackId="a" fill="hsl(280, 67%, 56%)" />
               <Bar dataKey="epicos" name="Épico" stackId="a" fill="hsl(180, 60%, 45%)" />
               <Bar dataKey="outros" name="Outros" stackId="a" fill="hsl(215, 15%, 52%)" />
-            </BarChart>
+              <Line type="monotone" dataKey="tendencia" name="Tendência" stroke="hsl(45, 100%, 62%)" strokeWidth={2} strokeDasharray="6 4" dot={false} />
+            </ComposedChart>
+
           </ResponsiveContainer>
         </div>
       </div>
