@@ -114,3 +114,17 @@ describe("chartHelpers — dados insuficientes", () => {
     expect(splitBySufficiency([])).toEqual({ withData: [], insufficient: [] });
   });
 });
+
+describe("linearTrend com máscara de períodos sem dados", () => {
+  it("mantém inclinação positiva ignorando meses zerados", () => {
+    const values = [10, 20, 30, 0];
+    const mask = [true, true, true, false];
+    const trend = linearTrend(values, mask);
+    expect(trend[3]).toBeGreaterThan(trend[0]);
+  });
+
+  it("sem máscara, o zero final derruba a tendência", () => {
+    const trend = linearTrend([10, 20, 30, 0]);
+    expect(trend[3]).toBeLessThan(trend[0]);
+  });
+});
