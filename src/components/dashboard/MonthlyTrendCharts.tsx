@@ -30,7 +30,9 @@ export function MonthlyTrendCharts({ data }: Props) {
   const totals = data.map(d =>
     DELIVERY_KEYS.reduce((s, k) => s + (Number((d as unknown as Record<string, number>)[k]) || 0), 0),
   );
-  const deliveryTrend = linearTrend(totals);
+  const deliveryMask = totals.map(t => t !== 0);
+  const deliveryTrend = linearTrend(totals, deliveryMask.some(Boolean) ? deliveryMask : undefined);
+
   const chartData = data.map((d, i) => ({
     ...d,
     shortLabel: shortLabel(d.label),
