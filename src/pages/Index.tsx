@@ -472,12 +472,26 @@ const Index = () => {
             </h2>
             <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
             <div className="space-y-4">
+              {isMultiMonth && (
+                <MonthComparisonPanel
+                  title="Comparação mensal — entregas por tipo"
+                  months={period.months}
+                  metrics={[
+                    buildMetric("tarefas", "Tarefas", p => p.tarefas),
+                    buildMetric("melhorias", "Melhorias", p => p.melhorias),
+                    buildMetric("epicos", "Épicos", p => p.epicos),
+                    buildMetric("horas", "Horas realizadas", p => p.totalSpentHours, "h"),
+                  ]}
+                  onDrill={(month) => setDrill({ month, label: comparisonPoints.find(p => p.month === month)?.label ?? month })}
+                />
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <CategoryChart categoryTotals={categoryTotals} />
                 <TeamDistributionChart teams={teams} />
               </div>
               <TaskTable categoryTotals={categoryTotals} />
             </div>
+
           </section>
 
           {/* ═══════ VISÃO DETALHADA POR SQUAD ═══════ */}
