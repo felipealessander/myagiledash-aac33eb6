@@ -402,30 +402,33 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       const reworkCount = mTasks.filter(t => (t.qa_returns || 0) > 0 || (t.corrections_count || 0) > 0).length;
       const reworkRate = totalTasks > 0 ? Math.round((reworkCount / totalTasks) * 1000) / 10 : 0;
 
-      // Only count tasks resolved within THIS month for lead/cycle time
+      // Only count tasks resolved within THIS month for lead/cycle time.
+      // Mesmas regras dos widgets: dias úteis, sem incidentes/épicos/Qualidade.
       const isResolvedInThisMonth = (ra: string) => ra.slice(0, 7) === m.value;
-      // Exclude Qualidade squad from agile metrics in trend
-      const isQualidade = (t: DBTask) => (t.squad || '').toLowerCase().trim() === 'qualidade';
-      const interruptedDaysT = (t: DBTask) => Math.max(0, (t.interrupted_minutes || 0) / (60 * 24));
-      const resolved = mTasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
-      const leadTimes = resolved.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.created_at_yt!).getTime()) / 86400000 - interruptedDaysT(t)));
-      const leadTimeAvg = leadTimes.length > 0 ? Math.round((leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length) * 10) / 10 : 0;
-
-      const cycled = mTasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && !isQualidade(t) && isResolvedInThisMonth(t.resolved_at!));
-      const cycleTimes = cycled.map(t => Math.max(0, (new Date(t.resolved_at!).getTime() - new Date(t.started_at!).getTime()) / 86400000 - interruptedDaysT(t)));
-      const cycleTimeAvg = cycleTimes.length > 0 ? Math.round((cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length) * 10) / 10 : 0;
-
-      // Stats helpers
-      const pct = (arr: number[], p: number) => {
-        if (arr.length === 0) return 0;
-        const sorted = [...arr].sort((a, b) => a - b);
-        const idx = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
-        return Math.round(sorted[idx] * 10) / 10;
+      const bDays = (from: string | null | undefined, to: string) => {
+        if (!from) return null;
+        const a = new Date(from);
+        const b = new Date(to);
+        if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
+        return businessDaysBetween(a, b);
       };
-      const leadTimeMedianGlobal = pct(leadTimes, 0.5);
-      const leadTimeP85Global = pct(leadTimes, 0.85);
-      const cycleTimeMedianGlobal = pct(cycleTimes, 0.5);
-      const cycleTimeP85Global = pct(cycleTimes, 0.85);
+      const flowMonthTasks = mTasks.filter(t => isFlowEligible(t) && !isIncidentTask(t) && t.resolved_at && isResolvedInThisMonth(t.resolved_at!));
+
+      const resolved = flowMonthTasks.filter(t => t.created_at_yt);
+      const leadTimes = resolved.map(t => bDays(t.created_at_yt, t.resolved_at!) ?? 0);
+      const leadStats = computeStats(leadTimes);
+      const leadTimeAvg = leadStats.avg;
+
+      const cycled = flowMonthTasks.filter(t => t.started_at || t.created_at_yt);
+      const cycleTimes = cycled.map(t => bDays(t.started_at || t.created_at_yt, t.resolved_at!) ?? 0);
+      const cycleStats = computeStats(cycleTimes);
+      const cycleTimeAvg = cycleStats.avg;
+
+      const pct = (arr: number[], p: number) => Math.round(percentile(arr, p) * 10) / 10;
+      const leadTimeMedianGlobal = leadStats.median;
+      const leadTimeP85Global = leadStats.p85;
+      const cycleTimeMedianGlobal = cycleStats.median;
+      const cycleTimeP85Global = cycleStats.p85;
 
       // Per-squad lead/cycle stats
       const groupBySquad = (items: { squad: string | null; v: number }[]) => {
@@ -444,6 +447,7 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       };
       const leadTimeBySquad = groupBySquad(resolved.map((t, i) => ({ squad: t.squad, v: leadTimes[i] })));
       const cycleTimeBySquad = groupBySquad(cycled.map((t, i) => ({ squad: t.squad, v: cycleTimes[i] })));
+
 
       // Throughput: count tasks with done status (aligned with CFD definition)
       const throughput = mTasks.filter(t => isDoneStatus(t.status)).length;
