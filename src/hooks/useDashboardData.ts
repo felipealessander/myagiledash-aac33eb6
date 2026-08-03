@@ -399,6 +399,16 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       const totalSpentHours = mTasks.reduce((s, t) => s + (t.spent_minutes || 0) / 60, 0);
       const totalEstimatedHours = mTasks.reduce((s, t) => s + (t.estimated_minutes || 0) / 60, 0);
 
+      let billableHours = 0, nonBillableHours = 0, unmarkedBillingHours = 0;
+      for (const t of mTasks) {
+        const h = (t.spent_minutes || 0) / 60;
+        const st = normalizeBillingStatusValue(t.billing_status);
+        if (st === "Faturável") billableHours += h;
+        else if (st === "Não Faturável") nonBillableHours += h;
+        else unmarkedBillingHours += h;
+      }
+
+
       let incidentes = 0, melhorias = 0, deadLetters = 0, tarefas = 0, bugs = 0, epicos = 0, outros = 0;
       for (const t of mTasks) {
         const hasDL = isDeadLetter(t);
