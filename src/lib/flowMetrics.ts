@@ -380,6 +380,8 @@ function emptySegment(key: FlowSegmentKey): FlowSegmentResult {
     bySquad: [],
     byClient: [],
     items: [],
+    issues: [],
+
   };
 }
 
