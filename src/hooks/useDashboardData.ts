@@ -631,9 +631,26 @@ export function useDashboardData() {
     fetchYearForTrend();
   }, [selectedMonth, months, toast]);
 
+  // ── Filtro global de meses (multi-seleção) ────────────────────────────────
+  // Seleção vazia = consolidado do período base (ano ou mês selecionado).
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+
+  const selectedReportIds = useMemo(
+    () => new Set(months.filter(m => selectedMonths.includes(m.value)).map(m => m.id)),
+    [months, selectedMonths],
+  );
+
+  /** Tarefas efetivas do período ativo (respeita a multi-seleção de meses). */
+  const effectiveTasks = useMemo(() => {
+    if (selectedMonths.length === 0) return dbTasks;
+    if (!dbTasksForTrend) return dbTasks;
+    return dbTasksForTrend.filter(t => selectedReportIds.has((t as unknown as { report_id?: string }).report_id || ""));
+  }, [selectedMonths, dbTasks, dbTasksForTrend, selectedReportIds]);
+
   const dashboardData: DashboardData = useMemo(() => {
-    if (!dbTasks || dbTasks.length === 0) {
+    if (!effectiveTasks || effectiveTasks.length === 0) {
       return {
+
         teams: [],
         categoryTotals: [],
         billingData: [],
