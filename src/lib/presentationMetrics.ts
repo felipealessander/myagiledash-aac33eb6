@@ -24,25 +24,30 @@ export interface PresentationTask {
   resolved_at?: string | null;
 }
 
-const DEADLETTER_RE = /dead[\s-]?letter/i;
+import {
+  DEADLETTER_RE,
+  isArchivedStatus,
+  isDeadLetter as ruleIsDeadLetter,
+  isIncident as ruleIsIncident,
+  isEpic as ruleIsEpic,
+} from "./taskRules";
+
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 export function isArchived(status?: string | null): boolean {
-  return (status || "").toLowerCase().trim().includes("arquivado");
+  return isArchivedStatus(status);
 }
 
 export function isDeadLetter(t: PresentationTask): boolean {
-  if ((t.tags || []).some(tag => DEADLETTER_RE.test(tag || ""))) return true;
-  if (t.category && DEADLETTER_RE.test(t.category)) return true;
-  return false;
+  return ruleIsDeadLetter(t);
 }
 
 export function isIncident(t: PresentationTask): boolean {
-  return (t.category || "").toLowerCase().trim() === "incidente";
+  return ruleIsIncident(t);
 }
 
 function isEpic(t: PresentationTask): boolean {
-  return (t.category || "").toLowerCase().trim() === "épico";
+  return ruleIsEpic(t);
 }
 
 /** Valid, finite timestamp in ms, or null. */
