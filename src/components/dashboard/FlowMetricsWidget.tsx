@@ -195,6 +195,18 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
           ))}
         </div>
 
+        {latest && (
+          <div className="flex flex-wrap gap-1.5">
+            {(Object.keys(TYPE_LABEL) as (keyof typeof TYPE_LABEL)[])
+              .filter(k => (latest.byType[k as keyof typeof latest.byType] ?? 0) > 0)
+              .map(k => (
+                <Badge key={k} variant="outline" className="text-[10px]">
+                  {TYPE_LABEL[k]}: {latest.byType[k as keyof typeof latest.byType]}
+                </Badge>
+              ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <MetricComparisonChart title="Lead Time — Criação → Conclusão" icon={Clock} data={chart("lead")} />
           <MetricComparisonChart title="Cycle Time — Início do Dev → Conclusão" icon={Gauge} data={chart("cycle")} />
