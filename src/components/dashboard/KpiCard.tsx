@@ -10,6 +10,8 @@ interface KpiCardProps {
   variant?: "default" | "primary" | "warning" | "info" | "destructive";
   className?: string;
   delay?: number;
+  /** Torna o card clicável (drill-down dos cards que compõem o valor). */
+  onClick?: () => void;
 }
 
 const variantStyles = {
@@ -28,12 +30,17 @@ const iconVariantStyles = {
   destructive: "bg-destructive/10 text-destructive",
 };
 
-export function KpiCard({ title, value, subtitle, icon: Icon, trend, variant = "default", className, delay = 0 }: KpiCardProps) {
+export function KpiCard({ title, value, subtitle, icon: Icon, trend, variant = "default", className, delay = 0, onClick }: KpiCardProps) {
   return (
     <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
       className={cn(
         "gradient-card rounded-lg border p-5 opacity-0 animate-fade-in",
         variantStyles[variant],
+        onClick && "cursor-pointer transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/40",
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
