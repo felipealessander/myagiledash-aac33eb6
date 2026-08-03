@@ -22,6 +22,11 @@ import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
 import { IncidentsList } from "@/components/dashboard/IncidentsList";
+import { MonthMultiSelector } from "@/components/dashboard/MonthMultiSelector";
+import { PeriodBadge } from "@/components/dashboard/PeriodBadge";
+import { MonthComparisonPanel, type ComparisonMetric } from "@/components/dashboard/MonthComparisonPanel";
+import { DrillDownSheet } from "@/components/dashboard/DrillDownSheet";
+
 
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { MonthlyTrendCharts } from "@/components/dashboard/MonthlyTrendCharts";
