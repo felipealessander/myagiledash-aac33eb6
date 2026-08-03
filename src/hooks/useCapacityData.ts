@@ -50,7 +50,7 @@ async function fetchHoursForMonths(months: string[]): Promise<SquadHours[]> {
   const map = new Map<string, { estimated: number; spent: number; productSpent: number }>();
   for (const t of allTasks) {
     const status = (t.status || "").toLowerCase();
-    if (status.includes("arquivado")) continue;
+    if (isArchivedStatus(status)) continue;
     const sq = t.squad || "Sem Squad";
     const entry = map.get(sq) || { estimated: 0, spent: 0, productSpent: 0 };
     const spent = (t.spent_minutes || 0) / 60;
