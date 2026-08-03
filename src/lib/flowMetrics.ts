@@ -55,8 +55,7 @@ export function isBugTask(t: FlowTask): boolean {
 
 /** Incidente "puro" (tipo Incidente) — nunca entra nos indicadores gerais. */
 export function isPureIncidentTask(t: FlowTask): boolean {
-  const c = (t.category || "").toLowerCase().trim();
-  return c === "incidente" || c === "incidentes";
+  return ruleIsIncident(t);
 }
 
 /** Incidente, Bug e DeadLetter compõem a visão separada de incidentes. */
