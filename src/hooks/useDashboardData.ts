@@ -140,15 +140,9 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   const billMap = new Map<string, { estimatedHours: number; spentHours: number; taskCount: number }>();
 
   function normalizeBillingStatus(raw: string | null): string {
-    if (!raw) return "Nenhum Faturável";
-    const lower = raw.toLowerCase().trim();
-    if (lower === "sim") return "Faturável";
-    if (lower === "não" || lower === "nao") return "Não Faturável";
-    if (lower.includes("não fatur") || lower.includes("nao fatur")) return "Não Faturável";
-    if (lower.includes("nenhum")) return "Nenhum Faturável";
-    if (lower.includes("fatur")) return "Faturável";
-    return "Nenhum Faturável";
+    return normalizeBillingStatusValue(raw);
   }
+
 
   for (const t of tasks) {
     const status = normalizeBillingStatus(t.billing_status);
