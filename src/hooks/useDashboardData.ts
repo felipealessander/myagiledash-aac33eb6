@@ -370,6 +370,12 @@ export interface MonthlyTrendPoint {
   cfdDev: number;
   cfdQA: number;
   cfdDone: number;
+  /** Horas realizadas faturáveis no mês. */
+  billableHours: number;
+  /** Horas realizadas não faturáveis no mês. */
+  nonBillableHours: number;
+  /** Horas realizadas sem marcação de faturamento no mês. */
+  unmarkedBillingHours: number;
 }
 
 function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTrendPoint[] {
