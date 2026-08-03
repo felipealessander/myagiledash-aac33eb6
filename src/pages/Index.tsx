@@ -291,10 +291,11 @@ const Index = () => {
             <div className="space-y-4">
               {/* KPIs de Produto */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KpiCard title="Horas Realizadas" value={`${totalSpent.toFixed(0)}h`} subtitle="Total de horas registradas" icon={Clock} variant="primary" delay={0} />
-                <KpiCard title="Horas Estimadas" value={`${totalEstimated.toFixed(0)}h`} subtitle="Total previsto nas tarefas" icon={TrendingUp} variant="info" delay={50} />
-                <KpiCard title="Total de Tarefas" value={totalTasks} subtitle="Itens rastreados no período" icon={ListTodo} variant="default" delay={100} />
+                <KpiCard title="Horas Realizadas" value={`${totalSpent.toFixed(0)}h`} subtitle="Total de horas registradas · clique para detalhar" icon={Clock} variant="primary" delay={0} onClick={() => setDrill({ month: "*", label: `Horas Realizadas — ${period.label}` })} />
+                <KpiCard title="Horas Estimadas" value={`${totalEstimated.toFixed(0)}h`} subtitle="Total previsto nas tarefas · clique para detalhar" icon={TrendingUp} variant="info" delay={50} onClick={() => setDrill({ month: "*", label: `Horas Estimadas — ${period.label}` })} />
+                <KpiCard title="Total de Tarefas" value={totalTasks} subtitle="Itens rastreados no período · clique para detalhar" icon={ListTodo} variant="default" delay={100} onClick={() => setDrill({ month: "*", label: `Tarefas — ${period.label}` })} />
                 <KpiCard title="Desvio de Estimativa" value={`${Number(overrun) >= 0 ? "+" : ""}${overrun}%`} subtitle="Horas além do estimado" icon={AlertTriangle} variant="warning" delay={150} />
+
               </div>
 
               {/* Comparação mensal — visão geral */}
