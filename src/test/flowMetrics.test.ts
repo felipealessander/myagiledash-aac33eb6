@@ -11,6 +11,7 @@ import {
   isOnDemandTask,
   percentile,
   toComparisonChartData,
+  computeVariation,
   type FlowTask,
 } from "@/lib/flowMetrics";
 
@@ -409,5 +410,86 @@ describe("inclusão de Bugs e DeadLetters", () => {
     const periods = [{ value: "2026-05", label: "Mai" }];
     expect(buildOnDemandHistory(byPeriod, periods)[0]).toMatchObject({ completed: 1, hours: 1 });
     expect(buildOnDemandHistory(byPeriod, periods, { inclusion: { deadletters: true } })[0]).toMatchObject({ completed: 2, hours: 3 });
+  });
+});
+
+/* ───────── Auditoria: rastreabilidade e inconsistências ───────── */
+
+describe("auditoria dos indicadores de fluxo", () => {
+  const base = (over: Partial<FlowTask>): FlowTask => ({
+    task_code: "X-1",
+    category: "Tarefa",
+    squad: "Golden Gate",
+    status: "Concluído",
+    created_at_yt: "2026-05-04T10:00:00Z",
+    started_at: "2026-05-05T10:00:00Z",
+    resolved_at: "2026-05-08T10:00:00Z",
+    ...over,
+  });
+
+  it("detalhamento tem a mesma quantidade de linhas do total do indicador", () => {
+    const tasks = [base({ task_code: "A-1" }), base({ task_code: "A-2" }), base({ task_code: "A-3", resolved_at: null })];
+    const m = buildFlowMetrics(tasks, { periodKey: "2026-05" });
+    expect(m.general.items.length).toBe(m.general.completed);
+    expect(m.general.completed).toBe(2);
+  });
+
+  it("expõe datas, flags e motivo de inclusão em cada card", () => {
+    const m = buildFlowMetrics([base({ task_code: "A-9", client: "PGE SP" })], { periodKey: "2026-05" });
+    const item = m.general.items[0];
+    expect(item.createdAt).toBe("2026-05-04T10:00:00Z");
+    expect(item.startedAt).toBe("2026-05-05T10:00:00Z");
+    expect(item.resolvedAt).toBe("2026-05-08T10:00:00Z");
+    expect(item.isBug).toBe(false);
+    expect(item.isDeadletter).toBe(false);
+    expect(item.isIncident).toBe(false);
+    expect(item.inclusionReason).toContain("Sob Demanda");
+  });
+
+  it("marca flags corretas para bug e deadletter incluídos", () => {
+    const tasks = [
+      base({ task_code: "B-1", category: "Bug" }),
+      base({ task_code: "D-1", category: "Tarefa", tags: ["DeadLetter"] }),
+    ];
+    const m = buildFlowMetrics(tasks, { periodKey: "2026-05", inclusion: { bugs: true, deadletters: true } });
+    expect(m.general.items.find(i => i.code === "B-1")!.isBug).toBe(true);
+    expect(m.general.items.find(i => i.code === "D-1")!.isDeadletter).toBe(true);
+  });
+
+  it("sinaliza fechamento anterior à abertura sem gerar valor negativo", () => {
+    const t = base({ task_code: "I-1", created_at_yt: "2026-05-20T10:00:00Z", resolved_at: "2026-05-10T10:00:00Z", started_at: null });
+    const m = buildFlowMetrics([t], { periodKey: "2026-05" });
+    expect(m.general.items[0].lead).toBe(0);
+    expect(m.general.issues.some(i => i.kind === "resolved_before_created")).toBe(true);
+  });
+
+  it("sinaliza concluído sem data de início e sem squad", () => {
+    const t = base({ task_code: "I-2", started_at: null, squad: null });
+    const m = buildFlowMetrics([t], { periodKey: "2026-05" });
+    const kinds = m.general.issues.map(i => i.kind);
+    expect(kinds).toContain("resolved_without_started");
+    expect(kinds).toContain("missing_squad");
+    expect(m.general.missingStart).toBe(1);
+  });
+
+  it("card concluído sem data de abertura fica fora do Lead Time", () => {
+    const t = base({ task_code: "I-3", created_at_yt: null });
+    const m = buildFlowMetrics([t], { periodKey: "2026-05" });
+    expect(m.general.items[0].lead).toBeNull();
+    expect(m.general.leadTime.count).toBe(0);
+    expect(m.general.missingCreated).toBe(1);
+  });
+
+  it("computeVariation protege divisão por zero e calcula percentual", () => {
+    expect(computeVariation(5, 0)).toEqual({ abs: 5, pct: null });
+    expect(computeVariation(6, 4)).toEqual({ abs: 2, pct: 50 });
+    expect(computeVariation(3, 6)).toEqual({ abs: -3, pct: -50 });
+  });
+
+  it("período sem registros retorna zeros, não erro", () => {
+    const m = buildFlowMetrics([base({ task_code: "Z-1" })], { periodKey: "2026-01" });
+    expect(m.general.completed).toBe(0);
+    expect(m.general.leadTime).toEqual({ count: 0, avg: 0, median: 0, p85: 0, min: 0, max: 0 });
+    expect(m.general.items).toHaveLength(0);
   });
 });

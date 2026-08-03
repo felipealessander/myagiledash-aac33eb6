@@ -270,10 +270,75 @@ export interface FlowItemDetail {
   client: string;
   type: FlowTaskClass;
   category: string;
+  /** Data de abertura (created_at_yt). */
+  createdAt: string | null;
+  /** Data de início do desenvolvimento (started_at). */
+  startedAt: string | null;
   resolvedAt: string | null;
   lead: number | null;
   cycle: number | null;
   hours: number;
+  isBug: boolean;
+  isDeadletter: boolean;
+  isIncident: boolean;
+  /** Motivo pelo qual o card entrou no indicador. */
+  inclusionReason: string;
+  /** Inconsistências de dados detectadas neste card. */
+  issues: string[];
+}
+
+/** Inconsistência de dados que não deve ser silenciosamente incorporada. */
+export interface FlowDataIssue {
+  code: string;
+  squad: string;
+  kind:
+    | "resolved_before_created"
+    | "started_before_created"
+    | "resolved_without_created"
+    | "resolved_without_started"
+    | "missing_squad"
+    | "invalid_classification";
+  message: string;
+}
+
+const ISSUE_MESSAGE: Record<FlowDataIssue["kind"], string> = {
+  resolved_before_created: "Data de fechamento anterior à data de abertura",
+  started_before_created: "Início do desenvolvimento anterior à abertura",
+  resolved_without_created: "Concluído sem data de abertura (fora do Lead Time)",
+  resolved_without_started: "Concluído sem data de início (Cycle Time usa a abertura)",
+  missing_squad: "Card sem squad",
+  invalid_classification: "Card sem tipo/classificação",
+};
+
+/** Detecta inconsistências de um card já filtrado. */
+export function detectTaskIssues(t: FlowTask): FlowDataIssue["kind"][] {
+  const kinds: FlowDataIssue["kind"][] = [];
+  const created = parseDate(t.created_at_yt);
+  const started = parseDate(t.started_at);
+  const resolved = parseDate(t.resolved_at);
+  if (created && resolved && resolved.getTime() < created.getTime()) kinds.push("resolved_before_created");
+  if (created && started && started.getTime() < created.getTime()) kinds.push("started_before_created");
+  if (resolved && !created) kinds.push("resolved_without_created");
+  if (resolved && !started) kinds.push("resolved_without_started");
+  if (!t.squad || !t.squad.trim()) kinds.push("missing_squad");
+  if (!t.category || !t.category.trim()) kinds.push("invalid_classification");
+  return kinds;
+}
+
+export function describeIssue(kind: FlowDataIssue["kind"]): string {
+  return ISSUE_MESSAGE[kind];
+}
+
+function inclusionReasonOf(t: FlowTask, key: FlowSegmentKey): string {
+  const type = classifyFlowTask(t);
+  if (key === "incidents") return `Visão separada de incidentes (${type})`;
+  const base =
+    type === "regular"
+      ? "Demanda regular"
+      : type === "deadletter"
+        ? "DeadLetter incluído por filtro"
+        : "Bug/Incidente incluído por filtro";
+  return isOnDemandTask(t) ? `${base} · Sob Demanda (cliente vinculado)` : base;
 }
 
 export interface FlowSegmentResult {
@@ -296,7 +361,10 @@ export interface FlowSegmentResult {
   byClient: { client: string; count: number; leadMedian: number; cycleMedian: number }[];
   /** Cards que compõem o resultado (concluídos no período). */
   items: FlowItemDetail[];
+  /** Inconsistências detectadas entre os cards do período. */
+  issues: FlowDataIssue[];
 }
+
 
 function emptySegment(key: FlowSegmentKey): FlowSegmentResult {
   return {
@@ -312,6 +380,8 @@ function emptySegment(key: FlowSegmentKey): FlowSegmentResult {
     bySquad: [],
     byClient: [],
     items: [],
+    issues: [],
+
   };
 }
 
@@ -364,6 +434,10 @@ export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey
 
     const type = classifyFlowTask(t);
     result.byType[type] += 1;
+    const issueKinds = detectTaskIssues(t);
+    for (const kind of issueKinds) {
+      result.issues.push({ code: t.task_code, squad: sq, kind, message: describeIssue(kind) });
+    }
     result.items.push({
       code: t.task_code,
       title: t.title || "",
@@ -371,12 +445,20 @@ export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey
       client: cl,
       type,
       category: t.category || "—",
+      createdAt: t.created_at_yt ?? null,
+      startedAt: t.started_at ?? null,
       resolvedAt: t.resolved_at ?? null,
       lead,
       cycle,
       hours: Math.round(((t.spent_minutes || 0) / 60) * 10) / 10,
+      isBug: isBugTask(t),
+      isDeadletter: isDeadLetterTask(t),
+      isIncident: isPureIncidentTask(t),
+      inclusionReason: inclusionReasonOf(t, key),
+      issues: issueKinds.map(describeIssue),
     });
   }
+
 
   result.items.sort((a, b) => (b.lead ?? -1) - (a.lead ?? -1) || a.code.localeCompare(b.code));
 
@@ -502,6 +584,14 @@ export function toComparisonChartData(
     };
   });
 }
+
+/** Variação absoluta e percentual entre dois valores (protegida contra divisão por zero). */
+export function computeVariation(current: number, previous: number): { abs: number; pct: number | null } {
+  const abs = round1(current - previous);
+  if (!previous) return { abs, pct: null };
+  return { abs, pct: Math.round(((current - previous) / previous) * 1000) / 10 };
+}
+
 
 /* ────────────────────────── histórico Sob Demanda ────────────────────────── */
 

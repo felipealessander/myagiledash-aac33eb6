@@ -24,6 +24,7 @@ import {
   buildFlowComparison,
   buildOnDemandHistory,
   toComparisonChartData,
+  computeVariation,
   type FlowMetricKind,
 } from "@/lib/flowMetrics";
 
@@ -42,6 +43,9 @@ const TYPE_LABEL: Record<string, string> = {
   incident: "Incidente",
 };
 
+
+const fmtDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
 
 const tooltipStyle = {
   backgroundColor: "hsl(var(--card))",
@@ -222,11 +226,14 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
                 <th className="text-right py-2 font-medium">Lead P85</th>
                 <th className="text-right py-2 font-medium">Cycle mediana</th>
                 <th className="text-right py-2 font-medium">Cycle P85</th>
+                <th className="text-right py-2 font-medium">Δ Lead mediana</th>
               </tr>
             </thead>
             <tbody>
-              {comparison.map(c => {
+              {comparison.map((c, i) => {
                 const seg = c.metrics[segment];
+                const prev = i > 0 ? comparison[i - 1].metrics[segment] : null;
+                const delta = prev ? computeVariation(seg.leadTime.median, prev.leadTime.median) : null;
                 return (
                   <tr key={c.periodKey} className="border-b border-border/50">
                     <td className="py-2">{c.label}</td>
@@ -235,14 +242,20 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
                     <td className="py-2 text-right">{seg.leadTime.p85}d</td>
                     <td className="py-2 text-right">{seg.cycleTime.median}d</td>
                     <td className="py-2 text-right">{seg.cycleTime.p85}d</td>
+                    <td className="py-2 text-right">
+                      {delta
+                        ? `${delta.abs > 0 ? "+" : ""}${delta.abs}d${delta.pct === null ? "" : ` (${delta.pct > 0 ? "+" : ""}${delta.pct}%)`}`
+                        : "—"}
+                    </td>
                   </tr>
                 );
               })}
               {comparison.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-muted-foreground">Selecione ao menos um mês.</td>
+                  <td colSpan={7} className="py-6 text-center text-muted-foreground">Selecione ao menos um mês.</td>
                 </tr>
               )}
+
             </tbody>
           </table>
         </div>
@@ -267,12 +280,27 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
           </div>
         )}
 
+        {latest && latest.issues.length > 0 && (
+          <details className="rounded-lg border border-warning/40 bg-warning/5 p-3">
+            <summary className="text-xs font-semibold cursor-pointer text-warning">
+              Inconsistências de dados detectadas ({latest.issues.length})
+            </summary>
+            <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+              {latest.issues.map((iss, i) => (
+                <li key={`${iss.code}-${iss.kind}-${i}`} className="text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground">{iss.code}</span> · {iss.squad} · {iss.message}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+
         {latest && latest.items.length > 0 && (
           <details className="rounded-lg border border-border p-3">
             <summary className="text-xs font-semibold cursor-pointer">
-              Detalhamento dos cards — {comparison[comparison.length - 1]?.label} ({latest.items.length})
+              Detalhamento dos cards — {comparison[comparison.length - 1]?.label} ({latest.items.length} de {latest.completed})
             </summary>
-            <div className="mt-3 max-h-72 overflow-y-auto">
+            <div className="mt-3 max-h-72 overflow-x-auto overflow-y-auto">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-card">
                   <tr className="text-muted-foreground border-b border-border">
@@ -280,9 +308,14 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
                     <th className="text-left py-2 font-medium">Tipo</th>
                     <th className="text-left py-2 font-medium">Squad</th>
                     <th className="text-left py-2 font-medium">Cliente</th>
+                    <th className="text-left py-2 font-medium">Abertura</th>
+                    <th className="text-left py-2 font-medium">Início Dev</th>
+                    <th className="text-left py-2 font-medium">Fechamento</th>
                     <th className="text-right py-2 font-medium">Lead</th>
                     <th className="text-right py-2 font-medium">Cycle</th>
                     <th className="text-right py-2 font-medium">Horas</th>
+                    <th className="text-left py-2 font-medium">Flags</th>
+                    <th className="text-left py-2 font-medium">Motivo de inclusão</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -295,9 +328,23 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
                       <td className="py-1.5">{TYPE_LABEL[item.type]}</td>
                       <td className="py-1.5">{item.squad}</td>
                       <td className="py-1.5">{item.client}</td>
+                      <td className="py-1.5 whitespace-nowrap">{fmtDate(item.createdAt)}</td>
+                      <td className="py-1.5 whitespace-nowrap">{fmtDate(item.startedAt)}</td>
+                      <td className="py-1.5 whitespace-nowrap">{fmtDate(item.resolvedAt)}</td>
                       <td className="py-1.5 text-right">{item.lead === null ? "—" : `${item.lead}d`}</td>
                       <td className="py-1.5 text-right">{item.cycle === null ? "—" : `${item.cycle}d`}</td>
                       <td className="py-1.5 text-right">{item.hours.toFixed(1)}h</td>
+                      <td className="py-1.5">
+                        <span className="flex flex-wrap gap-1">
+                          {item.isBug && <Badge variant="outline" className="text-[9px]">Bug</Badge>}
+                          {item.isDeadletter && <Badge variant="outline" className="text-[9px]">DLQ</Badge>}
+                          {item.isIncident && <Badge variant="outline" className="text-[9px]">Incidente</Badge>}
+                          {item.issues.length > 0 && (
+                            <Badge variant="destructive" className="text-[9px]">{item.issues.length} alerta(s)</Badge>
+                          )}
+                        </span>
+                      </td>
+                      <td className="py-1.5 text-muted-foreground">{item.inclusionReason}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -305,6 +352,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
             </div>
           </details>
         )}
+
       </div>
     );
   };
