@@ -344,8 +344,10 @@ const Index = () => {
                 <ReworkChart data={unfilteredDashboardData.reworkBySquad || []} />
                 <IncidentsByClientChart data={unfilteredDashboardData.incidentsByClient || []} />
               </div>
+              <IncidentsList tasks={rawTasks} selectedSquads={selectedSquads} />
             </div>
           </section>
+
 
           {/* ═══════ HORAS POR CLIENTE (Sob Demanda) ═══════ */}
           <ClientHoursWidget selectedMonth={selectedMonth} months={months} />
