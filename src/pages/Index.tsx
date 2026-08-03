@@ -26,6 +26,7 @@ import { MonthMultiSelector } from "@/components/dashboard/MonthMultiSelector";
 import { PeriodBadge } from "@/components/dashboard/PeriodBadge";
 import { MonthComparisonPanel, type ComparisonMetric } from "@/components/dashboard/MonthComparisonPanel";
 import { DrillDownSheet } from "@/components/dashboard/DrillDownSheet";
+import { isIncident } from "@/lib/taskRules";
 
 
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
@@ -54,7 +55,7 @@ const Index = () => {
     monthlyTrend, isYearView, rawTasks, trendTasks, monthByReportId,
   } = useDashboardData();
   const [presentationOpen, setPresentationOpen] = useState(false);
-  const [drill, setDrill] = useState<{ month: string; label: string } | null>(null);
+  const [drill, setDrill] = useState<{ month: string; label: string; filter?: (t: any) => boolean } | null>(null);
   const isComparing = selectedSquads.length >= 2;
   const hasSquadFilter = selectedSquads.length > 0;
   const isMultiMonth = period.months.length > 1;
@@ -62,16 +63,19 @@ const Index = () => {
     setSelectedSquads(prev => prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]);
   };
 
-  // Cards de um mês específico (drill-down das comparações mensais)
+  // Cards de um mês específico ("*" = todo o período ativo) — drill-down
   const drillTasks = useMemo(() => {
     if (!drill) return [];
+    const allowed = drill.month === "*" ? new Set(period.months) : new Set([drill.month]);
     return (trendTasks as any[]).filter(t => {
       const month = monthByReportId.get(t.report_id || "");
-      if (month !== drill.month) return false;
+      if (!month || !allowed.has(month)) return false;
       if (selectedSquads.length > 0 && !selectedSquads.includes(t.squad || "Sem Squad")) return false;
-      return !(t.status || "").toLowerCase().includes("arquivado");
+      if ((t.status || "").toLowerCase().includes("arquivado")) return false;
+      return drill.filter ? drill.filter(t) : true;
     });
-  }, [drill, trendTasks, monthByReportId, selectedSquads]);
+  }, [drill, trendTasks, monthByReportId, selectedSquads, period.months]);
+
 
   const buildMetric = (key: string, label: string, pick: (p: (typeof comparisonPoints)[number]) => number, unit?: string, lowerIsBetter?: boolean): ComparisonMetric => ({
     key, label, unit, lowerIsBetter,
@@ -288,10 +292,11 @@ const Index = () => {
             <div className="space-y-4">
               {/* KPIs de Produto */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KpiCard title="Horas Realizadas" value={`${totalSpent.toFixed(0)}h`} subtitle="Total de horas registradas" icon={Clock} variant="primary" delay={0} />
-                <KpiCard title="Horas Estimadas" value={`${totalEstimated.toFixed(0)}h`} subtitle="Total previsto nas tarefas" icon={TrendingUp} variant="info" delay={50} />
-                <KpiCard title="Total de Tarefas" value={totalTasks} subtitle="Itens rastreados no período" icon={ListTodo} variant="default" delay={100} />
+                <KpiCard title="Horas Realizadas" value={`${totalSpent.toFixed(0)}h`} subtitle="Total de horas registradas · clique para detalhar" icon={Clock} variant="primary" delay={0} onClick={() => setDrill({ month: "*", label: `Horas Realizadas — ${period.label}` })} />
+                <KpiCard title="Horas Estimadas" value={`${totalEstimated.toFixed(0)}h`} subtitle="Total previsto nas tarefas · clique para detalhar" icon={TrendingUp} variant="info" delay={50} onClick={() => setDrill({ month: "*", label: `Horas Estimadas — ${period.label}` })} />
+                <KpiCard title="Total de Tarefas" value={totalTasks} subtitle="Itens rastreados no período · clique para detalhar" icon={ListTodo} variant="default" delay={100} onClick={() => setDrill({ month: "*", label: `Tarefas — ${period.label}` })} />
                 <KpiCard title="Desvio de Estimativa" value={`${Number(overrun) >= 0 ? "+" : ""}${overrun}%`} subtitle="Horas além do estimado" icon={AlertTriangle} variant="warning" delay={150} />
+
               </div>
 
               {/* Comparação mensal — visão geral */}
@@ -331,7 +336,7 @@ const Index = () => {
             <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KpiCard title="Incidentes Criados" value={unfilteredDashboardData.incidentsCreatedInMonth} subtitle="Criados no período selecionado" icon={AlertTriangle} variant="destructive" delay={0} />
+                <KpiCard title="Incidentes Criados" value={unfilteredDashboardData.incidentsCreatedInMonth} subtitle="Criados no período · clique para detalhar" icon={AlertTriangle} variant="destructive" delay={0} onClick={() => setDrill({ month: "*", label: `Incidentes — ${period.label}`, filter: (t) => isIncident(t) })} />
                 <KpiCard title="Tarefas com Retrabalho" value={unfilteredDashboardData.reworkCount} subtitle={`${unfilteredDashboardData.reworkRate}% do total`} icon={RotateCcw} variant="destructive" delay={50} />
                 <KpiCard title="Total de Correções" value={unfilteredDashboardData.reworkTotalCorrections} subtitle="Soma de correções aplicadas" icon={RotateCcw} variant="warning" delay={100} />
                 <KpiCard title="Correções / Tarefa" value={unfilteredDashboardData.reworkCount > 0 ? (unfilteredDashboardData.reworkTotalCorrections / unfilteredDashboardData.reworkCount).toFixed(1) : "0"} subtitle="Média por tarefa retrabalhada" icon={RotateCcw} variant="info" delay={150} />
@@ -472,12 +477,26 @@ const Index = () => {
             </h2>
             <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
             <div className="space-y-4">
+              {isMultiMonth && (
+                <MonthComparisonPanel
+                  title="Comparação mensal — entregas por tipo"
+                  months={period.months}
+                  metrics={[
+                    buildMetric("tarefas", "Tarefas", p => p.tarefas),
+                    buildMetric("melhorias", "Melhorias", p => p.melhorias),
+                    buildMetric("epicos", "Épicos", p => p.epicos),
+                    buildMetric("horas", "Horas realizadas", p => p.totalSpentHours, "h"),
+                  ]}
+                  onDrill={(month) => setDrill({ month, label: comparisonPoints.find(p => p.month === month)?.label ?? month })}
+                />
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <CategoryChart categoryTotals={categoryTotals} />
                 <TeamDistributionChart teams={teams} />
               </div>
               <TaskTable categoryTotals={categoryTotals} />
             </div>
+
           </section>
 
           {/* ═══════ VISÃO DETALHADA POR SQUAD ═══════ */}
