@@ -43,6 +43,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { LastSyncBadge } from "@/components/dashboard/LastSyncBadge";
+import { isDeadLetter } from "@/lib/taskRules";
 import { ShieldAlert } from "lucide-react";
 
 const Index = () => {
@@ -426,8 +427,22 @@ const Index = () => {
                 </div>
                 <FlowMetricsWidget months={months} selectedMonth={selectedMonth} selectedSquads={selectedSquads} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <LeadTimeChart data={leadTimeBySquad || []} />
-                  <CycleTimeChart data={cycleTimeBySquad || []} />
+                  <LeadTimeChart
+                    data={leadTimeBySquad || []}
+                    onSelect={(squad) => setDrill({
+                      month: "*",
+                      label: `Lead Time · ${squad} — ${period.label}`,
+                      filter: (t: any) => (t.squad || "Sem Squad") === squad && !!t.resolved_at,
+                    })}
+                  />
+                  <CycleTimeChart
+                    data={cycleTimeBySquad || []}
+                    onSelect={(squad) => setDrill({
+                      month: "*",
+                      label: `Cycle Time · ${squad} — ${period.label}`,
+                      filter: (t: any) => (t.squad || "Sem Squad") === squad && !!t.resolved_at,
+                    })}
+                  />
                 </div>
                 {monthlyTrend.length > 1 && (
                   <div className="gradient-card rounded-lg border border-border p-5">
@@ -491,8 +506,22 @@ const Index = () => {
                 />
               )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <CategoryChart categoryTotals={categoryTotals} />
-                <TeamDistributionChart teams={teams} />
+                <CategoryChart
+                  categoryTotals={categoryTotals}
+                  onSelect={(cat) => setDrill({
+                    month: "*",
+                    label: `Categoria: ${cat} — ${period.label}`,
+                    filter: (t: any) => (isDeadLetter(t) ? "DeadLetter" : (t.category || "Tarefa")) === cat || (t.category || "Tarefa") === cat,
+                  })}
+                />
+                <TeamDistributionChart
+                  teams={teams}
+                  onSelect={(squad) => setDrill({
+                    month: "*",
+                    label: `Squad: ${squad} — ${period.label}`,
+                    filter: (t: any) => (t.squad || "Sem Squad") === squad,
+                  })}
+                />
               </div>
               <TaskTable categoryTotals={categoryTotals} />
             </div>
@@ -595,6 +624,19 @@ const Index = () => {
               Faturamento
             </h2>
             <div className="space-y-4">
+              {isMultiMonth && (
+                <MonthComparisonPanel
+                  title="Comparação mensal — faturamento"
+                  months={period.months}
+                  metrics={[
+                    buildMetric("faturavel", "Horas faturáveis", p => p.billableHours, "h"),
+                    buildMetric("naoFaturavel", "Horas não faturáveis", p => p.nonBillableHours, "h", true),
+                    buildMetric("semMarcacao", "Horas sem marcação", p => p.unmarkedBillingHours, "h", true),
+                    buildMetric("pctFaturavel", "% faturável", p => p.totalSpentHours > 0 ? Math.round((p.billableHours / p.totalSpentHours) * 1000) / 10 : 0, "%"),
+                  ]}
+                  onDrill={(month) => setDrill({ month, label: comparisonPoints.find(p => p.month === month)?.label ?? month })}
+                />
+              )}
               <BillingKpiCards billingData={unfilteredDashboardData.billingData} billingTotalSpent={unfilteredDashboardData.billingTotalSpent} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <BillingOverviewChart billingData={unfilteredDashboardData.billingData} billingTotalSpent={unfilteredDashboardData.billingTotalSpent} />

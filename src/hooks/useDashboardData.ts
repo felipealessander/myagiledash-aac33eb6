@@ -62,6 +62,19 @@ function isDoneStatus(status: string | null): boolean {
   return ruleIsDoneStatus(status);
 }
 
+export function normalizeBillingStatusValue(raw: string | null | undefined): string {
+  if (!raw) return "Nenhum Faturável";
+  const lower = raw.toLowerCase().trim();
+  if (lower === "sim") return "Faturável";
+  if (lower === "não" || lower === "nao") return "Não Faturável";
+  if (lower.includes("não fatur") || lower.includes("nao fatur")) return "Não Faturável";
+  if (lower.includes("nenhum")) return "Nenhum Faturável";
+  if (lower.includes("fatur")) return "Faturável";
+  return "Nenhum Faturável";
+}
+
+
+
 function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   // Exclude archived tasks from ALL calculations
   const tasks = rawTasks.filter(t => !isArchived(t.status));
@@ -140,15 +153,9 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   const billMap = new Map<string, { estimatedHours: number; spentHours: number; taskCount: number }>();
 
   function normalizeBillingStatus(raw: string | null): string {
-    if (!raw) return "Nenhum Faturável";
-    const lower = raw.toLowerCase().trim();
-    if (lower === "sim") return "Faturável";
-    if (lower === "não" || lower === "nao") return "Não Faturável";
-    if (lower.includes("não fatur") || lower.includes("nao fatur")) return "Não Faturável";
-    if (lower.includes("nenhum")) return "Nenhum Faturável";
-    if (lower.includes("fatur")) return "Faturável";
-    return "Nenhum Faturável";
+    return normalizeBillingStatusValue(raw);
   }
+
 
   for (const t of tasks) {
     const status = normalizeBillingStatus(t.billing_status);
@@ -363,6 +370,12 @@ export interface MonthlyTrendPoint {
   cfdDev: number;
   cfdQA: number;
   cfdDone: number;
+  /** Horas realizadas faturáveis no mês. */
+  billableHours: number;
+  /** Horas realizadas não faturáveis no mês. */
+  nonBillableHours: number;
+  /** Horas realizadas sem marcação de faturamento no mês. */
+  unmarkedBillingHours: number;
 }
 
 function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTrendPoint[] {
@@ -385,6 +398,16 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       const totalTasks = mTasks.length;
       const totalSpentHours = mTasks.reduce((s, t) => s + (t.spent_minutes || 0) / 60, 0);
       const totalEstimatedHours = mTasks.reduce((s, t) => s + (t.estimated_minutes || 0) / 60, 0);
+
+      let billableHours = 0, nonBillableHours = 0, unmarkedBillingHours = 0;
+      for (const t of mTasks) {
+        const h = (t.spent_minutes || 0) / 60;
+        const st = normalizeBillingStatusValue(t.billing_status);
+        if (st === "Faturável") billableHours += h;
+        else if (st === "Não Faturável") nonBillableHours += h;
+        else unmarkedBillingHours += h;
+      }
+
 
       let incidentes = 0, melhorias = 0, deadLetters = 0, tarefas = 0, bugs = 0, epicos = 0, outros = 0;
       for (const t of mTasks) {
@@ -492,6 +515,9 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
         throughput,
         wip,
         cfdBacklog, cfdDev, cfdQA, cfdDone,
+        billableHours: Math.round(billableHours),
+        nonBillableHours: Math.round(nonBillableHours),
+        unmarkedBillingHours: Math.round(unmarkedBillingHours),
       };
     });
 
