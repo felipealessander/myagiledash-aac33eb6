@@ -311,7 +311,7 @@ describe("inclusão de Bugs e DeadLetters", () => {
   it("inclui somente Bugs quando a opção de Bug está ativa", () => {
     const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: { bugs: true } });
     expect(m.general.completed).toBe(2);
-    expect(m.general.items.map(i => i.code).sort()).toEqual(["B-1", "R-1"]);
+    expect(m.general.items.map(i => i.code).sort()).toEqual(["B-1", "R-1"]); // BD-1 conta como DeadLetter
     expect(m.general.byType.bug).toBe(1);
   });
 
