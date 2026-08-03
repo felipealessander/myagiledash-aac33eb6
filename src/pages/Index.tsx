@@ -21,6 +21,8 @@ import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
+import { IncidentsList } from "@/components/dashboard/IncidentsList";
+
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { MonthlyTrendCharts } from "@/components/dashboard/MonthlyTrendCharts";
 import { P85BySquadTrendChart } from "@/components/dashboard/P85BySquadTrendChart";
@@ -317,16 +319,6 @@ const Index = () => {
             </div>
           </section>
 
-          {/* ═══════ EVOLUÇÃO MENSAL (só no ano consolidado) ═══════ */}
-          {isYearView && monthlyTrend.length > 0 && (
-            <section>
-              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
-                <TrendingUp className="h-4 w-4" />
-                Evolução Mensal
-              </h2>
-              <MonthlyTrendCharts data={monthlyTrend} />
-            </section>
-          )}
 
           <section>
             <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
@@ -344,11 +336,11 @@ const Index = () => {
                 <ReworkChart data={unfilteredDashboardData.reworkBySquad || []} />
                 <IncidentsByClientChart data={unfilteredDashboardData.incidentsByClient || []} />
               </div>
+              <IncidentsList tasks={rawTasks} selectedSquads={selectedSquads} />
             </div>
           </section>
 
-          {/* ═══════ HORAS POR CLIENTE (Sob Demanda) ═══════ */}
-          <ClientHoursWidget selectedMonth={selectedMonth} months={months} />
+
 
           {/* ═══════ MÉTRICAS ÁGEIS ═══════ */}
           {selectedMonth !== "static" && (leadTimeBySquad?.length > 0 || cycleTimeBySquad?.length > 0 || throughputByWeek?.length > 0 || wipBySquad?.length > 0) && (
@@ -436,6 +428,22 @@ const Index = () => {
               </div>
             </section>
           )}
+
+          {/* ═══════ EVOLUÇÃO MENSAL (só no ano consolidado) ═══════ */}
+          {isYearView && monthlyTrend.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+                <TrendingUp className="h-4 w-4" />
+                Evolução Mensal
+              </h2>
+              <MonthlyTrendCharts data={monthlyTrend} />
+            </section>
+          )}
+
+          {/* ═══════ HORAS POR CLIENTE (Sob Demanda) ═══════ */}
+          <ClientHoursWidget selectedMonth={selectedMonth} months={months} />
+
+
 
           {/* ═══════ FATURAMENTO ═══════ */}
           <section>
