@@ -194,56 +194,49 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     return resolved === selectedMonth;
   };
 
-  // Agile metrics - Lead Time: created_at_yt -> resolved_at, descontando tempo em "Interrompido"
-  // Exclude "Qualidade" squad from agile metrics as their workflow differs significantly
-  const isQualidadeSquad = (t: DBTask) => (t.squad || '').toLowerCase().trim() === 'qualidade';
-  const interruptedDays = (t: DBTask) => Math.max(0, (t.interrupted_minutes || 0) / (60 * 24));
-  const resolvedTasks = tasks.filter(t => t.created_at_yt && t.resolved_at && t.category !== "Épico" && !isQualidadeSquad(t) && isResolvedInPeriod(t.resolved_at!));
-  const leadTimes = resolvedTasks.map(t => {
-    const created = new Date(t.created_at_yt!).getTime();
-    const resolved = new Date(t.resolved_at!).getTime();
-    const raw = (resolved - created) / (1000 * 60 * 60 * 24);
-    return Math.max(0, raw - interruptedDays(t));
-  });
+  // Agile metrics — regras unificadas em src/lib/flowMetrics.ts:
+  // Lead Time  = criação -> conclusão, em dias úteis.
+  // Cycle Time = início do dev (ou criação, na ausência dele) -> conclusão, em dias úteis.
+  // Incidentes (Incidente, Bug e DeadLetter), Épicos e a squad "Qualidade" ficam fora.
+  const flowBase = tasks.filter(t => isFlowEligible(t) && !isIncidentTask(t));
+  const businessDaysFrom = (from: string | null | undefined, to: string) => {
+    if (!from) return null;
+    const a = new Date(from);
+    const b = new Date(to);
+    if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
+    return businessDaysBetween(a, b);
+  };
+  const stats = (values: number[]) => {
+    const s = computeStats(values);
+    return { avg: s.avg, median: s.median, p85: s.p85 };
+  };
+
+  const resolvedTasks = flowBase.filter(t => t.created_at_yt && t.resolved_at && isResolvedInPeriod(t.resolved_at!));
+  const leadTimes = resolvedTasks
+    .map(t => businessDaysFrom(t.created_at_yt, t.resolved_at!))
+    .filter((v): v is number => v !== null);
 
   // Lead time by squad
   const leadTimeBySquad: { squad: string; avg: number; median: number; p85: number; count: number }[] = [];
   for (const squadName of squadNames) {
     const squadResolved = resolvedTasks.filter(t => (t.squad || "Sem Squad") === squadName);
-    if (squadResolved.length === 0) {
-      leadTimeBySquad.push({ squad: squadName, avg: 0, median: 0, p85: 0, count: 0 });
-      continue;
-    }
-    const times = squadResolved.map(t => {
-      const c = new Date(t.created_at_yt!).getTime();
-      const r = new Date(t.resolved_at!).getTime();
-      return Math.max(0, (r - c) / (1000 * 60 * 60 * 24) - interruptedDays(t));
-    }).sort((a, b) => a - b);
-    const avg = times.reduce((s, v) => s + v, 0) / times.length;
-    const median = times[Math.floor(times.length / 2)];
-    const p85 = times[Math.floor(times.length * 0.85)];
-    leadTimeBySquad.push({ squad: squadName, avg: Math.round(avg * 10) / 10, median: Math.round(median * 10) / 10, p85: Math.round(p85 * 10) / 10, count: squadResolved.length });
+    const times = squadResolved
+      .map(t => businessDaysFrom(t.created_at_yt, t.resolved_at!))
+      .filter((v): v is number => v !== null);
+    leadTimeBySquad.push({ squad: squadName, ...stats(times), count: squadResolved.length });
   }
 
-  // Cycle Time by squad (started_at -> resolved_at, descontando tempo em "Interrompido")
-  const cycleTimeTasks = tasks.filter(t => t.started_at && t.resolved_at && t.category !== "Épico" && !isQualidadeSquad(t) && isResolvedInPeriod(t.resolved_at!));
+  // Cycle Time by squad
+  const cycleTimeTasks = flowBase.filter(t => t.resolved_at && (t.started_at || t.created_at_yt) && isResolvedInPeriod(t.resolved_at!));
   const cycleTimeBySquad: { squad: string; avg: number; median: number; p85: number; count: number }[] = [];
   for (const squadName of squadNames) {
     const squadCycle = cycleTimeTasks.filter(t => (t.squad || "Sem Squad") === squadName);
-    if (squadCycle.length === 0) {
-      cycleTimeBySquad.push({ squad: squadName, avg: 0, median: 0, p85: 0, count: 0 });
-      continue;
-    }
-    const times = squadCycle.map(t => {
-      const started = new Date(t.started_at!).getTime();
-      const resolved = new Date(t.resolved_at!).getTime();
-      return Math.max(0, (resolved - started) / (1000 * 60 * 60 * 24) - interruptedDays(t));
-    }).sort((a, b) => a - b);
-    const avg = times.reduce((s, v) => s + v, 0) / times.length;
-    const median = times[Math.floor(times.length / 2)];
-    const p85 = times[Math.floor(times.length * 0.85)];
-    cycleTimeBySquad.push({ squad: squadName, avg: Math.round(avg * 10) / 10, median: Math.round(median * 10) / 10, p85: Math.round(p85 * 10) / 10, count: squadCycle.length });
+    const times = squadCycle
+      .map(t => businessDaysFrom(t.started_at || t.created_at_yt, t.resolved_at!))
+      .filter((v): v is number => v !== null);
+    cycleTimeBySquad.push({ squad: squadName, ...stats(times), count: squadCycle.length });
   }
+
 
   // Throughput by week
   const throughputByWeek: { week: string; count: number }[] = [];
