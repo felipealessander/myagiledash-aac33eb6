@@ -434,6 +434,10 @@ export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey
 
     const type = classifyFlowTask(t);
     result.byType[type] += 1;
+    const issueKinds = detectTaskIssues(t);
+    for (const kind of issueKinds) {
+      result.issues.push({ code: t.task_code, squad: sq, kind, message: describeIssue(kind) });
+    }
     result.items.push({
       code: t.task_code,
       title: t.title || "",
@@ -441,12 +445,20 @@ export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey
       client: cl,
       type,
       category: t.category || "—",
+      createdAt: t.created_at_yt ?? null,
+      startedAt: t.started_at ?? null,
       resolvedAt: t.resolved_at ?? null,
       lead,
       cycle,
       hours: Math.round(((t.spent_minutes || 0) / 60) * 10) / 10,
+      isBug: isBugTask(t),
+      isDeadletter: isDeadLetterTask(t),
+      isIncident: isPureIncidentTask(t),
+      inclusionReason: inclusionReasonOf(t, key),
+      issues: issueKinds.map(describeIssue),
     });
   }
+
 
   result.items.sort((a, b) => (b.lead ?? -1) - (a.lead ?? -1) || a.code.localeCompare(b.code));
 
