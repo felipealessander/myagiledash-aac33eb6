@@ -353,7 +353,24 @@ export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey
     cEntry.count += 1;
     if (lead !== null) cEntry.lead.push(lead);
     if (cycle !== null) cEntry.cycle.push(cycle);
+
+    const type = classifyFlowTask(t);
+    result.byType[type] += 1;
+    result.items.push({
+      code: t.task_code,
+      title: t.title || "",
+      squad: sq,
+      client: cl,
+      type,
+      category: t.category || "—",
+      resolvedAt: t.resolved_at ?? null,
+      lead,
+      cycle,
+      hours: Math.round(((t.spent_minutes || 0) / 60) * 10) / 10,
+    });
   }
+
+  result.items.sort((a, b) => (b.lead ?? -1) - (a.lead ?? -1) || a.code.localeCompare(b.code));
 
   result.leadTime = computeStats(leadValues);
   result.cycleTime = computeStats(cycleValues);
