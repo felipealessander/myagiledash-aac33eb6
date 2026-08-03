@@ -463,6 +463,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
                 <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 Evolução mês a mês dos itens com cliente vinculado (Sob Demanda), com volume, horas apontadas e indicadores de fluxo.
               </p>
+              {onDemandDescription}
               {history.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-8 text-center">Sem meses disponíveis.</p>
               ) : (
