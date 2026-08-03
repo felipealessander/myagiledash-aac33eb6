@@ -74,20 +74,24 @@ export function MonthlyTrendCharts({ data }: Props) {
       {/* Throughput & Rework */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="gradient-card rounded-lg border border-border p-5">
-          <h3 className="text-sm font-semibold mb-1">Throughput Mensal</h3>
-          <p className="text-xs text-muted-foreground mb-4">Tarefas resolvidas por mês</p>
+          <h3 className="text-sm font-semibold mb-1">Throughput vs WIP Mensal</h3>
+          <p className="text-xs text-muted-foreground mb-4">Tarefas resolvidas no mês (barras) e trabalho em andamento — itens não concluídos, sem incidentes e sem squad Qualidade (linha)</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
+              <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                 <XAxis dataKey="shortLabel" tick={axisTickStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
-                <YAxis tick={axisTickStyle} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [v, "Resolvidas"]} />
-                <Bar dataKey="throughput" name="Resolvidas" fill="hsl(160, 84%, 39%)" radius={[4, 4, 0, 0]} fillOpacity={0.8} />
-              </BarChart>
+                <YAxis yAxisId="left" tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="right" orientation="right" tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "hsl(210, 20%, 92%)" }} />
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <Bar yAxisId="left" dataKey="throughput" name="Resolvidas" fill="hsl(160, 84%, 39%)" radius={[4, 4, 0, 0]} fillOpacity={0.8} />
+                <Line yAxisId="right" type="monotone" dataKey="wip" name="WIP" stroke="hsl(280, 67%, 56%)" strokeWidth={2} dot={{ r: 4 }} />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </div>
+
 
         <div className="gradient-card rounded-lg border border-border p-5">
           <h3 className="text-sm font-semibold mb-1">Taxa de Retrabalho</h3>

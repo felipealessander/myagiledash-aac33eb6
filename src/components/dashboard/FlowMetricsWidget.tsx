@@ -173,6 +173,23 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
     return `${base} Participando do cálculo: ${includedTypesLabel}.`;
   };
 
+  const onDemandDescription = (
+    <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5">
+      <p className="text-xs font-semibold flex items-center gap-2">
+        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+        O que é considerado "Sob Demanda"
+      </p>
+      <ul className="text-[11px] text-muted-foreground list-disc pl-5 space-y-1">
+        <li>Card com <strong>cliente vinculado</strong> no YouTrack (campo Cliente preenchido) — essa é a regra única de classificação.</li>
+        <li>Competência pelo <strong>mês de fechamento</strong> (<code>resolved_at</code>), independentemente de quando o card foi aberto.</li>
+        <li>Status contendo <strong>"Arquivado"</strong> é excluído; cada <code>task_code</code> conta uma única vez (deduplicação).</li>
+        <li><strong>Épicos</strong> e a squad <strong>Qualidade</strong> ficam fora das métricas de fluxo.</li>
+        <li><strong>Incidentes, Bugs e DeadLetters</strong> só entram quando os respectivos filtros acima estiverem marcados.</li>
+        <li>Lead Time = abertura → fechamento; Cycle Time = início do desenvolvimento → fechamento, ambos em <strong>dias úteis</strong>.</li>
+      </ul>
+    </div>
+  );
+
   const renderSegment = (segment: SegmentKey) => {
     const chart = (metric: FlowMetricKind) => toComparisonChartData(comparison, segment, metric);
     const latest = comparison[comparison.length - 1]?.metrics[segment];
@@ -183,6 +200,9 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
           <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
           {segmentHint(segment)}
         </p>
+
+        {segment === "onDemand" && onDemandDescription}
+
 
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
