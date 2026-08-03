@@ -62,6 +62,19 @@ function isDoneStatus(status: string | null): boolean {
   return ruleIsDoneStatus(status);
 }
 
+export function normalizeBillingStatusValue(raw: string | null | undefined): string {
+  if (!raw) return "Nenhum Faturável";
+  const lower = raw.toLowerCase().trim();
+  if (lower === "sim") return "Faturável";
+  if (lower === "não" || lower === "nao") return "Não Faturável";
+  if (lower.includes("não fatur") || lower.includes("nao fatur")) return "Não Faturável";
+  if (lower.includes("nenhum")) return "Nenhum Faturável";
+  if (lower.includes("fatur")) return "Faturável";
+  return "Nenhum Faturável";
+}
+
+
+
 function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   // Exclude archived tasks from ALL calculations
   const tasks = rawTasks.filter(t => !isArchived(t.status));
