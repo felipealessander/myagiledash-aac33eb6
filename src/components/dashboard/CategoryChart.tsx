@@ -13,9 +13,11 @@ const COLORS = [
 
 interface CategoryChartProps {
   categoryTotals: { name: CategoryName; hours: number; count: number }[];
+  /** Clique numa barra para abrir o drill-down da categoria. */
+  onSelect?: (category: string) => void;
 }
 
-export function CategoryChart({ categoryTotals }: CategoryChartProps) {
+export function CategoryChart({ categoryTotals, onSelect }: CategoryChartProps) {
   const data = categoryTotals.map(c => ({
     name: c.name,
     hours: Math.round(c.hours),
@@ -25,7 +27,7 @@ export function CategoryChart({ categoryTotals }: CategoryChartProps) {
   return (
     <div className="gradient-card rounded-lg border border-border p-5 opacity-0 animate-fade-in" style={{ animationDelay: "300ms" }}>
       <h3 className="text-sm font-semibold mb-1">Horas por Categoria</h3>
-      <p className="text-xs text-muted-foreground mb-4">Distribuição do tempo gasto por tipo de atividade</p>
+      <p className="text-xs text-muted-foreground mb-4">Distribuição do tempo gasto por tipo de atividade{onSelect ? " · clique numa barra para detalhar" : ""}</p>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
@@ -38,7 +40,12 @@ export function CategoryChart({ categoryTotals }: CategoryChartProps) {
               itemStyle={{ color: "hsl(210, 20%, 92%)" }}
               formatter={(value: number) => [`${value}h`, "Tempo gasto"]}
             />
-            <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
+            <Bar
+              dataKey="hours"
+              radius={[4, 4, 0, 0]}
+              cursor={onSelect ? "pointer" : undefined}
+              onClick={(d: any) => onSelect?.(d?.name ?? d?.payload?.name)}
+            >
               {data.map((_, index) => (
                 <Cell key={index} fill={COLORS[index % COLORS.length]} fillOpacity={0.8} />
               ))}

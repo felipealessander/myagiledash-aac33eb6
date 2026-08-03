@@ -13,9 +13,11 @@ interface CycleTimeData {
 
 interface CycleTimeChartProps {
   data: CycleTimeData[];
+  /** Clique numa barra para abrir o drill-down da squad. */
+  onSelect?: (squad: string) => void;
 }
 
-export function CycleTimeChart({ data }: CycleTimeChartProps) {
+export function CycleTimeChart({ data, onSelect }: CycleTimeChartProps) {
   const { withData, insufficient } = splitBySufficiency(data || []);
   const chartData = [...withData].sort((a, b) => b.median - a.median);
 
@@ -33,7 +35,12 @@ export function CycleTimeChart({ data }: CycleTimeChartProps) {
         ) : (
           <>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 55 }}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 5, right: 20, left: 0, bottom: 55 }}
+                style={onSelect ? { cursor: "pointer" } : undefined}
+                onClick={(state: any) => state?.activeLabel && onSelect?.(state.activeLabel)}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis
                   dataKey="squad"

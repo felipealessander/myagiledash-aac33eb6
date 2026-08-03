@@ -15,9 +15,11 @@ const DEFAULT_COLORS = [
 
 interface TeamDistributionChartProps {
   teams: TeamData[];
+  /** Clique numa fatia/legenda para abrir o drill-down do time. */
+  onSelect?: (squad: string) => void;
 }
 
-export function TeamDistributionChart({ teams }: TeamDistributionChartProps) {
+export function TeamDistributionChart({ teams, onSelect }: TeamDistributionChartProps) {
   const data = teams.map(t => ({
     name: t.name,
     value: Math.round(getTeamTotalHours(t)),
@@ -27,12 +29,12 @@ export function TeamDistributionChart({ teams }: TeamDistributionChartProps) {
   return (
     <div className="gradient-card rounded-lg border border-border p-5 opacity-0 animate-fade-in" style={{ animationDelay: "350ms" }}>
       <h3 className="text-sm font-semibold mb-1">Distribuição por Time</h3>
-      <p className="text-xs text-muted-foreground mb-4">Proporção de horas gastas entre os times</p>
+      <p className="text-xs text-muted-foreground mb-4">Proporção de horas gastas entre os times{onSelect ? " · clique para detalhar" : ""}</p>
       <div className="flex items-center gap-4">
         <div className="h-48 w-48 flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0}>
+              <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value" strokeWidth={0} cursor={onSelect ? "pointer" : undefined} onClick={(d: any) => onSelect?.(d?.name ?? d?.payload?.name)}>
                 {data.map((_, index) => (
                   <Cell key={index} fill={DEFAULT_COLORS[index % DEFAULT_COLORS.length]} fillOpacity={0.85} />
                 ))}
@@ -48,7 +50,11 @@ export function TeamDistributionChart({ teams }: TeamDistributionChartProps) {
         </div>
         <div className="space-y-3 flex-1">
           {data.map((d, i) => (
-            <div key={d.name} className="flex items-center gap-2">
+            <div
+              key={d.name}
+              className={`flex items-center gap-2 ${onSelect ? "cursor-pointer hover:opacity-80" : ""}`}
+              onClick={() => onSelect?.(d.name)}
+            >
               <div className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: DEFAULT_COLORS[i % DEFAULT_COLORS.length] }} />
               <span className="text-xs flex-1">{d.name}</span>
               <span className="text-xs font-mono text-muted-foreground">{d.value}h</span>
