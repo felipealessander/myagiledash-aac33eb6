@@ -400,13 +400,15 @@ export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey
 
 export interface FlowMetricsResult {
   periodKey: string | null;
-  /** Indicadores gerais: demandas comuns + sob demanda, SEM incidentes. */
+  /** Configuração de inclusão aplicada a este resultado. */
+  inclusion: Required<FlowInclusion>;
+  /** Indicadores gerais: demandas regulares (+ Bug/DeadLetter quando incluídos). */
   general: FlowSegmentResult;
   /** Somente demandas sem cliente vinculado. */
   demands: FlowSegmentResult;
   /** Somente itens com cliente vinculado (Sob Demanda). */
   onDemand: FlowSegmentResult;
-  /** Incidente, Bug e DeadLetter — contabilizados à parte. */
+  /** Incidente, Bug e DeadLetter — contabilizados à parte, sempre completos. */
   incidents: FlowSegmentResult;
   squads: string[];
   clients: string[];
@@ -415,17 +417,20 @@ export interface FlowMetricsResult {
 export function buildFlowMetrics(rawTasks: FlowTask[], filters: FlowFilters = {}): FlowMetricsResult {
   const tasks = applyFlowFilters(rawTasks, filters);
   const periodKey = filters.periodKey ?? null;
+  const inclusion: Required<FlowInclusion> = {
+    bugs: filters.inclusion?.bugs ?? DEFAULT_INCLUSION.bugs,
+    deadletters: filters.inclusion?.deadletters ?? DEFAULT_INCLUSION.deadletters,
+  };
 
   const incidentTasks = tasks.filter(isIncidentTask);
-  const nonIncident = tasks.filter(t => !isIncidentTask(t));
-  const onDemandTasks = nonIncident.filter(isOnDemandTask);
-  const plainTasks = nonIncident.filter(t => !isOnDemandTask(t));
-
-  const general = computeSegment(nonIncident, "demands", periodKey);
+  const generalTasks = tasks.filter(t => isIncludedInGeneral(t, inclusion));
+  const onDemandTasks = generalTasks.filter(isOnDemandTask);
+  const plainTasks = generalTasks.filter(t => !isOnDemandTask(t));
 
   return {
     periodKey,
-    general,
+    inclusion,
+    general: computeSegment(generalTasks, "demands", periodKey),
     demands: computeSegment(plainTasks, "demands", periodKey),
     onDemand: computeSegment(onDemandTasks, "onDemand", periodKey),
     incidents: computeSegment(incidentTasks, "incidents", periodKey),
