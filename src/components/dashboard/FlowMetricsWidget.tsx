@@ -266,6 +266,45 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
             </ResponsiveContainer>
           </div>
         )}
+
+        {latest && latest.items.length > 0 && (
+          <details className="rounded-lg border border-border p-3">
+            <summary className="text-xs font-semibold cursor-pointer">
+              Detalhamento dos cards — {comparison[comparison.length - 1]?.label} ({latest.items.length})
+            </summary>
+            <div className="mt-3 max-h-72 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-card">
+                  <tr className="text-muted-foreground border-b border-border">
+                    <th className="text-left py-2 font-medium">Card</th>
+                    <th className="text-left py-2 font-medium">Tipo</th>
+                    <th className="text-left py-2 font-medium">Squad</th>
+                    <th className="text-left py-2 font-medium">Cliente</th>
+                    <th className="text-right py-2 font-medium">Lead</th>
+                    <th className="text-right py-2 font-medium">Cycle</th>
+                    <th className="text-right py-2 font-medium">Horas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {latest.items.map(item => (
+                    <tr key={item.code} className="border-b border-border/50">
+                      <td className="py-1.5 pr-2">
+                        <span className="font-medium">{item.code}</span>
+                        {item.title && <span className="text-muted-foreground"> · {item.title}</span>}
+                      </td>
+                      <td className="py-1.5">{TYPE_LABEL[item.type]}</td>
+                      <td className="py-1.5">{item.squad}</td>
+                      <td className="py-1.5">{item.client}</td>
+                      <td className="py-1.5 text-right">{item.lead === null ? "—" : `${item.lead}d`}</td>
+                      <td className="py-1.5 text-right">{item.cycle === null ? "—" : `${item.cycle}d`}</td>
+                      <td className="py-1.5 text-right">{item.hours.toFixed(1)}h</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
       </div>
     );
   };
