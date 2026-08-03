@@ -515,6 +515,9 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
         throughput,
         wip,
         cfdBacklog, cfdDev, cfdQA, cfdDone,
+        billableHours: Math.round(billableHours),
+        nonBillableHours: Math.round(nonBillableHours),
+        unmarkedBillingHours: Math.round(unmarkedBillingHours),
       };
     });
 
