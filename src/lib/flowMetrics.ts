@@ -230,6 +230,8 @@ export interface FlowFilters {
   periodKey?: string | null;
   squads?: string[];
   clients?: string[];
+  /** Tipos opcionalmente incluídos nos indicadores gerais (Bug / DeadLetter). */
+  inclusion?: FlowInclusion;
 }
 
 /** Aplica os filtros globais do portal (arquivados, squad, cliente). */
