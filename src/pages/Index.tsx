@@ -365,11 +365,26 @@ const Index = () => {
           {/* ═══════ MÉTRICAS ÁGEIS ═══════ */}
           {selectedMonth !== "static" && (leadTimeBySquad?.length > 0 || cycleTimeBySquad?.length > 0 || throughputByWeek?.length > 0 || wipBySquad?.length > 0) && (
             <section>
-              <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+              <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
                 <TrendingUp className="h-4 w-4" />
                 Métricas Ágeis
               </h2>
+              <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
               <div className="space-y-4">
+                {isMultiMonth && (
+                  <MonthComparisonPanel
+                    title="Comparação mensal — métricas ágeis"
+                    months={period.months}
+                    metrics={[
+                      buildMetric("lead", "Lead Time médio", p => p.leadTimeAvg, "d", true),
+                      buildMetric("cycle", "Cycle Time médio", p => p.cycleTimeAvg, "d", true),
+                      buildMetric("throughput", "Throughput", p => p.throughput),
+                      buildMetric("wip", "WIP", p => p.wip, "", true),
+                    ]}
+                    onDrill={(month) => setDrill({ month, label: comparisonPoints.find(p => p.month === month)?.label ?? month })}
+                  />
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <KpiCard
                     title="Lead Time Médio"
