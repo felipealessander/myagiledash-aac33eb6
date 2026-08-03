@@ -43,6 +43,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { LastSyncBadge } from "@/components/dashboard/LastSyncBadge";
+import { isDeadLetter } from "@/lib/taskRules";
 import { ShieldAlert } from "lucide-react";
 
 const Index = () => {
