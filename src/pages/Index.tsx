@@ -26,6 +26,7 @@ import { MonthMultiSelector } from "@/components/dashboard/MonthMultiSelector";
 import { PeriodBadge } from "@/components/dashboard/PeriodBadge";
 import { MonthComparisonPanel, type ComparisonMetric } from "@/components/dashboard/MonthComparisonPanel";
 import { DrillDownSheet } from "@/components/dashboard/DrillDownSheet";
+import { isIncident } from "@/lib/taskRules";
 
 
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
