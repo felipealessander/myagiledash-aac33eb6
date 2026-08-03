@@ -6,6 +6,7 @@ import type { TeamData, CategoryName, BillingData, BillingStatus } from "@/data/
 import { getTeamColor } from "@/data/dashboardData";
 import * as staticData from "@/data/dashboardData";
 import { businessDaysBetween, computeStats, isFlowEligible, isIncidentTask, percentile } from "@/lib/flowMetrics";
+import { isArchivedStatus, isDoneStatus as ruleIsDoneStatus, isDeadLetter as ruleIsDeadLetter } from "@/lib/taskRules";
 
 export interface MonthOption {
   value: string;
@@ -34,12 +35,9 @@ interface DBTask {
 }
 
 // DeadLetter identification: by tag OR by YouTrack Type (category).
-// Matches variants like "deadletter", "dead letter", "dead-letter".
-const DEADLETTER_RE = /dead[\s-]?letter/i;
+// Regra canônica compartilhada — ver src/lib/taskRules.ts
 function isDeadLetter(t: { tags?: string[] | null; category?: string | null }): boolean {
-  if ((t.tags || []).some(tag => DEADLETTER_RE.test(tag))) return true;
-  if (t.category && DEADLETTER_RE.test(t.category)) return true;
-  return false;
+  return ruleIsDeadLetter(t);
 }
 
 // Fallback hardcoded members for static data only
@@ -53,15 +51,13 @@ const SQUAD_MEMBERS_STATIC: Record<string, string[]> = {
   "TheBigBang": ["João Victor", "Amanda Nunes", "Caio Rezende"],
 };
 
-// Helper: check if a task status is "archived" (should be excluded from all metrics)
+// Regras canônicas compartilhadas — ver src/lib/taskRules.ts
 function isArchived(status: string | null): boolean {
-  return (status || '').toLowerCase().trim().includes('arquivado');
+  return isArchivedStatus(status);
 }
 
-// Helper: check if a task status is "done" (delivered)
 function isDoneStatus(status: string | null): boolean {
-  const s = (status || '').toLowerCase().trim();
-  return s.includes('conclu') || s.includes('done') || s.includes('delivery');
+  return ruleIsDoneStatus(status);
 }
 
 function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {

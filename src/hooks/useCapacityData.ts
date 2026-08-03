@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isArchivedStatus } from "@/lib/taskRules";
 import { SQUAD_CAPACITY, getSquadCapacityForMonth, computeCapacitySummaries, getWorkingDaysInMonth, type SquadCapacitySummary } from "@/data/squadCapacity";
 
 interface SquadHours { squad: string; estimated: number; spent: number; productSpent: number }
@@ -50,7 +51,7 @@ async function fetchHoursForMonths(months: string[]): Promise<SquadHours[]> {
   const map = new Map<string, { estimated: number; spent: number; productSpent: number }>();
   for (const t of allTasks) {
     const status = (t.status || "").toLowerCase();
-    if (status.includes("arquivado")) continue;
+    if (isArchivedStatus(status)) continue;
     const sq = t.squad || "Sem Squad";
     const entry = map.get(sq) || { estimated: 0, spent: 0, productSpent: 0 };
     const spent = (t.spent_minutes || 0) / 60;

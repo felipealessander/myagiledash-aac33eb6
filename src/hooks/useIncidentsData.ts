@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isArchivedStatus, isDoneStatus, isIncident as ruleIsIncident } from "@/lib/taskRules";
 
 interface IncidentTask {
   task_code: string;
@@ -22,13 +23,12 @@ interface IncidentTask {
 export type PeriodFilter = "1m" | "3m" | "6m" | "1y";
 
 function isIncident(task: IncidentTask): boolean {
-  const cat = task.category?.toLowerCase() || "";
-  return cat === "incidente";
+  return ruleIsIncident(task);
 }
 
 function isOpen(task: IncidentTask, treatHomologAsDone = false): boolean {
   const s = (task.status || "").toLowerCase().trim();
-  if (s.includes("conclu") || s.includes("done") || s.includes("arquivado")) return false;
+  if (isDoneStatus(s) || isArchivedStatus(s)) return false;
   if (treatHomologAsDone && s.includes("homolog")) return false;
   return true;
 }
