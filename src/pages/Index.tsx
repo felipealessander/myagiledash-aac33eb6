@@ -21,6 +21,8 @@ import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
+import { IncidentsList } from "@/components/dashboard/IncidentsList";
+
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { MonthlyTrendCharts } from "@/components/dashboard/MonthlyTrendCharts";
 import { P85BySquadTrendChart } from "@/components/dashboard/P85BySquadTrendChart";
