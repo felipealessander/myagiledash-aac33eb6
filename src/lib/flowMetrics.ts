@@ -90,11 +90,16 @@ export const DEFAULT_INCLUSION: Required<FlowInclusion> = { bugs: false, deadlet
 export function isIncludedInGeneral(t: FlowTask, inclusion: FlowInclusion = {}): boolean {
   const includeBugs = inclusion.bugs ?? DEFAULT_INCLUSION.bugs;
   const includeDl = inclusion.deadletters ?? DEFAULT_INCLUSION.deadletters;
-  if (isPureIncidentTask(t) && !isDeadLetterTask(t) && !isBugTask(t)) return false;
-  const dl = isDeadLetterTask(t);
-  const bug = isBugTask(t);
-  if (!dl && !bug) return true;
-  return (dl && includeDl) || (bug && includeBugs);
+  switch (classifyFlowTask(t)) {
+    case "regular":
+      return true;
+    case "deadletter":
+      return includeDl;
+    case "bug":
+      return includeBugs;
+    default:
+      return false;
+  }
 }
 
 
