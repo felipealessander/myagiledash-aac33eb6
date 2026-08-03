@@ -15,6 +15,7 @@ import { BillingOverviewChart } from "@/components/dashboard/BillingOverviewChar
 import { BillingComparisonChart } from "@/components/dashboard/BillingComparisonChart";
 import { BillingKpiCards } from "@/components/dashboard/BillingKpiCards";
 import { LeadTimeChart } from "@/components/dashboard/LeadTimeChart";
+import { FlowMetricsWidget } from "@/components/dashboard/FlowMetricsWidget";
 import { ThroughputChart } from "@/components/dashboard/ThroughputChart";
 import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
