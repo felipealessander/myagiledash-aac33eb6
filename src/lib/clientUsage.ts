@@ -36,7 +36,7 @@ export interface UsageResult {
   unmapped: { alias: string; spentHours: number; taskCount: number }[];
 }
 
-const STATUS_ARQUIVADO = "arquivado";
+import { isArchivedStatus } from "./taskRules";
 
 /**
  * Return the month bucket (YYYY-MM, UTC) a task should be attributed to.
