@@ -75,3 +75,30 @@ Elas aparecem no painel "Inconsistências de dados detectadas" do widget.
 
 Qualquer mudança de regra exige atualizar este documento e os testes em
 `src/test/flowMetrics.test.ts`.
+
+## Fonte única das regras de classificação (`src/lib/taskRules.ts`)
+
+Todos os módulos do portal consomem as mesmas funções para classificar cards —
+nenhum módulo reimplementa a regra:
+
+| Regra | Função | Definição |
+| --- | --- | --- |
+| Arquivado | `isArchivedStatus` / `isArchived` | status **contém** "arquivado" (qualquer sufixo) — excluído de todos os indicadores |
+| Concluído | `isDoneStatus` | status contém "conclu", "done" ou "delivery" |
+| DeadLetter (DLQ) | `isDeadLetter` | tag **ou** tipo casando `dead[ -]?letter` |
+| Bug | `isBug` | tipo `Bug` / `Bugs` |
+| Incidente | `isIncident` | tipo `Incidente` / `Incidentes` |
+| Épico | `isEpic` | tipo `Épico` / `Epico` / `Epic` — entra no esforço, fora do fluxo |
+| Squad Qualidade | `isQualidadeSquad` | squad `Qualidade` — fora das métricas de fluxo |
+
+Módulos já centralizados: Fluxo (`flowMetrics`), Apresentação (`presentationMetrics`),
+Dashboard (`useDashboardData`), Capacidade (`useCapacityData`), Clientes
+(`clientUsage` / `useClientsData`) e Incidentes (`useIncidentsData`).
+
+Divergências corrigidas nesta auditoria:
+- **Clientes** excluía arquivados apenas com igualdade exata (`status === "arquivado"`);
+  status como "Arquivado (duplicado)" entravam no realizado. Agora usa a regra por conteúdo.
+- **Apresentação** e **Incidentes** não reconheciam o tipo no plural ("Incidentes").
+- Regex de DeadLetter estava duplicada em quatro arquivos; agora é única.
+
+Cobertura: `src/test/taskRules.test.ts`.
