@@ -31,21 +31,26 @@ export interface FlowTask {
 
 export type FlowSegmentKey = "demands" | "onDemand" | "incidents";
 
-const DEADLETTER_RE = /dead[\s-]?letter/i;
+import {
+  isArchived as ruleIsArchived,
+  isDeadLetter as ruleIsDeadLetter,
+  isBug as ruleIsBug,
+  isIncident as ruleIsIncident,
+  isEpic as ruleIsEpic,
+  isQualidadeSquad as ruleIsQualidadeSquad,
+} from "./taskRules";
 
 export function isArchivedTask(t: FlowTask): boolean {
-  return (t.status || "").toLowerCase().trim().includes("arquivado");
+  return ruleIsArchived(t);
 }
 
 export function isDeadLetterTask(t: FlowTask): boolean {
-  if ((t.tags || []).some(tag => DEADLETTER_RE.test(tag || ""))) return true;
-  return !!t.category && DEADLETTER_RE.test(t.category);
+  return ruleIsDeadLetter(t);
 }
 
 /** Bug puro (tipo Bug no YouTrack). */
 export function isBugTask(t: FlowTask): boolean {
-  const c = (t.category || "").toLowerCase().trim();
-  return c === "bug" || c === "bugs";
+  return ruleIsBug(t);
 }
 
 /** Incidente "puro" (tipo Incidente) — nunca entra nos indicadores gerais. */
