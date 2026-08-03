@@ -24,6 +24,7 @@ import {
   buildFlowComparison,
   buildOnDemandHistory,
   toComparisonChartData,
+  computeVariation,
   type FlowMetricKind,
 } from "@/lib/flowMetrics";
 
