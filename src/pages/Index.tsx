@@ -464,6 +464,95 @@ const Index = () => {
             </section>
           )}
 
+          {/* ═══════ ENTREGAS POR TIPO / DISTRIBUIÇÃO / CATEGORIAS ═══════ */}
+          <section>
+            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+              <BarChart3 className="h-4 w-4" />
+              Entregas por Tipo e Distribuição
+            </h2>
+            <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <CategoryChart categoryTotals={categoryTotals} />
+                <TeamDistributionChart teams={teams} />
+              </div>
+              <TaskTable categoryTotals={categoryTotals} />
+            </div>
+          </section>
+
+          {/* ═══════ VISÃO DETALHADA POR SQUAD ═══════ */}
+          {hasSquadFilter && (
+            <section>
+              <h2 className="text-sm font-semibold mb-2 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+                <Users className="h-4 w-4" />
+                Visão por Squad
+              </h2>
+              <PeriodBadge period={period} squads={selectedSquads} className="mb-4" />
+              <div className="space-y-4">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${teams.length <= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
+                  {teams.map((team, i) => {
+                    const lt = leadTimeBySquad.find(l => l.squad === team.name);
+                    const ct = cycleTimeBySquad.find(l => l.squad === team.name);
+                    const wp = wipBySquad.find(w => w.squad === team.name);
+                    const rw = (reworkBySquad || []).find((r: any) => r.squad === team.name);
+                    const tput = lt && lt.count > 0 && throughputByWeek.length > 0
+                      ? Math.round((lt.count / throughputByWeek.length) * 10) / 10
+                      : 0;
+                    return (
+                      <TeamCard
+                        key={team.name}
+                        team={team}
+                        teamIndex={i}
+                        delay={i * 50}
+                        monthLabel={currentMonthLabel}
+                        agileMetrics={{
+                          leadTimeAvg: lt?.avg ?? 0,
+                          cycleTimeAvg: ct?.avg ?? 0,
+                          throughput: tput,
+                          wip: wp?.wip ?? 0,
+                        }}
+                        reworkMetrics={{
+                          reworkCount: rw?.count ?? 0,
+                          reworkRate: rw?.rate ?? 0,
+                          corrections: rw?.corrections ?? 0,
+                        }}
+                        previousMetrics={previousGlobalMetrics}
+                      />
+                    );
+                  })}
+                </div>
+
+                <EstimationVsSpentChart teams={teams} />
+
+                {isComparing && (
+                  <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                    <h3 className="text-xs font-semibold flex items-center gap-2 text-primary uppercase tracking-wider">
+                      <GitCompare className="h-3.5 w-3.5" />
+                      Comparativo entre Times
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <AgileMetricsComparisonChart
+                        data={teams.map(t => {
+                          const lt = leadTimeBySquad.find(l => l.squad === t.name);
+                          const ct = cycleTimeBySquad.find(l => l.squad === t.name);
+                          const wp = wipBySquad.find(w => w.squad === t.name);
+                          const throughput = lt && lt.count > 0 && throughputByWeek.length > 0
+                            ? Math.round((lt.count / throughputByWeek.length) * 10) / 10
+                            : 0;
+                          return { squad: t.name, leadAvg: lt?.avg || 0, cycleAvg: ct?.avg || 0, throughput, wip: wp?.wip || 0 };
+                        })}
+                      />
+                      <ReworkComparisonChart data={reworkBySquad || []} />
+                    </div>
+                    <CategoriesBySquadChart teams={teams} />
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+
+
           {/* ═══════ EVOLUÇÃO MENSAL (só no ano consolidado) ═══════ */}
           {isYearView && monthlyTrend.length > 0 && (
             <section>
