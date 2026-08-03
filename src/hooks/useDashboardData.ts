@@ -354,6 +354,8 @@ export interface MonthlyTrendPoint {
   leadTimeBySquad: SquadAgilePoint[];
   cycleTimeBySquad: SquadAgilePoint[];
   throughput: number;
+  /** WIP: itens não concluídos no mês (exclui Qualidade e incidentes). */
+  wip: number;
   // CFD cumulative fields
   cfdBacklog: number;
   cfdDev: number;
@@ -448,6 +450,14 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       // Throughput: count tasks with done status (aligned with CFD definition)
       const throughput = mTasks.filter(t => isDoneStatus(t.status)).length;
 
+      // WIP mensal: mesma regra do WIP por squad (não concluídos, sem incidentes, sem Qualidade)
+      const wip = mTasks.filter(
+        t =>
+          !isDoneStatus(t.status) &&
+          !isIncidentTask(t) &&
+          (t.squad || "").toLowerCase().trim() !== "qualidade",
+      ).length;
+
       // CFD status grouping (3 Kanban phases — archived already excluded)
       const doneStatuses = ['concluida', 'delivery'];
       const qaStatuses = ['teste qa', 'teste dev', 'homologação', 'homologacao', 'validação', 'code review', 'aguardando merge'];
@@ -478,6 +488,7 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
         leadTimeBySquad,
         cycleTimeBySquad,
         throughput,
+        wip,
         cfdBacklog, cfdDev, cfdQA, cfdDone,
       };
     });
