@@ -10,7 +10,7 @@ consomem exatamente o mesmo resultado (`buildFlowMetrics` / `buildFlowComparison
 
 | Tema | Regra |
 | --- | --- |
-| Competência mensal | Sempre pela **data de fechamento** (`resolved_at`). Item aberto em mês anterior e fechado no mês selecionado conta no mês de conclusão. Itens abertos não são entregas. |
+| Competência mensal | Sempre pela **data de fechamento** (`resolved_at`). Item aberto em mês anterior e fechado no mês selecionado conta no mês de conclusão. Itens abertos não são entregas. A carga (`useFlowTasks`) busca por **intervalo de data**, não pelo relatório de origem — um card concluído no mês entra mesmo que seu registro exista apenas no relatório de outro mês. |
 | Deduplicação | `dedupeByTaskCode` — um `task_code` aparece uma única vez; vence o registro com conclusão mais recente (estado final após troca de squad/status). |
 | Arquivados | Status contendo "Arquivado" é excluído globalmente. |
 | Elegibilidade de fluxo | Épicos e squad "Qualidade" ficam fora das métricas de fluxo. |
