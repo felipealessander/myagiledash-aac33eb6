@@ -523,7 +523,7 @@ export function buildOnDemandHistory(
       const metrics = buildFlowMetrics(tasksByPeriod[p.value] || [], { ...filters, periodKey: p.value });
       const seg = metrics.onDemand;
       const monthTasks = applyFlowFilters(tasksByPeriod[p.value] || [], filters)
-        .filter(t => !isIncidentTask(t) && isOnDemandTask(t) && matchesPeriod(t.resolved_at, p.value));
+        .filter(t => isFlowEligible(t) && isIncludedInGeneral(t, metrics.inclusion) && isOnDemandTask(t) && matchesPeriod(t.resolved_at, p.value));
       return {
         periodKey: p.value,
         label: p.label,
