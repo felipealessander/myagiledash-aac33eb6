@@ -1,0 +1,78 @@
+/**
+ * Helpers puros de apresentação de gráficos do dashboard.
+ * Mantidos fora dos componentes para permitir testes automatizados.
+ */
+
+/** Amostra mínima para que um indicador estatístico seja considerado válido. */
+export const MIN_SAMPLE = 1;
+
+export function hasSufficientData(count: number, min: number = MIN_SAMPLE): boolean {
+  return Number.isFinite(count) && count >= min;
+}
+
+/**
+ * Separa as séries com dados suficientes das que devem exibir "Dados insuficientes".
+ */
+export function splitBySufficiency<T extends { count: number }>(
+  rows: T[],
+  min: number = MIN_SAMPLE,
+): { withData: T[]; insufficient: T[] } {
+  const withData: T[] = [];
+  const insufficient: T[] = [];
+  for (const r of rows || []) {
+    (hasSufficientData(r.count, min) ? withData : insufficient).push(r);
+  }
+  return { withData, insufficient };
+}
+
+/**
+ * Linha de tendência por mínimos quadrados (regressão linear simples).
+ * Retorna os valores ajustados, na mesma ordem/cardinalidade da entrada.
+ * Apoio visual — nunca substitui os valores reais.
+ */
+export function linearTrend(values: number[]): number[] {
+  const n = values.length;
+  if (n === 0) return [];
+  if (n === 1) return [round1(values[0])];
+  let sx = 0, sy = 0, sxy = 0, sxx = 0;
+  for (let i = 0; i < n; i++) {
+    sx += i;
+    sy += values[i];
+    sxy += i * values[i];
+    sxx += i * i;
+  }
+  const denom = n * sxx - sx * sx;
+  if (denom === 0) return values.map(round1);
+  const slope = (n * sxy - sx * sy) / denom;
+  const intercept = (sy - slope * sx) / n;
+  return values.map((_, i) => round1(intercept + slope * i));
+}
+
+export interface Variation {
+  abs: number;
+  /** null quando o valor anterior é 0 (variação percentual indefinida). */
+  pct: number | null;
+}
+
+export function variation(previous: number, current: number): Variation {
+  const abs = round1(current - previous);
+  if (!previous) return { abs, pct: null };
+  return { abs, pct: round1(((current - previous) / Math.abs(previous)) * 100) };
+}
+
+/** Adiciona `trend` e a variação vs. mês anterior a uma série mensal. */
+export function withTrend<T extends Record<string, unknown>>(
+  rows: T[],
+  key: keyof T,
+): (T & { trend: number; deltaAbs: number; deltaPct: number | null })[] {
+  const values = rows.map(r => Number(r[key]) || 0);
+  const trend = linearTrend(values);
+  return rows.map((r, i) => {
+    const v = variation(i === 0 ? values[0] : values[i - 1], values[i]);
+    return { ...r, trend: trend[i], deltaAbs: v.abs, deltaPct: i === 0 ? null : v.pct };
+  });
+}
+
+export function round1(n: number): number {
+  return Math.round(n * 10) / 10;
+}

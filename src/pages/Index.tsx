@@ -426,7 +426,11 @@ const Index = () => {
                   </div>
                 )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <ThroughputChart data={throughputByWeek || []} />
+                  <ThroughputChart
+                    data={throughputByWeek || []}
+                    monthlyData={monthlyTrend.map(m => ({ month: m.month, label: m.label, count: m.throughput }))}
+                  />
+
                   <WIPChart data={wipBySquad || []} />
                 </div>
               </div>
