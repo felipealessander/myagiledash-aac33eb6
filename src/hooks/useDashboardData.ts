@@ -34,12 +34,9 @@ interface DBTask {
 }
 
 // DeadLetter identification: by tag OR by YouTrack Type (category).
-// Matches variants like "deadletter", "dead letter", "dead-letter".
-const DEADLETTER_RE = /dead[\s-]?letter/i;
+// Regra canônica compartilhada — ver src/lib/taskRules.ts
 function isDeadLetter(t: { tags?: string[] | null; category?: string | null }): boolean {
-  if ((t.tags || []).some(tag => DEADLETTER_RE.test(tag))) return true;
-  if (t.category && DEADLETTER_RE.test(t.category)) return true;
-  return false;
+  return ruleIsDeadLetter(t);
 }
 
 // Fallback hardcoded members for static data only
