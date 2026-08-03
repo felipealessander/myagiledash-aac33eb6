@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isArchivedStatus } from "@/lib/taskRules";
 import { SQUAD_CAPACITY, getSquadCapacityForMonth, computeCapacitySummaries, getWorkingDaysInMonth, type SquadCapacitySummary } from "@/data/squadCapacity";
 
 interface SquadHours { squad: string; estimated: number; spent: number; productSpent: number }
