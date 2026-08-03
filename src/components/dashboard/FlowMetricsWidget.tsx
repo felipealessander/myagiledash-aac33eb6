@@ -225,11 +225,14 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
                 <th className="text-right py-2 font-medium">Lead P85</th>
                 <th className="text-right py-2 font-medium">Cycle mediana</th>
                 <th className="text-right py-2 font-medium">Cycle P85</th>
+                <th className="text-right py-2 font-medium">Δ Lead mediana</th>
               </tr>
             </thead>
             <tbody>
-              {comparison.map(c => {
+              {comparison.map((c, i) => {
                 const seg = c.metrics[segment];
+                const prev = i > 0 ? comparison[i - 1].metrics[segment] : null;
+                const delta = prev ? computeVariation(seg.leadTime.median, prev.leadTime.median) : null;
                 return (
                   <tr key={c.periodKey} className="border-b border-border/50">
                     <td className="py-2">{c.label}</td>
@@ -238,14 +241,20 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
                     <td className="py-2 text-right">{seg.leadTime.p85}d</td>
                     <td className="py-2 text-right">{seg.cycleTime.median}d</td>
                     <td className="py-2 text-right">{seg.cycleTime.p85}d</td>
+                    <td className="py-2 text-right">
+                      {delta
+                        ? `${delta.abs > 0 ? "+" : ""}${delta.abs}d${delta.pct === null ? "" : ` (${delta.pct > 0 ? "+" : ""}${delta.pct}%)`}`
+                        : "—"}
+                    </td>
                   </tr>
                 );
               })}
               {comparison.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-muted-foreground">Selecione ao menos um mês.</td>
+                  <td colSpan={7} className="py-6 text-center text-muted-foreground">Selecione ao menos um mês.</td>
                 </tr>
               )}
+
             </tbody>
           </table>
         </div>
