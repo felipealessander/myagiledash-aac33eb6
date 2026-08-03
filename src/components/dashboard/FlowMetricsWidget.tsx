@@ -35,11 +35,13 @@ const SEGMENT_LABEL: Record<SegmentKey, string> = {
   incidents: "Incidentes",
 };
 
-const SEGMENT_HINT: Record<SegmentKey, string> = {
-  general: "Demandas e itens sob demanda concluídos no mês. Incidentes, Bugs e DeadLetter ficam fora.",
-  onDemand: "Somente itens com cliente vinculado, concluídos no mês (exclui incidentes).",
-  incidents: "Incidente, Bug e DeadLetter — contabilizados separadamente dos indicadores gerais.",
+const TYPE_LABEL: Record<string, string> = {
+  regular: "Demanda regular",
+  bug: "Bug",
+  deadletter: "DeadLetter",
+  incident: "Incidente",
 };
+
 
 const tooltipStyle = {
   backgroundColor: "hsl(var(--card))",
