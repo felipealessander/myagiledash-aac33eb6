@@ -585,6 +585,14 @@ export function toComparisonChartData(
   });
 }
 
+/** Variação absoluta e percentual entre dois valores (protegida contra divisão por zero). */
+export function computeVariation(current: number, previous: number): { abs: number; pct: number | null } {
+  const abs = round1(current - previous);
+  if (!previous) return { abs, pct: null };
+  return { abs, pct: Math.round(((current - previous) / previous) * 1000) / 10 };
+}
+
+
 /* ────────────────────────── histórico Sob Demanda ────────────────────────── */
 
 export interface OnDemandHistoryPoint {
