@@ -244,6 +244,32 @@ const Index = () => {
       ) : (
         <main className="container mx-auto px-4 py-6 space-y-8">
 
+          {/* ═══════ FILTROS GLOBAIS ═══════ */}
+          <section className="rounded-lg border border-border bg-muted/20 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Período ativo</span>
+              <PeriodBadge period={period} squads={selectedSquads} />
+            </div>
+            <div className="flex items-center gap-2">
+              <MonthMultiSelector months={months} selected={selectedMonths} onChange={setSelectedMonths} />
+              {selectedSquads.length > 0 && (
+                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setSelectedSquads([])}>
+                  Limpar squads
+                </Button>
+              )}
+            </div>
+          </section>
+
+          <DrillDownSheet
+            open={!!drill}
+            onOpenChange={(v) => !v && setDrill(null)}
+            title={`Cards de ${drill?.label ?? ""}`}
+            subtitle={selectedSquads.length > 0 ? `Squads: ${selectedSquads.join(", ")}` : "Todas as squads"}
+            tasks={drillTasks}
+          />
+
+
+
           {/* ═══════ INSIGHTS DE IA ═══════ */}
           <AIInsightsWidget
             scope="global"
