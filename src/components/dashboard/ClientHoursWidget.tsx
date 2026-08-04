@@ -193,7 +193,8 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
         </Card>
 
         {/* Enriched KPI cards with sparklines */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-2">
