@@ -57,9 +57,9 @@ export function MonthlyTrendCharts({ data }: Props) {
               <Legend wrapperStyle={{ fontSize: "11px" }} />
               <Bar dataKey="tarefas" name="Tarefa" stackId="a" fill="hsl(210, 100%, 56%)" />
               <Bar dataKey="melhorias" name="Melhoria" stackId="a" fill="hsl(160, 84%, 39%)" />
-              <Bar dataKey="incidentes" name="Incidente" stackId="a" fill="hsl(0, 72%, 51%)" />
+              <Bar dataKey="incidentes" name="Incidente" stackId="a" fill="hsl(0, 84%, 65%)" />
               <Bar dataKey="bugs" name="Bug" stackId="a" fill="hsl(38, 92%, 50%)" />
-              <Bar dataKey="deadLetters" name="DeadLetter" stackId="a" fill="hsl(280, 67%, 56%)" />
+              <Bar dataKey="deadLetters" name="DeadLetter" stackId="a" fill="hsl(280, 80%, 72%)" />
               <Bar dataKey="epicos" name="Épico" stackId="a" fill="hsl(180, 60%, 45%)" />
               <Bar dataKey="outros" name="Outros" stackId="a" fill="hsl(215, 15%, 52%)" />
               <Line type="monotone" dataKey="tendencia" name="Tendência" stroke="hsl(45, 100%, 62%)" strokeWidth={2} strokeDasharray="6 4" dot={false} />
@@ -103,7 +103,7 @@ export function MonthlyTrendCharts({ data }: Props) {
                 <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "hsl(210, 20%, 92%)" }} />
                 <Legend wrapperStyle={{ fontSize: "11px" }} />
                 <Bar yAxisId="left" dataKey="throughput" name="Resolvidas" fill="hsl(160, 84%, 39%)" radius={[4, 4, 0, 0]} fillOpacity={0.8} />
-                <Line yAxisId="right" type="monotone" dataKey="wip" name="WIP" stroke="hsl(280, 67%, 56%)" strokeWidth={2} dot={{ r: 4 }} />
+                <Line yAxisId="right" type="monotone" dataKey="wip" name="WIP" stroke="hsl(280, 80%, 72%)" strokeWidth={2} dot={{ r: 4 }} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -120,7 +120,7 @@ export function MonthlyTrendCharts({ data }: Props) {
                 <XAxis dataKey="shortLabel" tick={axisTickStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
                 <YAxis tick={axisTickStyle} axisLine={false} tickLine={false} unit="%" />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v}%`, "Retrabalho"]} />
-                <Area dataKey="reworkRate" fill="hsl(0, 72%, 51%)" fillOpacity={0.15} stroke="hsl(0, 72%, 51%)" strokeWidth={2} dot={{ r: 4 }} name="Retrabalho %" />
+                <Area dataKey="reworkRate" fill="hsl(0, 84%, 65%)" fillOpacity={0.15} stroke="hsl(0, 84%, 65%)" strokeWidth={2} dot={{ r: 4 }} name="Retrabalho %" />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

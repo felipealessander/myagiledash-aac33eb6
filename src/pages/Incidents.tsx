@@ -281,7 +281,7 @@ const Incidents = () => {
                             contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "11px" }}
                           />
                           <Legend wrapperStyle={{ fontSize: "11px" }} />
-                          <Bar dataKey="created" name="Criados" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="created" name="Criados" fill="hsl(0, 84%, 65%)" radius={[4, 4, 0, 0]} />
                           <Bar dataKey="resolved" name="Resolvidos" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>

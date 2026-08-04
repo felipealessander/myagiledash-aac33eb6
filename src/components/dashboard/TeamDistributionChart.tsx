@@ -3,7 +3,7 @@ import type { TeamData } from "@/data/dashboardData";
 import { getTeamTotalHours, getTeamColor } from "@/data/dashboardData";
 
 const DEFAULT_COLORS = [
-  "hsl(280, 67%, 56%)",
+  "hsl(280, 80%, 72%)",
   "hsl(38, 92%, 50%)",
   "hsl(160, 84%, 39%)",
   "hsl(210, 100%, 56%)",

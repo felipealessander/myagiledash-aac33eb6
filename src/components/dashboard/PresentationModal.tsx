@@ -113,7 +113,7 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
 
   const loggingTone = timeLogging.overallPct >= 90 ? "good" : timeLogging.overallPct >= 75 ? "warn" : "bad";
   const loggingColor = (pct: number) =>
-    pct >= 90 ? "hsl(160, 84%, 39%)" : pct >= 75 ? "hsl(38, 92%, 50%)" : "hsl(0, 72%, 51%)";
+    pct >= 90 ? "hsl(160, 84%, 39%)" : pct >= 75 ? "hsl(38, 92%, 50%)" : "hsl(0, 84%, 65%)";
 
   const SQUAD_COLOR_MAP: Record<string, string> = {
     "Golden Gate": "hsl(217, 91%, 60%)",
@@ -353,10 +353,10 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
                     />
                     <ZAxis range={[50, 50]} />
                     {Number.isFinite(mttr.outlierThresholds.days) && mttr.outlierThresholds.days > 0 && (
-                      <ReferenceLine x={mttr.outlierThresholds.days} stroke="hsl(0, 72%, 51%)" strokeDasharray="4 4" />
+                      <ReferenceLine x={mttr.outlierThresholds.days} stroke="hsl(0, 84%, 65%)" strokeDasharray="4 4" />
                     )}
                     {mttr.outlierThresholds.hours > 0 && (
-                      <ReferenceLine y={mttr.outlierThresholds.hours} stroke="hsl(0, 72%, 51%)" strokeDasharray="4 4" />
+                      <ReferenceLine y={mttr.outlierThresholds.hours} stroke="hsl(0, 84%, 65%)" strokeDasharray="4 4" />
                     )}
                     <Tooltip
                       cursor={{ strokeDasharray: "3 3" }}
@@ -381,7 +381,7 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
                         {s.points.map(pt => (
                           <Cell
                             key={pt.code}
-                            fill={pt.outlier ? "hsl(0, 72%, 51%)" : squadColor(s.squad)}
+                            fill={pt.outlier ? "hsl(0, 84%, 65%)" : squadColor(s.squad)}
                           />
                         ))}
                       </Scatter>
@@ -549,7 +549,7 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
                     <YAxis tick={axisTick} allowDecimals={false} />
                     <Tooltip contentStyle={tooltipStyle} />
                     <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    <Bar dataKey="count" name="Itens" fill="hsl(280, 67%, 56%)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" name="Itens" fill="hsl(280, 80%, 72%)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="hours" name="Horas" fill="hsl(280, 67%, 76%)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -562,7 +562,7 @@ export function PresentationModal({ open, onOpenChange, tasks, monthLabel, perio
                     <XAxis type="number" tick={axisTick} allowDecimals={false} />
                     <YAxis type="category" dataKey="key" width={120} tick={axisTick} />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Bar dataKey="count" name="Itens" fill="hsl(280, 67%, 56%)" radius={[0, 4, 4, 0]}>
+                    <Bar dataKey="count" name="Itens" fill="hsl(280, 80%, 72%)" radius={[0, 4, 4, 0]}>
                       <LabelList dataKey="count" position="right" style={{ fontSize: 11, fill: "hsl(var(--foreground))" }} />
                     </Bar>
                   </BarChart>
