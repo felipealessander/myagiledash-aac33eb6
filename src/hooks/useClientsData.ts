@@ -163,5 +163,5 @@ export function useClientsData(month: string | null) {
     return () => { cancelled = true; };
   }, [month, clients, hours]);
 
-  return { clients, hours, usage, unmappedClients, loading, refetch };
+  return { clients, hours, usage, unmappedClients, monthTasks, loading, refetch };
 }
