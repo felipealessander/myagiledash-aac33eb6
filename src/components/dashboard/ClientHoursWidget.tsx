@@ -264,7 +264,27 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
               </div>
             </CardContent>
           </Card>
+
+          <Card
+            role="button"
+            tabIndex={0}
+            onClick={() => setCardsDrill({ title: `Cards atendidos — ${selectedMonthLabel}`, client: null })}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setCardsDrill({ title: `Cards atendidos — ${selectedMonthLabel}`, client: null }); }}
+            className="cursor-pointer transition-colors hover:border-primary/60 hover:bg-muted/30"
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Cards Atendidos</p>
+                  <p className="text-2xl font-bold">{monthTasks.length.toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Clique para ver a listagem</p>
+                </div>
+                <ListChecks className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
 
         {/* Highlights — named lists (style of the reports) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
