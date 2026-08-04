@@ -292,9 +292,9 @@ describe("histórico Sob Demanda", () => {
   });
 });
 
-/* ────────── inclusão opcional de Bugs e DeadLetters ────────── */
+/* ────────── inclusão opcional de Incidentes e DeadLetters ────────── */
 
-describe("inclusão de Bugs e DeadLetters", () => {
+describe("inclusão de Incidentes e DeadLetters", () => {
   const regular = t({ task_code: "R-1" });
   const bug = t({ task_code: "B-1", category: "Bug" });
   const dl = t({ task_code: "D-1", category: "Tarefa", tags: ["DeadLetter"] });
@@ -304,17 +304,16 @@ describe("inclusão de Bugs e DeadLetters", () => {
 
   it("por padrão considera somente demandas regulares", () => {
     const m = buildFlowMetrics(all, { periodKey: "2026-05" });
-    expect(m.inclusion).toEqual({ bugs: false, deadletters: false });
+    expect(m.inclusion).toEqual({ incidents: false, deadletters: false });
     expect(m.general.completed).toBe(1);
     expect(m.general.items.map(i => i.code)).toEqual(["R-1"]);
   });
 
-  it("inclui Bugs e Incidentes quando a opção de Bug está ativa", () => {
-    const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: { bugs: true } });
+  it("inclui Bugs (= Incidentes) quando a opção de Incidentes está ativa", () => {
+    const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: { incidents: true } });
     expect(m.general.completed).toBe(3);
     expect(m.general.items.map(i => i.code).sort()).toEqual(["B-1", "I-1", "R-1"]); // BD-1 conta como DeadLetter
-    expect(m.general.byType.bug).toBe(1);
-    expect(m.general.byType.incident).toBe(1);
+    expect(m.general.byType.incident).toBe(2); // Bug e Incidente na mesma classificação
   });
 
   it("inclui somente DeadLetters quando a opção de DLQ está ativa", () => {
@@ -323,15 +322,15 @@ describe("inclusão de Bugs e DeadLetters", () => {
     expect(m.general.byType.deadletter).toBe(2);
   });
 
-  it("inclui Bugs e DeadLetters juntos sem duplicar card com dupla classificação", () => {
-    const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: { bugs: true, deadletters: true } });
+  it("inclui Incidentes e DeadLetters juntos sem duplicar card com dupla classificação", () => {
+    const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: { incidents: true, deadletters: true } });
     expect(m.general.completed).toBe(5);
     expect(m.general.items.filter(i => i.code === "BD-1")).toHaveLength(1);
     expect(m.general.byType.deadletter).toBe(2); // DeadLetter tem precedência de rótulo
-    expect(m.general.byType.bug).toBe(1);
+    expect(m.general.byType.incident).toBe(2);
   });
 
-  it("mantém incidentes fora dos gerais quando a opção de Bug está desligada", () => {
+  it("mantém incidentes fora dos gerais quando a opção de Incidentes está desligada", () => {
     for (const inc of [{}, { deadletters: true }]) {
       const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: inc });
       expect(m.general.items.some(i => i.code === "I-1")).toBe(false);
@@ -346,7 +345,7 @@ describe("inclusão de Bugs e DeadLetters", () => {
       t({ task_code: "B-1", category: "Bug", created_at_yt: "2026-05-04T09:00:00Z", started_at: "2026-05-04T09:00:00Z", resolved_at: "2026-05-15T09:00:00Z" }),
     ];
     const off = buildFlowMetrics(tasks, { periodKey: "2026-05" });
-    const on = buildFlowMetrics(tasks, { periodKey: "2026-05", inclusion: { bugs: true } });
+    const on = buildFlowMetrics(tasks, { periodKey: "2026-05", inclusion: { incidents: true } });
     expect(off.general.leadTime.avg).toBe(1);
     expect(on.general.leadTime.avg).toBe(5); // (1 + 9) / 2
     expect(on.general.leadTime.p85).toBe(9);
@@ -355,7 +354,7 @@ describe("inclusão de Bugs e DeadLetters", () => {
   it("usa a data de fechamento para itens abertos em meses anteriores", () => {
     const oldBug = t({ task_code: "B-OLD", category: "Bug", created_at_yt: "2026-03-02T09:00:00Z", started_at: "2026-04-01T09:00:00Z", resolved_at: "2026-05-08T09:00:00Z" });
     const oldDl = t({ task_code: "D-OLD", tags: ["DeadLetter"], created_at_yt: "2026-02-02T09:00:00Z", started_at: "2026-04-01T09:00:00Z", resolved_at: "2026-05-08T09:00:00Z" });
-    const m = buildFlowMetrics([oldBug, oldDl], { periodKey: "2026-05", inclusion: { bugs: true, deadletters: true } });
+    const m = buildFlowMetrics([oldBug, oldDl], { periodKey: "2026-05", inclusion: { incidents: true, deadletters: true } });
     expect(m.general.completed).toBe(2);
     expect(buildFlowMetrics([oldBug, oldDl], { periodKey: "2026-05" }).general.completed).toBe(0);
   });
@@ -366,7 +365,7 @@ describe("inclusão de Bugs e DeadLetters", () => {
       t({ task_code: "B-CODE", category: "Bug", squad: "Code418", client: "AGE MG" }),
       t({ task_code: "R-JRE", squad: "JRE", client: "PGE SP" }),
     ];
-    const m = buildFlowMetrics(tasks, { periodKey: "2026-05", squads: ["JRE"], clients: ["PGE SP"], inclusion: { bugs: true } });
+    const m = buildFlowMetrics(tasks, { periodKey: "2026-05", squads: ["JRE"], clients: ["PGE SP"], inclusion: { incidents: true } });
     expect(m.general.completed).toBe(2);
     expect(m.onDemand.completed).toBe(2);
     expect(m.demands.completed).toBe(0);
@@ -386,14 +385,14 @@ describe("inclusão de Bugs e DeadLetters", () => {
     const off = buildFlowComparison(byPeriod, periods);
     expect(off.map(c => c.metrics.general.completed)).toEqual([0, 1, 0]);
 
-    const on = buildFlowComparison(byPeriod, periods, { inclusion: { bugs: true, deadletters: true } });
+    const on = buildFlowComparison(byPeriod, periods, { inclusion: { incidents: true, deadletters: true } });
     expect(on.map(c => c.metrics.general.completed)).toEqual([1, 1, 1]);
-    expect(on.every(c => c.metrics.inclusion.bugs && c.metrics.inclusion.deadletters)).toBe(true);
+    expect(on.every(c => c.metrics.inclusion.incidents && c.metrics.inclusion.deadletters)).toBe(true);
     expect(toComparisonChartData(on, "general", "lead").map(r => r.volume)).toEqual([1, 1, 1]);
   });
 
   it("mantém card, gráfico e detalhamento consistentes", () => {
-    const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: { bugs: true } });
+    const m = buildFlowMetrics(all, { periodKey: "2026-05", inclusion: { incidents: true } });
     const seg = m.general;
     expect(seg.items).toHaveLength(seg.completed);
     expect(seg.bySquad.reduce((s, x) => s + x.count, 0)).toBe(seg.completed);
@@ -440,19 +439,18 @@ describe("auditoria dos indicadores de fluxo", () => {
     expect(item.createdAt).toBe("2026-05-04T10:00:00Z");
     expect(item.startedAt).toBe("2026-05-05T10:00:00Z");
     expect(item.resolvedAt).toBe("2026-05-08T10:00:00Z");
-    expect(item.isBug).toBe(false);
     expect(item.isDeadletter).toBe(false);
     expect(item.isIncident).toBe(false);
     expect(item.inclusionReason).toContain("Sob Demanda");
   });
 
-  it("marca flags corretas para bug e deadletter incluídos", () => {
+  it("marca flags corretas para incidente (Bug) e deadletter incluídos", () => {
     const tasks = [
       base({ task_code: "B-1", category: "Bug" }),
       base({ task_code: "D-1", category: "Tarefa", tags: ["DeadLetter"] }),
     ];
-    const m = buildFlowMetrics(tasks, { periodKey: "2026-05", inclusion: { bugs: true, deadletters: true } });
-    expect(m.general.items.find(i => i.code === "B-1")!.isBug).toBe(true);
+    const m = buildFlowMetrics(tasks, { periodKey: "2026-05", inclusion: { incidents: true, deadletters: true } });
+    expect(m.general.items.find(i => i.code === "B-1")!.isIncident).toBe(true);
     expect(m.general.items.find(i => i.code === "D-1")!.isDeadletter).toBe(true);
   });
 
