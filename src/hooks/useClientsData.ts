@@ -48,6 +48,8 @@ export function useClientsData(month: string | null) {
   const [hours, setHours] = useState<ClientMonthlyHours[]>([]);
   const [usage, setUsage] = useState<ClientUsage[]>([]);
   const [unmappedClients, setUnmappedClients] = useState<{ alias: string; spentHours: number; taskCount: number }[]>([]);
+  const [monthTasks, setMonthTasks] = useState<ClientTaskRow[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
