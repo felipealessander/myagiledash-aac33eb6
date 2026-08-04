@@ -21,7 +21,6 @@ import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
 import { ReworkChart } from "@/components/dashboard/ReworkChart";
 import { IncidentsByClientChart } from "@/components/dashboard/IncidentsByClientChart";
-import { IncidentsList } from "@/components/dashboard/IncidentsList";
 import { MonthMultiSelector } from "@/components/dashboard/MonthMultiSelector";
 import { PeriodBadge } from "@/components/dashboard/PeriodBadge";
 import { MonthComparisonPanel, type ComparisonMetric } from "@/components/dashboard/MonthComparisonPanel";
@@ -349,7 +348,6 @@ const Index = () => {
                   months={period.months}
                   metrics={[
                     buildMetric("incidentes", "Incidentes", p => p.incidentes, "", true),
-                    buildMetric("bugs", "Bugs", p => p.bugs, "", true),
                     buildMetric("dlq", "DeadLetter (DLQ)", p => p.deadLetters, "", true),
                     buildMetric("reworkRate", "Retrabalho", p => p.reworkRate, "%", true),
                   ]}
@@ -361,7 +359,6 @@ const Index = () => {
                 <ReworkChart data={unfilteredDashboardData.reworkBySquad || []} />
                 <IncidentsByClientChart data={unfilteredDashboardData.incidentsByClient || []} />
               </div>
-              <IncidentsList tasks={rawTasks} selectedSquads={selectedSquads} />
             </div>
           </section>
 

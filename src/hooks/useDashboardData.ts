@@ -203,7 +203,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   // Agile metrics — regras unificadas em src/lib/flowMetrics.ts:
   // Lead Time  = criação -> conclusão, em dias úteis.
   // Cycle Time = início do dev (ou criação, na ausência dele) -> conclusão, em dias úteis.
-  // Incidentes (Incidente, Bug e DeadLetter), Épicos e a squad "Qualidade" ficam fora.
+  // Incidentes (Incidente/Bug e DeadLetter), Épicos e a squad "Qualidade" ficam fora.
   const flowBase = tasks.filter(t => isFlowEligible(t) && !isIncidentTask(t));
   const businessDaysFrom = (from: string | null | undefined, to: string) => {
     if (!from) return null;
@@ -350,7 +350,6 @@ export interface MonthlyTrendPoint {
   melhorias: number;
   deadLetters: number;
   tarefas: number;
-  bugs: number;
   epicos: number;
   outros: number;
   reworkRate: number;
@@ -409,15 +408,15 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       }
 
 
-      let incidentes = 0, melhorias = 0, deadLetters = 0, tarefas = 0, bugs = 0, epicos = 0, outros = 0;
+      let incidentes = 0, melhorias = 0, deadLetters = 0, tarefas = 0, epicos = 0, outros = 0;
       for (const t of mTasks) {
         const hasDL = isDeadLetter(t);
         const cat = hasDL ? "DeadLetter" : (t.category || "Tarefa");
-        if (cat === "Incidente") incidentes++;
+        // "Bug" no YouTrack é o mesmo que Incidente — contabilizado junto.
+        if (cat === "Incidente" || cat === "Bug") incidentes++;
         else if (cat === "Melhoria") melhorias++;
         else if (cat === "DeadLetter") deadLetters++;
         else if (cat === "Tarefa") tarefas++;
-        else if (cat === "Bug") bugs++;
         else if (cat === "Épico") epicos++;
         else outros++;
       }
@@ -502,7 +501,7 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
         totalTasks,
         totalSpentHours: Math.round(totalSpentHours),
         totalEstimatedHours: Math.round(totalEstimatedHours),
-        incidentes, melhorias, deadLetters, tarefas, bugs, epicos, outros,
+        incidentes, melhorias, deadLetters, tarefas, epicos, outros,
         reworkRate,
         leadTimeAvg,
         cycleTimeAvg,

@@ -38,7 +38,6 @@ const SEGMENT_LABEL: Record<SegmentKey, string> = {
 
 const TYPE_LABEL: Record<string, string> = {
   regular: "Demanda regular",
-  bug: "Bug",
   deadletter: "DeadLetter",
   incident: "Incidente",
 };
@@ -123,19 +122,19 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
     [selection, monthOnly],
   );
 
-  const [includeBugs, setIncludeBugs] = useState(false);
+  const [includeIncidents, setIncludeIncidents] = useState(false);
   const [includeDeadletters, setIncludeDeadletters] = useState(false);
   const inclusion = useMemo(
-    () => ({ bugs: includeBugs, deadletters: includeDeadletters }),
-    [includeBugs, includeDeadletters],
+    () => ({ incidents: includeIncidents, deadletters: includeDeadletters }),
+    [includeIncidents, includeDeadletters],
   );
 
   const includedTypesLabel = useMemo(() => {
     const parts = ["Demandas regulares"];
-    if (includeBugs) parts.push("Bugs/Incidentes");
+    if (includeIncidents) parts.push("Incidentes");
     if (includeDeadletters) parts.push("DeadLetters");
     return parts.join(" + ");
-  }, [includeBugs, includeDeadletters]);
+  }, [includeIncidents, includeDeadletters]);
 
   const comparison = useMemo(
     () => buildFlowComparison(tasksByPeriod, periods, { squads: selectedSquads, inclusion }),
@@ -165,7 +164,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
 
   const segmentHint = (segment: SegmentKey) => {
     if (segment === "incidents")
-      return "Incidente, Bug e DeadLetter — visão separada e sempre completa, independente das opções de inclusão acima.";
+      return "Incidentes (inclui o tipo Bug do YouTrack) e DeadLetter — visão separada e sempre completa, independente das opções de inclusão acima.";
     const base =
       segment === "general"
         ? "Itens concluídos no mês (data de fechamento)."
@@ -184,7 +183,7 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
         <li>Competência pelo <strong>mês de fechamento</strong> (<code>resolved_at</code>), independentemente de quando o card foi aberto.</li>
         <li>Status contendo <strong>"Arquivado"</strong> é excluído; cada <code>task_code</code> conta uma única vez (deduplicação).</li>
         <li><strong>Épicos</strong> e a squad <strong>Qualidade</strong> ficam fora das métricas de fluxo.</li>
-        <li><strong>Incidentes, Bugs e DeadLetters</strong> só entram quando os respectivos filtros acima estiverem marcados.</li>
+        <li><strong>Incidentes e DeadLetters</strong> só entram quando os respectivos filtros acima estiverem marcados. No YouTrack, "Bug" é o mesmo que Incidente — por isso não há filtro separado.</li>
         <li>Lead Time = abertura → fechamento; Cycle Time = início do desenvolvimento → fechamento, ambos em <strong>dias úteis</strong>.</li>
       </ul>
     </div>
@@ -358,7 +357,6 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
                       <td className="py-1.5 text-right">{item.hours.toFixed(1)}h</td>
                       <td className="py-1.5">
                         <span className="flex flex-wrap gap-1">
-                          {item.isBug && <Badge variant="outline" className="text-[9px]">Bug</Badge>}
                           {item.isDeadletter && <Badge variant="outline" className="text-[9px]">DLQ</Badge>}
                           {item.isIncident && <Badge variant="outline" className="text-[9px]">Incidente</Badge>}
                           {item.issues.length > 0 && (
@@ -394,8 +392,8 @@ export function FlowMetricsWidget({ months, selectedMonth, selectedSquads }: Pro
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 text-xs rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-muted">
-              <Checkbox checked={includeBugs} onCheckedChange={v => setIncludeBugs(v === true)} />
-              Incluir Bugs / Incidentes
+              <Checkbox checked={includeIncidents} onCheckedChange={v => setIncludeIncidents(v === true)} />
+              Incluir Incidentes
             </label>
             <label className="flex items-center gap-2 text-xs rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-muted">
               <Checkbox checked={includeDeadletters} onCheckedChange={v => setIncludeDeadletters(v === true)} />
