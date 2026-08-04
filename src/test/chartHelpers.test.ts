@@ -128,3 +128,40 @@ describe("linearTrend com máscara de períodos sem dados", () => {
     expect(trend[3]).toBeLessThan(trend[0]);
   });
 });
+
+describe("buildTrendMask — períodos comparáveis", () => {
+  const NOW = new Date("2026-08-03T00:00:00Z");
+
+  it("exclui o mês corrente (parcial) e mantém a inclinação real de alta", () => {
+    const values = [10, 20, 30, 2]; // último = mês corrente, ainda em curso
+    const months = ["2026-05", "2026-06", "2026-07", "2026-08"];
+    const mask = buildTrendMask(values, months, { now: NOW });
+    expect(mask).toEqual([true, true, true, false]);
+    const trend = linearTrend(values, mask);
+    expect(trend[3]).toBeGreaterThan(trend[0]);
+  });
+
+  it("exclui meses sem dados sem inverter a tendência", () => {
+    const values = [0, 5, 10, 15];
+    const months = ["2026-01", "2026-02", "2026-03", "2026-04"];
+    const mask = buildTrendMask(values, months, { now: NOW });
+    expect(mask).toEqual([false, true, true, true]);
+    const trend = linearTrend(values, mask);
+    expect(trend[3]).toBeGreaterThan(trend[1]);
+  });
+
+  it("usa hasData quando informado (zero legítimo continua fora)", () => {
+    const values = [4, 0, 6];
+    const mask = buildTrendMask(values, ["2026-01", "2026-02", "2026-03"], {
+      hasData: [true, true, true],
+      now: NOW,
+    });
+    expect(mask).toEqual([true, true, true]);
+  });
+
+  it("volta a considerar todos os meses com dados quando sobrariam menos de 2 pontos", () => {
+    const values = [0, 8];
+    const mask = buildTrendMask(values, ["2026-07", "2026-08"], { now: NOW });
+    expect(mask).toBeUndefined();
+  });
+});
