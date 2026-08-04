@@ -9,7 +9,6 @@ interface Props {
 
 const CATEGORY_COLORS: Record<string, string> = {
   "Tarefa": "hsl(210, 100%, 56%)",
-  "Bug": "hsl(0, 84%, 60%)",
   "Incidente": "hsl(38, 92%, 50%)",
   "Melhoria": "hsl(160, 84%, 39%)",
   "Épico": "hsl(280, 80%, 72%)",

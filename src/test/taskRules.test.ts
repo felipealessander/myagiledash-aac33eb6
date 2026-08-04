@@ -4,7 +4,6 @@ import {
   isArchived,
   isDoneStatus,
   isDeadLetter,
-  isBug,
   isIncident,
   isEpic,
   isQualidadeSquad,
@@ -35,9 +34,9 @@ describe("taskRules — regras canônicas compartilhadas", () => {
     expect(isDeadLetter({ category: "Tarefa", tags: [] })).toBe(false);
   });
 
-  it("classifica bug, incidente e épico por tipo", () => {
-    expect(isBug({ category: "Bug" })).toBe(true);
-    expect(isBug({ category: "Bugs" })).toBe(true);
+  it("classifica incidente (Bug = Incidente) e épico por tipo", () => {
+    expect(isIncident({ category: "Bug" })).toBe(true);
+    expect(isIncident({ category: "Bugs" })).toBe(true);
     expect(isIncident({ category: "incidente" })).toBe(true);
     expect(isIncident({ category: "Incidentes" })).toBe(true);
     expect(isEpic({ category: "Épico" })).toBe(true);

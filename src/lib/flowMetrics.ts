@@ -7,7 +7,8 @@
  *                 conclusão. Quando não há data de início, usa-se a data de criação.
  *  - Itens arquivados nunca entram em nenhum cálculo.
  *  - Épicos e a squad "Qualidade" ficam fora das métricas de fluxo.
- *  - Incidentes (Incidente, Bug e DeadLetter) NÃO entram nos indicadores gerais:
+ *  - Incidentes (o tipo "Bug" do YouTrack é o mesmo que Incidente) e DeadLetter
+ *    NÃO entram nos indicadores gerais:
  *    são contabilizados e apresentados separadamente.
  *  - "Sob Demanda" = itens com cliente vinculado.
  *  - Um mesmo task_code aparece uma única vez (mudanças de status/squad não duplicam).
@@ -34,7 +35,6 @@ export type FlowSegmentKey = "demands" | "onDemand" | "incidents";
 import {
   isArchived as ruleIsArchived,
   isDeadLetter as ruleIsDeadLetter,
-  isBug as ruleIsBug,
   isIncident as ruleIsIncident,
   isEpic as ruleIsEpic,
   isQualidadeSquad as ruleIsQualidadeSquad,
@@ -48,42 +48,36 @@ export function isDeadLetterTask(t: FlowTask): boolean {
   return ruleIsDeadLetter(t);
 }
 
-/** Bug puro (tipo Bug no YouTrack). */
-export function isBugTask(t: FlowTask): boolean {
-  return ruleIsBug(t);
-}
-
-/** Incidente "puro" (tipo Incidente) — nunca entra nos indicadores gerais. */
+/** Incidente (inclui o tipo "Bug" do YouTrack, que é a mesma coisa). */
 export function isPureIncidentTask(t: FlowTask): boolean {
   return ruleIsIncident(t);
 }
 
-/** Incidente, Bug e DeadLetter compõem a visão separada de incidentes. */
+/** Incidente e DeadLetter compõem a visão separada de incidentes. */
 export function isIncidentTask(t: FlowTask): boolean {
-  return isDeadLetterTask(t) || isBugTask(t) || isPureIncidentTask(t);
+  return isDeadLetterTask(t) || isPureIncidentTask(t);
 }
 
-export type FlowTaskClass = "regular" | "bug" | "deadletter" | "incident";
+export type FlowTaskClass = "regular" | "deadletter" | "incident";
 
 /**
  * Classificação principal de um card (para rótulos e detalhamento).
- * DeadLetter tem precedência sobre Bug quando o card possui as duas marcações.
+ * DeadLetter tem precedência sobre Incidente quando o card tem as duas marcações.
  */
 export function classifyFlowTask(t: FlowTask): FlowTaskClass {
   if (isDeadLetterTask(t)) return "deadletter";
-  if (isBugTask(t)) return "bug";
   if (isPureIncidentTask(t)) return "incident";
   return "regular";
 }
 
 export interface FlowInclusion {
-  /** Incluir cards do tipo Bug nos indicadores gerais. Padrão: false. */
-  bugs?: boolean;
+  /** Incluir Incidentes (tipo Incidente/Bug) nos indicadores gerais. Padrão: false. */
+  incidents?: boolean;
   /** Incluir cards DeadLetter nos indicadores gerais. Padrão: false. */
   deadletters?: boolean;
 }
 
-export const DEFAULT_INCLUSION: Required<FlowInclusion> = { bugs: false, deadletters: false };
+export const DEFAULT_INCLUSION: Required<FlowInclusion> = { incidents: false, deadletters: false };
 
 /**
  * Um card entra nos indicadores gerais quando é uma demanda regular ou quando
@@ -92,18 +86,15 @@ export const DEFAULT_INCLUSION: Required<FlowInclusion> = { bugs: false, deadlet
  * Incidentes "puros" nunca entram.
  */
 export function isIncludedInGeneral(t: FlowTask, inclusion: FlowInclusion = {}): boolean {
-  const includeBugs = inclusion.bugs ?? DEFAULT_INCLUSION.bugs;
+  const includeIncidents = inclusion.incidents ?? DEFAULT_INCLUSION.incidents;
   const includeDl = inclusion.deadletters ?? DEFAULT_INCLUSION.deadletters;
   switch (classifyFlowTask(t)) {
     case "regular":
       return true;
     case "deadletter":
       return includeDl;
-    // Bug e Incidente são tratados como a mesma coisa pelo negócio:
-    // a opção "Incluir Bugs / Incidentes" controla ambos.
-    case "bug":
     case "incident":
-      return includeBugs;
+      return includeIncidents;
     default:
       return false;
   }
@@ -241,7 +232,7 @@ export interface FlowFilters {
   periodKey?: string | null;
   squads?: string[];
   clients?: string[];
-  /** Tipos opcionalmente incluídos nos indicadores gerais (Bug / DeadLetter). */
+  /** Tipos opcionalmente incluídos nos indicadores gerais (Incidente / DeadLetter). */
   inclusion?: FlowInclusion;
 }
 
@@ -281,7 +272,6 @@ export interface FlowItemDetail {
   lead: number | null;
   cycle: number | null;
   hours: number;
-  isBug: boolean;
   isDeadletter: boolean;
   isIncident: boolean;
   /** Motivo pelo qual o card entrou no indicador. */
@@ -340,7 +330,7 @@ function inclusionReasonOf(t: FlowTask, key: FlowSegmentKey): string {
       ? "Demanda regular"
       : type === "deadletter"
         ? "DeadLetter incluído por filtro"
-        : "Bug/Incidente incluído por filtro";
+        : "Incidente incluído por filtro";
   return isOnDemandTask(t) ? `${base} · Sob Demanda (cliente vinculado)` : base;
 }
 
@@ -377,7 +367,7 @@ function emptySegment(key: FlowSegmentKey): FlowSegmentResult {
     missingStart: 0,
     missingCreated: 0,
     reopened: 0,
-    byType: { regular: 0, bug: 0, deadletter: 0, incident: 0 },
+    byType: { regular: 0, deadletter: 0, incident: 0 },
     leadTime: { ...EMPTY_STATS },
     cycleTime: { ...EMPTY_STATS },
     bySquad: [],
@@ -454,7 +444,6 @@ export function computeSegment(tasks: FlowTask[], key: FlowSegmentKey, periodKey
       lead,
       cycle,
       hours: Math.round(((t.spent_minutes || 0) / 60) * 10) / 10,
-      isBug: isBugTask(t),
       isDeadletter: isDeadLetterTask(t),
       isIncident: isPureIncidentTask(t),
       inclusionReason: inclusionReasonOf(t, key),
@@ -495,13 +484,13 @@ export interface FlowMetricsResult {
   periodKey: string | null;
   /** Configuração de inclusão aplicada a este resultado. */
   inclusion: Required<FlowInclusion>;
-  /** Indicadores gerais: demandas regulares (+ Bug/DeadLetter quando incluídos). */
+  /** Indicadores gerais: demandas regulares (+ Incidente/DeadLetter quando incluídos). */
   general: FlowSegmentResult;
   /** Somente demandas sem cliente vinculado. */
   demands: FlowSegmentResult;
   /** Somente itens com cliente vinculado (Sob Demanda). */
   onDemand: FlowSegmentResult;
-  /** Incidente, Bug e DeadLetter — contabilizados à parte, sempre completos. */
+  /** Incidente e DeadLetter — contabilizados à parte, sempre completos. */
   incidents: FlowSegmentResult;
   squads: string[];
   clients: string[];
@@ -511,7 +500,7 @@ export function buildFlowMetrics(rawTasks: FlowTask[], filters: FlowFilters = {}
   const tasks = applyFlowFilters(rawTasks, filters);
   const periodKey = filters.periodKey ?? null;
   const inclusion: Required<FlowInclusion> = {
-    bugs: filters.inclusion?.bugs ?? DEFAULT_INCLUSION.bugs,
+    incidents: filters.inclusion?.incidents ?? DEFAULT_INCLUSION.incidents,
     deadletters: filters.inclusion?.deadletters ?? DEFAULT_INCLUSION.deadletters,
   };
 

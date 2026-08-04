@@ -75,6 +75,19 @@ export function normalizeBillingStatusValue(raw: string | null | undefined): str
 
 
 
+/**
+ * O tipo "Bug" do YouTrack é, por regra de negócio, a mesma coisa que
+ * "Incidente". Normalizamos aqui para nunca exibir as duas categorias
+ * separadas (evita contagem duplicada / série vazia).
+ */
+function normalizeCategoryName(raw: string | null | undefined): string {
+  const c = (raw || "").trim();
+  if (!c) return "Tarefa";
+  const lower = c.toLowerCase();
+  if (lower === "bug" || lower === "bugs") return "Incidente";
+  return c;
+}
+
 function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   // Exclude archived tasks from ALL calculations
   const tasks = rawTasks.filter(t => !isArchived(t.status));
@@ -98,7 +111,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
     for (const t of tTasks) {
       // DeadLetter override applies when identified by tag OR by YouTrack Type
       const hasDeadLetter = isDeadLetter(t);
-      const cat = hasDeadLetter ? "DeadLetter" : (t.category || "Tarefa");
+      const cat = hasDeadLetter ? "DeadLetter" : normalizeCategoryName(t.category);
       const entry = categoryMap.get(cat) || { spentHours: 0, estimatedHours: 0, taskCount: 0 };
       entry.spentHours += (t.spent_minutes || 0) / 60;
       entry.estimatedHours += (t.estimated_minutes || 0) / 60;
@@ -138,7 +151,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   // apenas em análises isoladas de esforço).
   const catMap = new Map<string, { hours: number; count: number }>();
   for (const t of tasks) {
-    const cat = t.category || "Tarefa";
+    const cat = normalizeCategoryName(t.category);
     const entry = catMap.get(cat) || { hours: 0, count: 0 };
     entry.hours += (t.spent_minutes || 0) / 60;
     entry.count += 1;
@@ -203,7 +216,7 @@ function buildDashboardData(rawTasks: DBTask[], selectedMonth?: string) {
   // Agile metrics — regras unificadas em src/lib/flowMetrics.ts:
   // Lead Time  = criação -> conclusão, em dias úteis.
   // Cycle Time = início do dev (ou criação, na ausência dele) -> conclusão, em dias úteis.
-  // Incidentes (Incidente, Bug e DeadLetter), Épicos e a squad "Qualidade" ficam fora.
+  // Incidentes (Incidente/Bug e DeadLetter), Épicos e a squad "Qualidade" ficam fora.
   const flowBase = tasks.filter(t => isFlowEligible(t) && !isIncidentTask(t));
   const businessDaysFrom = (from: string | null | undefined, to: string) => {
     if (!from) return null;
@@ -350,7 +363,6 @@ export interface MonthlyTrendPoint {
   melhorias: number;
   deadLetters: number;
   tarefas: number;
-  bugs: number;
   epicos: number;
   outros: number;
   reworkRate: number;
@@ -409,15 +421,15 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       }
 
 
-      let incidentes = 0, melhorias = 0, deadLetters = 0, tarefas = 0, bugs = 0, epicos = 0, outros = 0;
+      let incidentes = 0, melhorias = 0, deadLetters = 0, tarefas = 0, epicos = 0, outros = 0;
       for (const t of mTasks) {
         const hasDL = isDeadLetter(t);
-        const cat = hasDL ? "DeadLetter" : (t.category || "Tarefa");
+        const cat = hasDL ? "DeadLetter" : normalizeCategoryName(t.category);
+        // "Bug" no YouTrack é o mesmo que Incidente — contabilizado junto.
         if (cat === "Incidente") incidentes++;
         else if (cat === "Melhoria") melhorias++;
         else if (cat === "DeadLetter") deadLetters++;
         else if (cat === "Tarefa") tarefas++;
-        else if (cat === "Bug") bugs++;
         else if (cat === "Épico") epicos++;
         else outros++;
       }
@@ -502,7 +514,7 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
         totalTasks,
         totalSpentHours: Math.round(totalSpentHours),
         totalEstimatedHours: Math.round(totalEstimatedHours),
-        incidentes, melhorias, deadLetters, tarefas, bugs, epicos, outros,
+        incidentes, melhorias, deadLetters, tarefas, epicos, outros,
         reworkRate,
         leadTimeAvg,
         cycleTimeAvg,

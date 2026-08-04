@@ -3,7 +3,7 @@ import {
   ResponsiveContainer, Legend, ComposedChart, Area, AreaChart,
 } from "recharts";
 import type { MonthlyTrendPoint } from "@/hooks/useDashboardData";
-import { linearTrend } from "@/lib/chartHelpers";
+import { buildTrendMask, linearTrend } from "@/lib/chartHelpers";
 
 interface Props {
   data: MonthlyTrendPoint[];
@@ -19,7 +19,7 @@ const tooltipStyle = {
 const axisTickStyle = { fill: "hsl(215, 15%, 52%)", fontSize: 10 };
 const gridStroke = "hsl(225, 15%, 18%)";
 
-const DELIVERY_KEYS = ["tarefas", "melhorias", "incidentes", "bugs", "deadLetters", "epicos", "outros"] as const;
+const DELIVERY_KEYS = ["tarefas", "melhorias", "incidentes", "deadLetters", "epicos", "outros"] as const;
 
 function shortLabel(label: string) {
   // "Março 2026" -> "Mar"
@@ -30,8 +30,7 @@ export function MonthlyTrendCharts({ data }: Props) {
   const totals = data.map(d =>
     DELIVERY_KEYS.reduce((s, k) => s + (Number((d as unknown as Record<string, number>)[k]) || 0), 0),
   );
-  const deliveryMask = totals.map(t => t !== 0);
-  const deliveryTrend = linearTrend(totals, deliveryMask.some(Boolean) ? deliveryMask : undefined);
+  const deliveryTrend = linearTrend(totals, buildTrendMask(totals, data.map(d => d.month)));
 
   const chartData = data.map((d, i) => ({
     ...d,
@@ -58,7 +57,6 @@ export function MonthlyTrendCharts({ data }: Props) {
               <Bar dataKey="tarefas" name="Tarefa" stackId="a" fill="hsl(210, 100%, 56%)" />
               <Bar dataKey="melhorias" name="Melhoria" stackId="a" fill="hsl(160, 84%, 39%)" />
               <Bar dataKey="incidentes" name="Incidente" stackId="a" fill="hsl(0, 84%, 65%)" />
-              <Bar dataKey="bugs" name="Bug" stackId="a" fill="hsl(38, 92%, 50%)" />
               <Bar dataKey="deadLetters" name="DeadLetter" stackId="a" fill="hsl(280, 80%, 72%)" />
               <Bar dataKey="epicos" name="Épico" stackId="a" fill="hsl(180, 60%, 45%)" />
               <Bar dataKey="outros" name="Outros" stackId="a" fill="hsl(215, 15%, 52%)" />
