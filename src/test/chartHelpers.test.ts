@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { linearTrend, variation, withTrend, splitBySufficiency, hasSufficientData } from "@/lib/chartHelpers";
+import { linearTrend, variation, withTrend, splitBySufficiency, hasSufficientData, buildTrendMask } from "@/lib/chartHelpers";
 
 describe("chartHelpers — linha de tendência", () => {
   it("retorna vazio sem dados", () => {
