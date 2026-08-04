@@ -537,6 +537,47 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
           </Card>
         )}
       </div>
+
+      <Sheet open={!!cardsDrill} onOpenChange={(o) => !o && setCardsDrill(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="text-base">{cardsDrill?.title}</SheetTitle>
+            <SheetDescription>
+              {drillTasks.length} card(s) • {drillTasks.reduce((s, t) => s + t.hours, 0).toFixed(1)}h apontadas
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="border-b border-border">
+                <tr className="text-left text-muted-foreground">
+                  <th className="py-2 px-2">Card</th>
+                  <th className="py-2 px-2">Título</th>
+                  <th className="py-2 px-2">Cliente</th>
+                  <th className="py-2 px-2">Squad</th>
+                  <th className="py-2 px-2">Status</th>
+                  <th className="py-2 px-2 text-right">Horas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drillTasks.map((t, i) => (
+                  <tr key={`${t.taskCode}-${i}`} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="py-2 px-2 font-mono">{t.taskCode}</td>
+                    <td className="py-2 px-2 max-w-[240px] truncate" title={t.title}>{t.title || "—"}</td>
+                    <td className="py-2 px-2">{t.clientName}{!t.mapped && <span className="text-warning"> *</span>}</td>
+                    <td className="py-2 px-2">{t.squad}</td>
+                    <td className="py-2 px-2">{t.status}</td>
+                    <td className="py-2 px-2 text-right font-mono">{t.hours}h</td>
+                  </tr>
+                ))}
+                {drillTasks.length === 0 && (
+                  <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">Nenhum card no período.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </SheetContent>
+      </Sheet>
     </section>
+
   );
 }
