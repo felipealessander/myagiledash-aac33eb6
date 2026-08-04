@@ -123,7 +123,16 @@
 
   .recharts-tooltip-item,
   .recharts-tooltip-label,
+  .recharts-tooltip-item-name,
+  .recharts-tooltip-item-separator,
+  .recharts-tooltip-item-value,
+  .recharts-tooltip-item-unit,
   .recharts-default-tooltip {
-    color: hsl(var(--foreground));
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .recharts-default-tooltip {
+    background-color: hsl(var(--popover)) !important;
+    border-color: hsl(var(--border)) !important;
   }
 }
