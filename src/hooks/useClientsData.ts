@@ -1,6 +1,21 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { computeClientUsage, type TaskLite } from "@/lib/clientUsage";
+import { computeClientUsage, buildAliasMap, type TaskLite } from "@/lib/clientUsage";
+import { isArchivedStatus } from "@/lib/taskRules";
+
+export interface ClientTaskRow {
+  taskCode: string;
+  title: string;
+  squad: string;
+  status: string;
+  clientName: string;
+  clientTag: string;
+  mapped: boolean;
+  hours: number;
+  resolvedAt: string | null;
+  createdAt: string | null;
+}
+
 
 export interface Client {
   id: string;
