@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Briefcase, AlertTriangle, Info, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Briefcase, AlertTriangle, Info, TrendingUp, TrendingDown, Minus, ListChecks } from "lucide-react";
 import { useClientsData } from "@/hooks/useClientsData";
 import { useClientHoursTrend } from "@/hooks/useClientHoursTrend";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, Legend, Cell, LineChart, Line, ReferenceLine,
 } from "recharts";
 import { ClientHoursComparison } from "./ClientHoursComparison";
 import type { MonthOption } from "@/hooks/useDashboardData";
+
 
 interface Props {
   selectedMonth: string;
