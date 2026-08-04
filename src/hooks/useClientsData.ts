@@ -131,9 +131,33 @@ export function useClientsData(month: string | null) {
         };
       });
 
+      const aliasMap = buildAliasMap(clients);
+      const taskRows: ClientTaskRow[] = (allTasks as any[])
+        .filter(t => !isArchivedStatus(t.status) && String(t.client || "").trim())
+        .filter(t => taskMonthBucket(t as TaskLite) === month)
+        .map(t => {
+          const tag = String(t.client).trim();
+          const mappedClient = aliasMap.get(tag.toUpperCase());
+          return {
+            taskCode: t.task_code || "—",
+            title: t.title || "",
+            squad: t.squad || "Sem Squad",
+            status: t.status || "—",
+            clientName: mappedClient?.name ?? tag,
+            clientTag: tag,
+            mapped: !!mappedClient,
+            hours: Math.round(((t.spent_minutes || 0) / 60) * 10) / 10,
+            resolvedAt: t.resolved_at ?? null,
+            createdAt: t.created_at_yt ?? null,
+          };
+        })
+        .sort((a, b) => b.hours - a.hours || a.taskCode.localeCompare(b.taskCode));
+
       if (cancelled) return;
       setUsage(usageList);
       setUnmappedClients(unmapped);
+      setMonthTasks(taskRows);
+
     };
     compute();
     return () => { cancelled = true; };
