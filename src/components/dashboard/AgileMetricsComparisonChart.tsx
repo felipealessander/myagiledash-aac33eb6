@@ -51,7 +51,7 @@ export function AgileMetricsComparisonChart({ data }: Props) {
               <Bar dataKey="leadAvg" name="Lead Time" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               <Bar dataKey="cycleAvg" name="Cycle Time" fill="hsl(var(--warning))" radius={[4, 4, 0, 0]} />
               <Bar dataKey="throughput" name="Throughput" fill="hsl(160, 84%, 39%)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="wip" name="WIP" fill="hsl(280, 67%, 56%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="wip" name="WIP" fill="hsl(280, 80%, 72%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

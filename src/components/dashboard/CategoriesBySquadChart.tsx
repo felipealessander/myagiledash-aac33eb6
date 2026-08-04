@@ -12,7 +12,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Bug": "hsl(0, 84%, 60%)",
   "Incidente": "hsl(38, 92%, 50%)",
   "Melhoria": "hsl(160, 84%, 39%)",
-  "Épico": "hsl(280, 67%, 56%)",
+  "Épico": "hsl(280, 80%, 72%)",
   "DeadLetter": "hsl(330, 80%, 55%)",
   "Outros": "hsl(190, 90%, 50%)",
 };
