@@ -96,7 +96,7 @@ export function useClientsData(month: string | null) {
       const fetchPage = async (from: number, to: number) =>
         supabase
           .from("report_tasks")
-          .select("client, spent_minutes, status, resolved_at, created_at_yt")
+          .select("task_code, title, squad, client, spent_minutes, status, resolved_at, created_at_yt")
           .not("client", "is", null)
           .or(
             `and(resolved_at.gte.${monthStartISO},resolved_at.lt.${monthEndISO}),` +
