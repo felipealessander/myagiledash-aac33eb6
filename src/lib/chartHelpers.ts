@@ -57,6 +57,38 @@ export function linearTrend(values: number[], mask?: boolean[]): number[] {
 }
 
 
+/** "2026-08" do mês corrente (UTC). */
+export function currentMonthKey(now: Date = new Date()): string {
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/**
+ * Máscara padrão da linha de tendência.
+ *
+ * Entram no ajuste apenas os períodos comparáveis:
+ *  - meses sem registros (valor 0 / sem dados) ficam de fora, pois não são
+ *    queda real de desempenho;
+ *  - o mês corrente ainda em curso fica de fora, pois só tem dados parciais e
+ *    invertia a inclinação (ex.: throughput crescente aparecia caindo).
+ *
+ * Se a exclusão deixar menos de 2 pontos, volta a considerar todos os meses
+ * com dados — nunca produz uma reta sem base.
+ */
+export function buildTrendMask(
+  values: number[],
+  months?: (string | undefined)[],
+  options: { hasData?: boolean[]; now?: Date } = {},
+): boolean[] | undefined {
+  const current = currentMonthKey(options.now ?? new Date());
+  const withData = values.map((v, i) =>
+    options.hasData ? !!options.hasData[i] : v !== 0,
+  );
+  const full = withData.map((ok, i) => ok && !(months && months[i] === current));
+  if (full.filter(Boolean).length >= 2) return full;
+  if (withData.filter(Boolean).length >= 2) return withData;
+  return undefined;
+}
+
 export interface Variation {
   abs: number;
   /** null quando o valor anterior é 0 (variação percentual indefinida). */
@@ -75,9 +107,8 @@ export function withTrend<T extends Record<string, unknown>>(
   key: keyof T,
 ): (T & { trend: number; deltaAbs: number; deltaPct: number | null })[] {
   const values = rows.map(r => Number(r[key]) || 0);
-  // Períodos zerados (mês sem registros) não entram no ajuste da tendência.
-  const mask = values.map(v => v !== 0);
-  const trend = linearTrend(values, mask.some(Boolean) ? mask : undefined);
+  const months = rows.map(r => (typeof r.month === "string" ? r.month : undefined));
+  const trend = linearTrend(values, buildTrendMask(values, months));
 
   return rows.map((r, i) => {
     const v = variation(i === 0 ? values[0] : values[i - 1], values[i]);

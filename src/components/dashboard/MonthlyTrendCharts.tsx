@@ -3,7 +3,7 @@ import {
   ResponsiveContainer, Legend, ComposedChart, Area, AreaChart,
 } from "recharts";
 import type { MonthlyTrendPoint } from "@/hooks/useDashboardData";
-import { linearTrend } from "@/lib/chartHelpers";
+import { buildTrendMask, linearTrend } from "@/lib/chartHelpers";
 
 interface Props {
   data: MonthlyTrendPoint[];
@@ -30,8 +30,7 @@ export function MonthlyTrendCharts({ data }: Props) {
   const totals = data.map(d =>
     DELIVERY_KEYS.reduce((s, k) => s + (Number((d as unknown as Record<string, number>)[k]) || 0), 0),
   );
-  const deliveryMask = totals.map(t => t !== 0);
-  const deliveryTrend = linearTrend(totals, deliveryMask.some(Boolean) ? deliveryMask : undefined);
+  const deliveryTrend = linearTrend(totals, buildTrendMask(totals, data.map(d => d.month)));
 
   const chartData = data.map((d, i) => ({
     ...d,

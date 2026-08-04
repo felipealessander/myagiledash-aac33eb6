@@ -3,7 +3,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, ComposedChart, Respon
 import { ArrowDownRight, ArrowRight, ArrowUpRight, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buildComparison, summarizeSeries } from "@/lib/monthComparison";
-import { linearTrend } from "@/lib/chartHelpers";
+import { buildTrendMask, linearTrend } from "@/lib/chartHelpers";
 
 export interface ComparisonMetric {
   key: string;
@@ -51,9 +51,12 @@ export function MonthComparisonPanel({ title = "Comparação mensal", months, me
   );
 
   const chartData = useMemo(() => {
-    // Meses sem registros não influenciam a inclinação da tendência.
-    const mask = rows.map(r => r.hasData);
-    const trend = linearTrend(rows.map(r => r.value), mask.some(Boolean) ? mask : undefined);
+    // Meses sem registros e o mês corrente (parcial) não influenciam a inclinação.
+    const values = rows.map(r => r.value);
+    const trend = linearTrend(
+      values,
+      buildTrendMask(values, rows.map(r => r.month), { hasData: rows.map(r => r.hasData) }),
+    );
     return rows.map((r, i) => ({ ...r, trend: trend[i] }));
 
   }, [rows]);
