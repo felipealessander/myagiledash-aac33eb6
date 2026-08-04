@@ -136,3 +136,43 @@
     border-color: hsl(var(--border)) !important;
   }
 }
+
+/*
+ * Recharts injeta a cor da série diretamente nos spans da legenda. Estas
+ * regras ficam fora de @layer para terem precedência sobre os estilos da
+ * biblioteca e cobrem também legendas renderizadas por payload/formatter.
+ */
+.recharts-default-legend,
+.recharts-default-legend li,
+.recharts-default-legend span,
+.recharts-legend-wrapper,
+.recharts-legend-wrapper li,
+.recharts-legend-wrapper span,
+.recharts-legend-item,
+.recharts-legend-item-text {
+  color: hsl(var(--foreground)) !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+}
+
+.recharts-wrapper svg text,
+.recharts-cartesian-axis-tick-value,
+.recharts-polar-angle-axis-tick-value,
+.recharts-label,
+.recharts-text {
+  fill: hsl(var(--muted-foreground)) !important;
+}
+
+.recharts-tooltip-wrapper,
+.recharts-tooltip-wrapper div,
+.recharts-tooltip-wrapper p,
+.recharts-tooltip-wrapper span,
+.recharts-default-tooltip,
+.recharts-default-tooltip li {
+  color: hsl(var(--popover-foreground)) !important;
+  -webkit-text-fill-color: hsl(var(--popover-foreground)) !important;
+}
+
+.recharts-default-tooltip {
+  background-color: hsl(var(--popover)) !important;
+  border-color: hsl(var(--border)) !important;
+}
