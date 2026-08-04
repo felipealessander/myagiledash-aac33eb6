@@ -60,12 +60,19 @@ describe("computeMttr", () => {
   it("counts unresolved incidents separately and ignores non-incidents", () => {
     const tasks = [
       t({ category: "Incidente", created_at_yt: "2026-05-01T00:00:00Z", resolved_at: null }),
-      t({ category: "Bug", created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-05T00:00:00Z" }),
+      t({ category: "Tarefa", created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-05T00:00:00Z" }),
     ];
     const r = computeMttr(tasks);
     expect(r.openIncidents).toBe(1);
     expect(r.resolvedIncidents).toBe(0);
     expect(r.overall.count).toBe(0);
+  });
+
+  it("trata o tipo Bug do YouTrack como Incidente (sem série duplicada)", () => {
+    const r = computeMttr([
+      t({ category: "Bug", created_at_yt: "2026-05-01T00:00:00Z", resolved_at: "2026-05-05T00:00:00Z" }),
+    ]);
+    expect(r.resolvedIncidents).toBe(1);
   });
 
   it("never returns negative durations", () => {
