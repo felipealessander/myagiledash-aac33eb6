@@ -108,7 +108,10 @@ export function MonthComparisonPanel({ title = "Comparação mensal", months, me
           <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
           <Tooltip
             contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-            formatter={(v: number, name: string) => [`${Math.round(v * 10) / 10}${metric.unit ?? ""}`, name === "trend" ? "Tendência" : metric.label]}
+            formatter={(v: number, _name: string, item: any) => [
+              `${Math.round(v * 10) / 10}${metric.unit ?? ""}`,
+              item?.dataKey === "trend" ? `Tendência ${metric.label}` : metric.label,
+            ]}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           <Bar
