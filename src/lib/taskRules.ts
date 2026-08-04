@@ -38,16 +38,13 @@ export function isDeadLetter(t: RuleTask): boolean {
   return !!t.category && DEADLETTER_RE.test(t.category);
 }
 
-/** Bug puro (tipo Bug no YouTrack). */
-export function isBug(t: RuleTask): boolean {
-  const c = norm(t.category);
-  return c === "bug" || c === "bugs";
-}
-
-/** Incidente puro (tipo Incidente no YouTrack). */
+/**
+ * Incidente. Por regra de negócio, o tipo "Bug" do YouTrack É um incidente —
+ * não existe indicador separado de Bug para evitar contagem duplicada.
+ */
 export function isIncident(t: RuleTask): boolean {
   const c = norm(t.category);
-  return c === "incidente" || c === "incidentes";
+  return c === "incidente" || c === "incidentes" || c === "bug" || c === "bugs";
 }
 
 /** Épico — entra no esforço, fica fora das métricas de fluxo. */
