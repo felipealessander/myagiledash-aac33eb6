@@ -1,6 +1,21 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { computeClientUsage, type TaskLite } from "@/lib/clientUsage";
+import { computeClientUsage, buildAliasMap, taskMonthBucket, type TaskLite } from "@/lib/clientUsage";
+import { isArchivedStatus } from "@/lib/taskRules";
+
+export interface ClientTaskRow {
+  taskCode: string;
+  title: string;
+  squad: string;
+  status: string;
+  clientName: string;
+  clientTag: string;
+  mapped: boolean;
+  hours: number;
+  resolvedAt: string | null;
+  createdAt: string | null;
+}
+
 
 export interface Client {
   id: string;
@@ -33,6 +48,8 @@ export function useClientsData(month: string | null) {
   const [hours, setHours] = useState<ClientMonthlyHours[]>([]);
   const [usage, setUsage] = useState<ClientUsage[]>([]);
   const [unmappedClients, setUnmappedClients] = useState<{ alias: string; spentHours: number; taskCount: number }[]>([]);
+  const [monthTasks, setMonthTasks] = useState<ClientTaskRow[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
@@ -79,7 +96,7 @@ export function useClientsData(month: string | null) {
       const fetchPage = async (from: number, to: number) =>
         supabase
           .from("report_tasks")
-          .select("client, spent_minutes, status, resolved_at, created_at_yt")
+          .select("task_code, title, squad, client, spent_minutes, status, resolved_at, created_at_yt")
           .not("client", "is", null)
           .or(
             `and(resolved_at.gte.${monthStartISO},resolved_at.lt.${monthEndISO}),` +
@@ -114,13 +131,37 @@ export function useClientsData(month: string | null) {
         };
       });
 
+      const aliasMap = buildAliasMap(clients);
+      const taskRows: ClientTaskRow[] = (allTasks as any[])
+        .filter(t => !isArchivedStatus(t.status) && String(t.client || "").trim())
+        .filter(t => taskMonthBucket(t as TaskLite) === month)
+        .map(t => {
+          const tag = String(t.client).trim();
+          const mappedClient = aliasMap.get(tag.toUpperCase());
+          return {
+            taskCode: t.task_code || "—",
+            title: t.title || "",
+            squad: t.squad || "Sem Squad",
+            status: t.status || "—",
+            clientName: mappedClient?.name ?? tag,
+            clientTag: tag,
+            mapped: !!mappedClient,
+            hours: Math.round(((t.spent_minutes || 0) / 60) * 10) / 10,
+            resolvedAt: t.resolved_at ?? null,
+            createdAt: t.created_at_yt ?? null,
+          };
+        })
+        .sort((a, b) => b.hours - a.hours || a.taskCode.localeCompare(b.taskCode));
+
       if (cancelled) return;
       setUsage(usageList);
       setUnmappedClients(unmapped);
+      setMonthTasks(taskRows);
+
     };
     compute();
     return () => { cancelled = true; };
   }, [month, clients, hours]);
 
-  return { clients, hours, usage, unmappedClients, loading, refetch };
+  return { clients, hours, usage, unmappedClients, monthTasks, loading, refetch };
 }

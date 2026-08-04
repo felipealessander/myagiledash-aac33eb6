@@ -15,7 +15,6 @@ import { BillingOverviewChart } from "@/components/dashboard/BillingOverviewChar
 import { BillingComparisonChart } from "@/components/dashboard/BillingComparisonChart";
 import { BillingKpiCards } from "@/components/dashboard/BillingKpiCards";
 import { LeadTimeChart } from "@/components/dashboard/LeadTimeChart";
-import { FlowMetricsWidget } from "@/components/dashboard/FlowMetricsWidget";
 import { ThroughputChart } from "@/components/dashboard/ThroughputChart";
 import { WIPChart } from "@/components/dashboard/WIPChart";
 import { CycleTimeChart } from "@/components/dashboard/CycleTimeChart";
@@ -422,7 +421,6 @@ const Index = () => {
                     delay={150}
                   />
                 </div>
-                <FlowMetricsWidget months={months} selectedMonth={selectedMonth} selectedSquads={selectedSquads} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <LeadTimeChart
                     data={leadTimeBySquad || []}

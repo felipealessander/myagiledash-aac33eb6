@@ -1,14 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Briefcase, AlertTriangle, Info, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Briefcase, AlertTriangle, Info, TrendingUp, TrendingDown, Minus, ListChecks } from "lucide-react";
 import { useClientsData } from "@/hooks/useClientsData";
 import { useClientHoursTrend } from "@/hooks/useClientHoursTrend";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, Legend, Cell, LineChart, Line, ReferenceLine,
 } from "recharts";
 import { ClientHoursComparison } from "./ClientHoursComparison";
 import type { MonthOption } from "@/hooks/useDashboardData";
+
 
 interface Props {
   selectedMonth: string;
@@ -65,8 +67,15 @@ function monthShortLabel(month: string): string {
 }
 
 export function ClientHoursWidget({ selectedMonth, months }: Props) {
-  const { usage, loading, unmappedClients } = useClientsData(selectedMonth);
+  const { usage, loading, unmappedClients, monthTasks } = useClientsData(selectedMonth);
   const { points: trend, loading: trendLoading } = useClientHoursTrend(selectedMonth, 3);
+  const [cardsDrill, setCardsDrill] = useState<{ title: string; client: string | null } | null>(null);
+
+  const drillTasks = useMemo(() => {
+    if (!cardsDrill) return [];
+    return cardsDrill.client ? monthTasks.filter(t => t.clientName === cardsDrill.client) : monthTasks;
+  }, [cardsDrill, monthTasks]);
+
 
   const data = useMemo(() => {
     return usage
@@ -184,7 +193,8 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
         </Card>
 
         {/* Enriched KPI cards with sparklines */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-2">
@@ -254,7 +264,27 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
               </div>
             </CardContent>
           </Card>
+
+          <Card
+            role="button"
+            tabIndex={0}
+            onClick={() => setCardsDrill({ title: `Cards atendidos — ${selectedMonthLabel}`, client: null })}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setCardsDrill({ title: `Cards atendidos — ${selectedMonthLabel}`, client: null }); }}
+            className="cursor-pointer transition-colors hover:border-primary/60 hover:bg-muted/30"
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Cards Atendidos</p>
+                  <p className="text-2xl font-bold">{monthTasks.length.toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Clique para ver a listagem</p>
+                </div>
+                <ListChecks className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
 
         {/* Highlights — named lists (style of the reports) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -472,7 +502,16 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
                         {d.delta >= 0 ? "+" : ""}{d.delta}h
                       </td>
                       <td className="py-2 px-2 text-right font-mono" style={{ color: BAND_COLOR[d.band] }}>{d.utilizationPct.toFixed(0)}%</td>
-                      <td className="py-2 px-2 text-right font-mono">{usage.find(u => u.client.name === d.fullName && u.client.classification === d.classification)?.taskCount ?? 0}</td>
+                      <td className="py-2 px-2 text-right font-mono">
+                        <button
+                          type="button"
+                          className="underline underline-offset-2 hover:text-primary"
+                          onClick={() => setCardsDrill({ title: `Cards de ${d.fullName} — ${selectedMonthLabel}`, client: d.fullName })}
+                        >
+                          {usage.find(u => u.client.name === d.fullName && u.client.classification === d.classification)?.taskCount ?? 0}
+                        </button>
+                      </td>
+
                     </tr>
                   ))}
                 </tbody>
@@ -498,6 +537,47 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
           </Card>
         )}
       </div>
+
+      <Sheet open={!!cardsDrill} onOpenChange={(o) => !o && setCardsDrill(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="text-base">{cardsDrill?.title}</SheetTitle>
+            <SheetDescription>
+              {drillTasks.length} card(s) • {drillTasks.reduce((s, t) => s + t.hours, 0).toFixed(1)}h apontadas
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="border-b border-border">
+                <tr className="text-left text-muted-foreground">
+                  <th className="py-2 px-2">Card</th>
+                  <th className="py-2 px-2">Título</th>
+                  <th className="py-2 px-2">Cliente</th>
+                  <th className="py-2 px-2">Squad</th>
+                  <th className="py-2 px-2">Status</th>
+                  <th className="py-2 px-2 text-right">Horas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drillTasks.map((t, i) => (
+                  <tr key={`${t.taskCode}-${i}`} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="py-2 px-2 font-mono">{t.taskCode}</td>
+                    <td className="py-2 px-2 max-w-[240px] truncate" title={t.title}>{t.title || "—"}</td>
+                    <td className="py-2 px-2">{t.clientName}{!t.mapped && <span className="text-warning"> *</span>}</td>
+                    <td className="py-2 px-2">{t.squad}</td>
+                    <td className="py-2 px-2">{t.status}</td>
+                    <td className="py-2 px-2 text-right font-mono">{t.hours}h</td>
+                  </tr>
+                ))}
+                {drillTasks.length === 0 && (
+                  <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">Nenhum card no período.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </SheetContent>
+      </Sheet>
     </section>
+
   );
 }
