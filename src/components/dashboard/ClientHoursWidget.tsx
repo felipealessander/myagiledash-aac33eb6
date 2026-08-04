@@ -502,7 +502,16 @@ export function ClientHoursWidget({ selectedMonth, months }: Props) {
                         {d.delta >= 0 ? "+" : ""}{d.delta}h
                       </td>
                       <td className="py-2 px-2 text-right font-mono" style={{ color: BAND_COLOR[d.band] }}>{d.utilizationPct.toFixed(0)}%</td>
-                      <td className="py-2 px-2 text-right font-mono">{usage.find(u => u.client.name === d.fullName && u.client.classification === d.classification)?.taskCount ?? 0}</td>
+                      <td className="py-2 px-2 text-right font-mono">
+                        <button
+                          type="button"
+                          className="underline underline-offset-2 hover:text-primary"
+                          onClick={() => setCardsDrill({ title: `Cards de ${d.fullName} — ${selectedMonthLabel}`, client: d.fullName })}
+                        >
+                          {usage.find(u => u.client.name === d.fullName && u.client.classification === d.classification)?.taskCount ?? 0}
+                        </button>
+                      </td>
+
                     </tr>
                   ))}
                 </tbody>
