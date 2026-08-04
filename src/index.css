@@ -107,3 +107,23 @@
     -webkit-text-fill-color: transparent;
   }
 }
+
+/* Recharts: garante textos claros em legendas, eixos e tooltips no tema escuro */
+@layer components {
+  .recharts-legend-item-text {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .recharts-cartesian-axis-tick-value,
+  .recharts-polar-angle-axis-tick-value,
+  .recharts-label,
+  .recharts-text {
+    fill: hsl(var(--muted-foreground));
+  }
+
+  .recharts-tooltip-item,
+  .recharts-tooltip-label,
+  .recharts-default-tooltip {
+    color: hsl(var(--foreground));
+  }
+}
