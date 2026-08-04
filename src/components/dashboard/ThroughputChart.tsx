@@ -24,7 +24,7 @@ interface ThroughputChartProps {
 }
 
 export function ThroughputChart({ data, monthlyData = [] }: ThroughputChartProps) {
-  const [view, setView] = useState<"week" | "month">("week");
+  const [view, setView] = useState<"week" | "month">("month");
 
   const formatted = data.map(d => ({
     ...d,
