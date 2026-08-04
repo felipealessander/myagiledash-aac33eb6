@@ -67,8 +67,15 @@ function monthShortLabel(month: string): string {
 }
 
 export function ClientHoursWidget({ selectedMonth, months }: Props) {
-  const { usage, loading, unmappedClients } = useClientsData(selectedMonth);
+  const { usage, loading, unmappedClients, monthTasks } = useClientsData(selectedMonth);
   const { points: trend, loading: trendLoading } = useClientHoursTrend(selectedMonth, 3);
+  const [cardsDrill, setCardsDrill] = useState<{ title: string; client: string | null } | null>(null);
+
+  const drillTasks = useMemo(() => {
+    if (!cardsDrill) return [];
+    return cardsDrill.client ? monthTasks.filter(t => t.clientName === cardsDrill.client) : monthTasks;
+  }, [cardsDrill, monthTasks]);
+
 
   const data = useMemo(() => {
     return usage
