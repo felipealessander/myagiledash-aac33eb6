@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# MyAgileDash — Portal de Indicadores Attus
 
 ## Project info
 
