@@ -312,6 +312,33 @@ Deno.serve(async (req) => {
       )
     }
 
+    // MODE: meta - lists the allowed values of the project custom fields (Type, State, ...)
+    // Used to audit new YouTrack field values that affect indicator rules.
+    if (mode === 'meta') {
+      const projFields = 'id,name,shortName,customFields(field(name),bundle(values(name)))'
+      const projects = await fetchJson(
+        `${base}/api/admin/projects?fields=${encodeURIComponent(projFields)}&$top=100`,
+        YOUTRACK_TOKEN,
+      ) as any[]
+      const proj = (projects || []).find((p: any) => p.shortName === project)
+      if (!proj) {
+        return new Response(
+          JSON.stringify({ error: `Project ${project} not found` }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      const fieldsMeta: Record<string, string[]> = {}
+      for (const cf of proj.customFields || []) {
+        const name = cf?.field?.name
+        if (!name) continue
+        fieldsMeta[name] = (cf?.bundle?.values || []).map((v: any) => v?.name).filter(Boolean)
+      }
+      return new Response(
+        JSON.stringify({ project: proj.shortName, fields: fieldsMeta }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // MODE: issues (default) - uses "work date" filter to capture all issues with time in period
     let query = `project: ${project}`
     if (dateFrom) {
