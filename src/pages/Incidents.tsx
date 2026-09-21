@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Clock, Shield, Loader2, LogOut, BarChart3, AlertCircle, CalendarClock, TrendingDown } from "lucide-react";
+import { AlertTriangle, Clock, Shield, Loader2, LogOut, BarChart3, AlertCircle, CalendarClock, TrendingDown, Timer } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIncidentsData, PeriodFilter } from "@/hooks/useIncidentsData";
 import { IncidentKpiCard } from "@/components/dashboard/IncidentKpiCard";
+import { MttrTrendChart } from "@/components/dashboard/MttrTrendChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ const Incidents = () => {
     bySquad, trend, period, setPeriod, totalIncidents,
     isDueNextBusinessDay, isOverdue,
     treatHomologAsDone, setTreatHomologAsDone,
+    mttr, mttrTrend, mttrBySquad,
   } = useIncidentsData();
 
   useEffect(() => {
