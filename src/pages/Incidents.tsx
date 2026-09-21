@@ -197,6 +197,63 @@ const Incidents = () => {
             <IncidentKpiCard title="Prometida Atrasada" value={promisedOverdue.length} subtitle="Prazo já expirado" icon={CalendarClock} variant="destructive" delay={250} incidents={promisedOverdue} />
           </div>
 
+          {/* MTTR */}
+          <section>
+            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+              <Timer className="h-4 w-4" />
+              MTTR — Tempo Médio de Resolução
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <IncidentKpiCard title="MTTR médio (mês)" value={`${mttr.avg}d`} subtitle={`${mttr.count} incidentes resolvidos`} icon={Timer} variant="warning" delay={0} />
+              <IncidentKpiCard title="Mediana" value={`${mttr.median}d`} subtitle="Metade resolve até aqui" icon={Timer} variant="info" delay={50} />
+              <IncidentKpiCard title="P85" value={`${mttr.p85}d`} subtitle="85% resolvem até aqui" icon={Timer} variant="destructive" delay={100} />
+              <IncidentKpiCard title="Pior caso" value={`${mttr.max}d`} subtitle={mttr.items[0]?.code || "—"} icon={AlertTriangle} variant="default" delay={150} />
+            </div>
+            {mttr.missingCreated > 0 && (
+              <p className="text-[11px] text-warning mb-4">
+                {mttr.missingCreated} incidente(s) resolvido(s) sem data de abertura no YouTrack ficaram fora do cálculo.
+              </p>
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <MttrTrendChart data={mttrTrend} />
+              <Card className="gradient-card border-border">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold">MTTR por time (mês atual)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {mttrBySquad.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-8">Sem incidentes resolvidos no mês.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Time</TableHead>
+                          <TableHead className="text-xs text-right">Resolvidos</TableHead>
+                          <TableHead className="text-xs text-right">Médio</TableHead>
+                          <TableHead className="text-xs text-right">Mediana</TableHead>
+                          <TableHead className="text-xs text-right">P85</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {mttrBySquad.map(s => (
+                          <TableRow key={s.squad}>
+                            <TableCell className="text-xs">{s.squad}</TableCell>
+                            <TableCell className="text-xs text-right font-mono">{s.count}</TableCell>
+                            <TableCell className="text-xs text-right font-mono font-semibold">{s.avg}d</TableCell>
+                            <TableCell className="text-xs text-right font-mono">{s.median}d</TableCell>
+                            <TableCell className="text-xs text-right font-mono">{s.p85}d</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+
+
+
           {/* Deadline tables */}
           <section>
             <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
