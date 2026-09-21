@@ -7,6 +7,8 @@ import {
   isIncident,
   isEpic,
   isQualidadeSquad,
+  isSupport,
+  canonicalCategory,
   round1,
 } from "@/lib/taskRules";
 
