@@ -7,6 +7,8 @@ import {
   isIncident,
   isEpic,
   isQualidadeSquad,
+  isSupport,
+  canonicalCategory,
   round1,
 } from "@/lib/taskRules";
 
@@ -39,6 +41,13 @@ describe("taskRules — regras canônicas compartilhadas", () => {
     expect(isIncident({ category: "Bugs" })).toBe(true);
     expect(isIncident({ category: "incidente" })).toBe(true);
     expect(isIncident({ category: "Incidentes" })).toBe(true);
+    expect(isIncident({ category: "Defeito" })).toBe(true);
+    expect(isIncident({ category: "Erro script" })).toBe(true);
+    expect(isIncident({ category: "Tarefa" })).toBe(false);
+    expect(canonicalCategory({ category: "Defeito" })).toBe("Incidente");
+    expect(canonicalCategory({ category: "Sob Demanda" })).toBe("Tarefa");
+    expect(canonicalCategory({ tags: ["dead letter"], category: "Bug" })).toBe("DeadLetter");
+    expect(isSupport({ category: "Atendimento" })).toBe(true);
     expect(isEpic({ category: "Épico" })).toBe(true);
     expect(isEpic({ category: "epic" })).toBe(true);
     expect(isEpic({ category: "Tarefa" })).toBe(false);

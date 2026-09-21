@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isArchivedStatus, isDoneStatus, isIncident as ruleIsIncident } from "@/lib/taskRules";
+import { buildMttr, buildMttrBySquad, buildMttrTrend, type MttrTask } from "@/lib/mttr";
 
 interface IncidentTask {
   task_code: string;
@@ -263,8 +264,37 @@ export function useIncidentsData() {
       });
   }, [incidents, period]);
 
+  /* ───────── MTTR (dias corridos entre abertura e conclusão) ───────── */
+
+  const mttrMonths = useMemo(() => {
+    const now = new Date();
+    const monthsBack = period === "1m" ? 1 : period === "3m" ? 3 : period === "6m" ? 6 : 12;
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - (monthsBack - 1), 1);
+    return cutoff.toISOString().slice(0, 7);
+  }, [period]);
+
+  const mttrTrend = useMemo(
+    () => buildMttrTrend(allTasks as unknown as MttrTask[]).filter(p => p.month >= mttrMonths),
+    [allTasks, mttrMonths],
+  );
+
+  const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
+
+  const mttr = useMemo(
+    () => buildMttr(allTasks as unknown as MttrTask[], { periodKey: currentMonthKey }),
+    [allTasks, currentMonthKey],
+  );
+
+  const mttrBySquad = useMemo(
+    () => buildMttrBySquad(allTasks as unknown as MttrTask[], { periodKey: currentMonthKey }),
+    [allTasks, currentMonthKey],
+  );
+
   return {
     loading,
+    mttr,
+    mttrTrend,
+    mttrBySquad,
     openIncidents,
     sloExpiring,
     sloOverdue,

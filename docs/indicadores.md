@@ -57,6 +57,15 @@ consomem exatamente o mesmo resultado (`buildFlowMetrics` / `buildFlowComparison
 ### Histórico Sob Demanda
 - `buildOnDemandHistory`: mês a mês, itens com cliente vinculado — concluídos, abertos, clientes distintos, horas apontadas, Lead/Cycle mediana e P85.
 
+### MTTR (`src/lib/mttr.ts`)
+- **Objetivo**: tempo médio para resolver um incidente.
+- **Escopo**: apenas cards classificados como Incidente (inclui os tipos legados Bug, Defeito e Erro script). DeadLetter fica fora por padrão (`includeDeadletters`).
+- **Início**: `created_at_yt`. **Término**: `resolved_at`. **Unidade**: dias **corridos** (incidente não espera dia útil), 1 casa decimal.
+- **Competência**: mês de conclusão. Dedupe por `task_code`; arquivados excluídos.
+- **Saídas**: média, mediana, P85, mínimo, máximo, série mensal (`buildMttrTrend`), MTTR por squad (`buildMttrBySquad`) e detalhamento (`items`, ordenado do mais lento).
+- **Sem data de abertura**: não entra no cálculo; é contado em `missingCreated` e sinalizado na tela.
+- Cobertura: `src/test/mttr.test.ts`.
+
 ## Rastreabilidade
 
 Cada segmento expõe `items` com: código, título, squad, cliente, tipo, categoria,
