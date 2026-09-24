@@ -20,10 +20,39 @@ const axisTickStyle = { fill: "hsl(215, 15%, 52%)", fontSize: 10 };
 const gridStroke = "hsl(225, 15%, 18%)";
 
 const DELIVERY_KEYS = ["tarefas", "melhorias", "incidentes", "deadLetters", "epicos", "outros"] as const;
+const HOUR_KEYS = new Set(["tarefasHours", "incidentesHours", "melhoriasHours", "deadLettersHours", "epicosHours", "outrosHours"]);
 
 function shortLabel(label: string) {
   // "Março 2026" -> "Mar"
   return label.slice(0, 3);
+}
+
+function HoursByCategoryTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey?: string; name?: string; value?: number; color?: string }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  const rows = payload.filter(item => item.dataKey && HOUR_KEYS.has(item.dataKey));
+  const total = rows.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+  const formatHours = (value: number) => `${value.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}h`;
+
+  return (
+    <div className="rounded-md border border-border bg-popover p-3 text-xs text-popover-foreground shadow-lg">
+      <p className="mb-2 font-semibold">{label}</p>
+      <div className="space-y-1">
+        {rows.map(item => (
+          <div key={item.dataKey} className="flex min-w-44 items-center justify-between gap-5">
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: item.color }} />
+              {item.name}
+            </span>
+            <span className="font-mono">{formatHours(Number(item.value) || 0)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex items-center justify-between border-t border-border pt-2 font-semibold">
+        <span>Total do mês</span>
+        <span className="font-mono">{formatHours(total)}</span>
+      </div>
+    </div>
+  );
 }
 
 export function MonthlyTrendCharts({ data }: Props) {
@@ -63,6 +92,29 @@ export function MonthlyTrendCharts({ data }: Props) {
               <Line type="monotone" dataKey="tendencia" name="Tendência" stroke="hsl(45, 100%, 62%)" strokeWidth={2} strokeDasharray="6 4" dot={false} />
             </ComposedChart>
 
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Delivered hours by category */}
+      <div className="gradient-card rounded-lg border border-border p-5">
+        <h3 className="text-sm font-semibold mb-1">Horas Entregues por Categoria</h3>
+        <p className="text-xs text-muted-foreground mb-4">Composição mensal das horas realizadas no ano selecionado</p>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 16, right: 5, left: -8, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+              <XAxis dataKey="shortLabel" interval={0} tick={axisTickStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
+              <YAxis tick={axisTickStyle} axisLine={false} tickLine={false} unit="h" />
+              <Tooltip content={<HoursByCategoryTooltip />} />
+              <Legend wrapperStyle={{ fontSize: "11px" }} />
+              <Bar dataKey="tarefasHours" name="Tarefa" stackId="hours" fill="hsl(var(--chart-2))" />
+              <Bar dataKey="incidentesHours" name="Incidente" stackId="hours" fill="hsl(var(--chart-5))" />
+              <Bar dataKey="melhoriasHours" name="Melhoria" stackId="hours" fill="hsl(var(--chart-1))" />
+              <Bar dataKey="deadLettersHours" name="DeadLetter" stackId="hours" fill="hsl(var(--chart-4))" />
+              <Bar dataKey="epicosHours" name="Épico" stackId="hours" fill="hsl(var(--chart-3))" />
+              <Bar dataKey="outrosHours" name="Outros" stackId="hours" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>

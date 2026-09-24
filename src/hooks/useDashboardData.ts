@@ -8,6 +8,7 @@ import * as staticData from "@/data/dashboardData";
 import { businessDaysBetween, computeStats, isFlowEligible, isIncidentTask, percentile } from "@/lib/flowMetrics";
 import { isArchivedStatus, isDoneStatus as ruleIsDoneStatus, isDeadLetter as ruleIsDeadLetter } from "@/lib/taskRules";
 import { describePeriod, type PeriodSummary } from "@/lib/monthComparison";
+import { sumMonthlyCategoryHours } from "@/lib/monthlyCategoryHours";
 
 
 export interface MonthOption {
@@ -365,6 +366,12 @@ export interface MonthlyTrendPoint {
   tarefas: number;
   epicos: number;
   outros: number;
+  tarefasHours: number;
+  incidentesHours: number;
+  melhoriasHours: number;
+  deadLettersHours: number;
+  epicosHours: number;
+  outrosHours: number;
   reworkRate: number;
   leadTimeAvg: number;
   cycleTimeAvg: number;
@@ -410,6 +417,7 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
       const totalTasks = mTasks.length;
       const totalSpentHours = mTasks.reduce((s, t) => s + (t.spent_minutes || 0) / 60, 0);
       const totalEstimatedHours = mTasks.reduce((s, t) => s + (t.estimated_minutes || 0) / 60, 0);
+      const categoryHours = sumMonthlyCategoryHours(mTasks);
 
       let billableHours = 0, nonBillableHours = 0, unmarkedBillingHours = 0;
       for (const t of mTasks) {
@@ -515,6 +523,7 @@ function buildMonthlyTrend(rawTasks: DBTask[], months: MonthOption[]): MonthlyTr
         totalSpentHours: Math.round(totalSpentHours),
         totalEstimatedHours: Math.round(totalEstimatedHours),
         incidentes, melhorias, deadLetters, tarefas, epicos, outros,
+        ...categoryHours,
         reworkRate,
         leadTimeAvg,
         cycleTimeAvg,
