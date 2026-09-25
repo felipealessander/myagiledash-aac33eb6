@@ -36,12 +36,28 @@ describe("horas mensais por categoria", () => {
     ]);
 
     expect(result.tarefasHours).toBe(0);
-    expect(result.outrosHours).toBe(1);
+    expect(result.infraestruturaHours).toBe(0.75);
+    expect(result.outrosHours).toBe(0.25);
     expect(totalCategoryHours(result)).toBe(1);
   });
 
   it("mantém ajustes negativos para reconciliar com o total realizado", () => {
     const result = sumMonthlyCategoryHours([{ category: "Tarefa", spent_minutes: -60 }]);
     expect(totalCategoryHours(result)).toBe(-1);
+  });
+
+  it("separa Atendimento, Planejamento, Auxílio técnico e Orientação", () => {
+    const r = sumMonthlyCategoryHours([
+      { category: "Atendimento", spent_minutes: 60 },
+      { category: "Planejamento", spent_minutes: 120 },
+      { category: "Auxílio técnico", spent_minutes: 180 },
+      { category: "Orientação", spent_minutes: 240 },
+    ]);
+    expect(r.atendimentoHours).toBe(1);
+    expect(r.planejamentoHours).toBe(2);
+    expect(r.auxilioTecnicoHours).toBe(3);
+    expect(r.orientacaoHours).toBe(4);
+    expect(r.outrosHours).toBe(0);
+    expect(totalCategoryHours(r)).toBe(10);
   });
 });

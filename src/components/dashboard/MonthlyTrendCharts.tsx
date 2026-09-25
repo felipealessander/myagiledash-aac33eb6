@@ -20,7 +20,7 @@ const axisTickStyle = { fill: "hsl(215, 15%, 52%)", fontSize: 10 };
 const gridStroke = "hsl(225, 15%, 18%)";
 
 const DELIVERY_KEYS = ["tarefas", "melhorias", "incidentes", "deadLetters", "epicos", "outros"] as const;
-const HOUR_KEYS = new Set(["tarefasHours", "incidentesHours", "melhoriasHours", "deadLettersHours", "epicosHours", "outrosHours"]);
+const HOUR_KEYS = new Set(["tarefasHours", "incidentesHours", "melhoriasHours", "deadLettersHours", "epicosHours", "atendimentoHours", "planejamentoHours", "auxilioTecnicoHours", "orientacaoHours", "infraestruturaHours", "outrosHours"]);
 
 function shortLabel(label: string) {
   // "Março 2026" -> "Mar"
@@ -113,6 +113,11 @@ export function MonthlyTrendCharts({ data }: Props) {
               <Bar dataKey="melhoriasHours" name="Melhoria" stackId="hours" fill="hsl(var(--chart-1))" />
               <Bar dataKey="deadLettersHours" name="DeadLetter" stackId="hours" fill="hsl(var(--chart-4))" />
               <Bar dataKey="epicosHours" name="Épico" stackId="hours" fill="hsl(var(--chart-3))" />
+              <Bar dataKey="atendimentoHours" name="Atendimento" stackId="hours" fill="hsl(28, 90%, 58%)" />
+              <Bar dataKey="planejamentoHours" name="Planejamento" stackId="hours" fill="hsl(190, 80%, 55%)" />
+              <Bar dataKey="auxilioTecnicoHours" name="Auxílio técnico" stackId="hours" fill="hsl(330, 75%, 65%)" />
+              <Bar dataKey="orientacaoHours" name="Orientação" stackId="hours" fill="hsl(55, 85%, 58%)" />
+              <Bar dataKey="infraestruturaHours" name="Infraestrutura" stackId="hours" fill="hsl(265, 60%, 70%)" />
               <Bar dataKey="outrosHours" name="Outros" stackId="hours" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
             </ComposedChart>
           </ResponsiveContainer>
