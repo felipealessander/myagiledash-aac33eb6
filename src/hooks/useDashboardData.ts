@@ -371,6 +371,11 @@ export interface MonthlyTrendPoint {
   melhoriasHours: number;
   deadLettersHours: number;
   epicosHours: number;
+  atendimentoHours: number;
+  planejamentoHours: number;
+  auxilioTecnicoHours: number;
+  orientacaoHours: number;
+  infraestruturaHours: number;
   outrosHours: number;
   reworkRate: number;
   leadTimeAvg: number;
